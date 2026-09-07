@@ -15,7 +15,7 @@ Descendant allocation: <finite root-recorded activity bound>
 Escalation/evidence target:
 ```
 
-Managers do not read AMS references, so root must copy the exact `DISPATCH REQUEST` and `MANAGER RESULT ADDENDUM` fields below into every manager order. Each child consumes one parent allocation unit; suballocation comes only from the unspent total and is never duplicated. Replenishment requires root.
+Managers receive orchestration instructions through their work order, so root must copy the exact `DISPATCH REQUEST` and `MANAGER RESULT ADDENDUM` fields below into every manager order. Each child consumes one parent allocation unit; suballocation comes only from the unspent total and is never duplicated. Replenishment requires root.
 
 Authority, scope, dependencies, permissions, ownership, and allocation only narrow. Minimal stays serial. Balanced allows either two direct non-manager sessions or one manager with at most three direct non-manager descendants, never both or nested. Higher modes have no fixed shape ceiling, but each layer must add supervision, context isolation, or useful parallelism.
 

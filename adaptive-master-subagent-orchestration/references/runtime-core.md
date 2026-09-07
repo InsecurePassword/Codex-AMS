@@ -24,6 +24,8 @@ Choose the lowest reliable route and effort by expected cost to accepted complet
 
 Keep one capable owner for each coherent task through investigation, implementation, validation, and repair. Add lanes only for ready disjoint work, a bounded specialist/reviewer, a specific blocker, or supervision that saves more than it costs.
 
+For Codex V2 use the supported equivalent of `fork_turns = "none"` and pass the compact order directly.
+
 Immediately after each successful Codex spawn report task and requested profile; batch-start reports. State observed model/effort only from direct evidence and separately from requested identity.
 
 Keep boundary/criteria, scope/dependencies, queue state, IDs/lineage/role/authority, ownership, route, validation/results, availability, and gated transient state in the root session; create no AMS runtime file.

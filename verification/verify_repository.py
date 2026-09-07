@@ -599,6 +599,8 @@ def main() -> int:
     assert_markdown_reference_integrity()
 
     for path in sorted(ROOT.rglob("*")):
+        if ".git" in path.relative_to(ROOT).parts:
+            continue
         if not path.is_file() or path.suffix == ".pyc" or "__pycache__" in path.parts:
             continue
         if path.suffix.lower() in {".md", ".yaml", ".yml", ".toml", ".json", ".py", ".ps1", ".sh", ".txt", ""}:

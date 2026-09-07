@@ -8,7 +8,7 @@ There is no fixed depth, manager, ratio, or shape limit. Root remains sole physi
 
 Root retains boundary, controls, integration, acceptance, completion, and user communication. Managers request descendants; workers are leaves; authority only narrows.
 
-Rush never permits skipped policy/authorization/validation/acceptance; new deliverables, speculative features, post-acceptance extras, or hidden dependency absorption; overlapping writers or uncontrolled destructive/external action; non-root AMS/control access; unsupported identity claims; orphaned/circular/uncollected chains; manager/worker completion; root project execution while a compliant route exists; bypass of runner fail-fast or bounded diagnosis; or proactive/multiplied Daybreak probes, units, admission, starts, or tasks.
+Rush never permits skipped policy/authorization/validation/acceptance; new deliverables, speculative features, post-acceptance extras, or hidden dependency absorption; overlapping writers or uncontrolled destructive/external action; non-root AMS/control access outside the explicit work order; unsupported identity claims; orphaned/circular/uncollected chains; manager/worker completion; root project execution while a compliant route exists; bypass of runner fail-fast or bounded diagnosis; or proactive/multiplied Daybreak probes, units, admission, starts, or tasks.
 
 After a qualifying standard-Sol cyber-safeguard refusal, `daybreak-blue.md` controls that unit. Rush may continue unrelated ready work but never multiplies the Daybreak lane.
 

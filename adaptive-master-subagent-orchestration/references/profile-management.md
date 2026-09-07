@@ -20,7 +20,7 @@ Exact bundled bytes define the name, model/effort, instructions, and V2 mode hin
 
 Sol, Terra, Luna, and Astra profiles act only as the assigned `worker/none` or `delegated-manager/request`; Spark and Daybreak accept only `worker/none`. Root alone spawns. Workers are leaves; managers return bounded root-mediated dispatch requests within granted scope and allocation. Peer messaging is limited to the named `worker/none` paths in one matching channel and changes no order or authority; the member returns a terminal stub, the lead returns synthesis, and root retains acceptance. All profiles preserve scope, dependencies, ownership, permissions, validation, user work, root-only user contact, and root-only completion.
 
-For Codex V2 use the supported equivalent of `fork_turns = "none"` and pass the compact order directly. Before spawn, verify the selected effective regular file matches its expected name, model/effort, managed contract, and permission neutrality. Requested identity is not observed identity. Daybreak remains governed only by `daybreak-blue.md`; profile presence proves nothing.
+Before spawn, verify the selected effective regular file matches its expected name, model/effort, managed contract, and permission neutrality. Requested identity is not observed identity. Daybreak remains governed only by `daybreak-blue.md`; profile presence proves nothing.
 
 ## Operations
 
