@@ -93,6 +93,7 @@ def profile_text(
 
 
 def make_project(root: Path, profile: str, request: dict[str, object]) -> tuple[Path, Path]:
+    root = root.resolve(strict=True)
     project = root / "project"
     profile_dir = project / ".codex/ams-local-llm/profiles"
     profile_dir.mkdir(parents=True)
@@ -400,7 +401,7 @@ class LocalLane(unittest.TestCase):
 
     def test_redirected_request_parent_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            root = Path(td)
+            root = Path(td).resolve(strict=True)
             project, request = make_project(root, profile_text("http://127.0.0.1:1/v1"), {"system": "", "user": "small"})
             link = root / "request-link"
             try:
@@ -543,7 +544,7 @@ class LocalLane(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "symlink fixture uses Unix semantics")
     def test_redirected_profile_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            root = Path(td)
+            root = Path(td).resolve(strict=True)
             profile_dir = root / ".codex/ams-local-llm/profiles"
             profile_dir.mkdir(parents=True)
             outside = root / "outside.toml"
@@ -559,7 +560,7 @@ class LocalLane(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "symlink fixture uses Unix semantics")
     def test_redirected_profile_parent_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            root = Path(td)
+            root = Path(td).resolve(strict=True)
             outside = root / "outside-profiles"
             outside.mkdir()
             (outside / "qwen38-32k.toml").write_text(profile_text("http://127.0.0.1:1/v1"), encoding="utf-8")
