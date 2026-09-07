@@ -10,7 +10,10 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,29 +40,14 @@ def run(
     return result
 
 
-def free_port() -> int:
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
+def start_server(root: Path) -> tuple[ThreadingHTTPServer, str]:
+    class Handler(SimpleHTTPRequestHandler):
+        def log_message(self, *_args: object) -> None:
+            pass
 
-
-def start_server(root: Path) -> tuple[subprocess.Popen[str], str]:
-    port = free_port()
-    process = subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(root)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        text=True,
-    )
-    url = f"http://127.0.0.1:{port}"
-    for _ in range(40):
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=0.1):
-                return process, url
-        except OSError:
-            time.sleep(0.05)
-    process.terminate()
-    raise AssertionError("fixture HTTP server did not start")
+    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(Handler, directory=str(root)))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, f"http://127.0.0.1:{server.server_port}"
 
 
 def patch_bash(source: Path, destination: Path, url: str) -> None:
@@ -314,12 +302,8 @@ def main() -> int:
                 "active/stale/malformed lock handling, and manifest refusal"
             )
         finally:
-            server.terminate()
-            try:
-                server.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                server.kill()
-                server.wait(timeout=5)
+            server.shutdown()
+            server.server_close()
     return 0
 
 

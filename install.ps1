@@ -180,7 +180,7 @@ function Assert-ProfilePreflight {
         $TargetProfile = Join-Path $AgentHome $ProfileFile
         $Source = Get-Item -LiteralPath $SourceProfile -Force
         if ($Source.PSIsContainer -or ($Source.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw "Bundled profile is invalid: $ProfileFile" }
-        $FirstLine = [IO.File]::ReadLines($SourceProfile) | Select-Object -First 1
+        $FirstLine = [IO.File]::ReadAllLines($SourceProfile)[0]
         if ($FirstLine -cne $ManagedMarker) { throw "Bundled profile lacks the managed marker: $ProfileFile" }
         $Target = Get-Item -LiteralPath $TargetProfile -Force -ErrorAction SilentlyContinue
         if ($Target) {
