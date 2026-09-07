@@ -1,0 +1,20 @@
+{
+  "name": "Codex-AMS",
+  "interface": {
+    "displayName": "Codex AMS"
+  },
+  "plugins": [
+    {
+      "name": "Codex-AMS",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

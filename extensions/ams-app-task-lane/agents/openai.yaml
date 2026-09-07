@@ -1,0 +1,6 @@
+interface:
+  display_name: "AMS App-Task Lane"
+  short_description: "Explicit user-visible task transport governed by AMS"
+  default_prompt: "Use $ams-app-task-lane only after I explicitly authorize a user-visible AMS app task for this objective."
+policy:
+  allow_implicit_invocation: false

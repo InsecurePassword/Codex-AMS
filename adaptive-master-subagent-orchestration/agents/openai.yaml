@@ -1,0 +1,6 @@
+interface:
+  display_name: "Adaptive Master–Subagent Orchestration"
+  short_description: "Route bounded work with scope, dependency, and failure controls"
+  default_prompt: "Use $adaptive-master-subagent-orchestration; resolve effective project/global settings before top-level project work."
+policy:
+  allow_implicit_invocation: true

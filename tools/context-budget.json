@@ -1,0 +1,29 @@
+{
+  "companion_max_bytes": {
+    "ams_app_task_lane": 6500,
+    "ams_local_openai_lane": 12000,
+    "ams_runtime_observation": 1800
+  },
+  "lazy_reference_max_bytes": {
+    "references/blocker-diagnosis.md": 3300,
+    "references/computer-use.md": 1000,
+    "references/configuration-maintenance.md": 2200,
+    "references/daybreak-blue.md": 13600,
+    "references/hierarchy-control.md": 6800,
+    "references/intensity-control.md": 1900,
+    "references/package-maintenance.md": 2900,
+    "references/profile-management.md": 3400,
+    "references/root-execution-fallback.md": 3300,
+    "references/zergling-rush.md": 3000
+  },
+  "scenario_max_bytes": {
+    "active_core": 23000,
+    "active_governance": 27000,
+    "bootstrap_skill": 3400
+  },
+  "scenario_max_delta_bytes": {
+    "active_core": 750,
+    "active_governance": 700,
+    "bootstrap_skill": 0
+  }
+}

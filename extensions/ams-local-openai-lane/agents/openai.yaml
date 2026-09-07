@@ -1,0 +1,6 @@
+interface:
+  display_name: "AMS Local OpenAI Lane"
+  short_description: "Explicit project-local OpenAI-compatible model lane for AMS"
+  default_prompt: "Use $ams-local-openai-lane only when project AMS settings enable it and my current-session steering names the local model and permitted use cases."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,99 @@
+name: Verify AMS repository
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11']
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Compile repository Python
+        shell: bash
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/pycache
+        run: >-
+          python -m py_compile
+          verification/verify_repository.py
+          verification/verify_contract_scenarios.py
+          verification/verify_daybreak_blue.py
+          verification/verify_installers.py
+          verification/verify_installers_windows.py
+          verification/verify_runtime_observation.py
+          verification/verify_local_openai_lane.py
+          tools/measure_context.py
+          tools/report_sizes.py
+          extensions/ams-runtime-observation/tools/inspect-agent-runtime.py
+          extensions/ams-local-openai-lane/tools/local_openai_lane.py
+
+      - name: Verify repository and core package
+        run: python verification/verify_repository.py
+
+      - name: Verify configuration and orchestration contracts
+        run: python verification/verify_contract_scenarios.py
+
+      - name: Verify Daybreak Blue fallback
+        run: python verification/verify_daybreak_blue.py
+
+      - name: Verify local OpenAI-compatible companion
+        run: python verification/verify_local_openai_lane.py
+
+      - name: Verify runtime-observation companion
+        run: python verification/verify_runtime_observation.py
+
+      - name: Verify context budget
+        run: python tools/measure_context.py --check
+
+      - name: Report package size
+        run: python tools/report_sizes.py --format summary
+
+      - name: Check patch whitespace
+        run: git diff --check
+
+      - name: Parse Bash installer
+        if: runner.os != 'Windows'
+        run: bash -n install.sh
+
+      - name: Verify Unix installer transactions
+        if: runner.os != 'Windows'
+        run: python verification/verify_installers.py
+
+      - name: Parse PowerShell files
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '.\install.ps1'), [ref]$null, [ref]$errors)
+          if ($errors.Count) { $errors | ForEach-Object ToString; exit 1 }
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '.\extensions\ams-runtime-observation\tools\Inspect-AgentRuntime.ps1'), [ref]$null, [ref]$errors)
+          if ($errors.Count) { $errors | ForEach-Object ToString; exit 1 }
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '.\verification\Verify-RuntimeObservation.ps1'), [ref]$null, [ref]$errors)
+          if ($errors.Count) { $errors | ForEach-Object ToString; exit 1 }
+
+      - name: Verify Windows installer transactions
+        if: runner.os == 'Windows'
+        run: python verification/verify_installers_windows.py
+
+      - name: Verify Windows runtime-observation fixture
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: .\verification\Verify-RuntimeObservation.ps1

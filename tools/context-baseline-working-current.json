@@ -1,0 +1,21 @@
+{
+  "baseline": "Codex-AMS current main 57dc12782cc1ea0d16d9c151afdb9cf8ea4bfddf",
+  "components": {
+    "SKILL.md": {
+      "bytes": 2846,
+      "sha256": "9fe0c0d478d8eeab882a8d497982f44f85f84159c25c0fd2099dfad78b515a63"
+    },
+    "references/project-control.md": {
+      "bytes": 6655,
+      "sha256": "c501c2fccd51bdd351ca88cb224e20fda0733386ff90239da09c3551c381a3f1"
+    },
+    "references/project-governance.md": {
+      "bytes": 2744,
+      "sha256": "cb26d24cde74c15a857a2ce550fa4cd432d2c0aeed020245dd770f10ade7a2a2"
+    },
+    "references/runtime-core.md": {
+      "bytes": 9214,
+      "sha256": "1323a71c8f3c00f30e4befe2f04d8319d9d3d268c14e9389358546436e2d7b93"
+    }
+  }
+}

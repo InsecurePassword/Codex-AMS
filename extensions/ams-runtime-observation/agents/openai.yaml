@@ -1,0 +1,6 @@
+interface:
+  display_name: "AMS Runtime Observation"
+  short_description: "Directly requested bounded local routing-metadata corroboration"
+  default_prompt: "Use $ams-runtime-observation only after I directly request local runtime observation for a specific AMS session."
+policy:
+  allow_implicit_invocation: false

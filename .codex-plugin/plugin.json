@@ -1,0 +1,36 @@
+{
+  "name": "Codex-AMS",
+  "version": "4.1.0",
+  "description": "Adaptive Master–Subagent Orchestration for Codex.",
+  "author": {
+    "name": "InsecurePassword",
+    "url": "https://github.com/InsecurePassword"
+  },
+  "homepage": "https://github.com/InsecurePassword/Codex-AMS",
+  "repository": "https://github.com/InsecurePassword/Codex-AMS",
+  "keywords": [
+    "codex",
+    "orchestration",
+    "multi-agent",
+    "subagents",
+    "model-routing"
+  ],
+  "skills": "./adaptive-master-subagent-orchestration/",
+  "interface": {
+    "displayName": "Codex AMS",
+    "shortDescription": "Adaptive multi-agent orchestration for Codex.",
+    "longDescription": "Routes bounded work to cost-appropriate subagents with scope, dependency, and failure controls.",
+    "developerName": "InsecurePassword",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/InsecurePassword/Codex-AMS",
+    "defaultPrompt": [
+      "Use AMS to orchestrate this project.",
+      "Use AMS to audit this repository.",
+      "Show AMS status for this project."
+    ]
+  }
+}

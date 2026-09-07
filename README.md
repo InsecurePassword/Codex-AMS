@@ -11,7 +11,7 @@ codex plugin marketplace add InsecurePassword/Codex-AMS --ref main
 codex plugin add Codex-AMS@Codex-AMS
 ```
 
-The plugin installs the skill, not custom-agent profiles. Before starting a new Codex thread, deploy all 19 profiles:
+The plugin installs the skill, not custom-agent profiles. Before starting a new Codex thread, deploy all 24 profiles:
 
 ```powershell
 $env:AMS_INSTALL_PROFILES_ONLY = '1'
@@ -37,7 +37,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "irm 'https://github.
 curl -fsSL 'https://github.com/InsecurePassword/Codex-AMS/raw/refs/heads/main/install.sh' | bash
 ```
 
-The direct installer deploys the core skill and all 19 profiles. Neither method edits general Codex configuration, project AMS settings, optional companions, operating-system permissions, or unrelated files.
+The direct installer deploys the core skill and all 24 profiles. Neither method edits general Codex configuration, project AMS settings, optional companions, operating-system permissions, or unrelated files.
 
 ## Runtime model
 
@@ -50,12 +50,17 @@ The direct installer deploys the core skill and all 19 profiles. Neither method 
 - Each materially real delegated route receives two bounded attempts; configured root fallback is one third and final attempt.
 - Shared process-start failure has one session episode: initial start, one same-lane retry, one root probe, and only after probe success one corrected confirmation.
 - Every successful Codex spawn reports the requested AMS profile immediately.
+- Astra is a peer route for end-to-end tool-heavy, computer-use, very-large-context, or high-rework-risk work when it is expected to beat Sol on total accepted-task usage, time, or correction.
 - Daybreak Blue is a lazy worker-only fallback after a qualifying cyber-safeguard refusal from a real standard-Sol worker/manager work order; root handling alone never qualifies.
 - AMS creates no convergence campaigns, receipts, runtime ledger, history, or persistent availability cache.
 
 ### Bounded peer channels
 
 When two direct `worker/none` sessions must collaborate, the root may name one bounded peer channel in both work orders and provide canonical absolute task paths such as `/root/sol_lead` and `/root/luna_worker`. The peers may use Codex direct messaging for in-scope questions, evidence, and corrections. Peer traffic cannot change scope, dependencies, permissions, ownership, criteria, retry budgets, or authority; a lead remains a worker. The member returns a short terminal stub, the lead returns one final synthesis, and the root alone accepts completion. If direct messaging is unavailable, normal root relay remains valid.
+
+### Astra and computer use
+
+Astra profiles cover `low` through `max`. AMS selects Astra for qualified end-to-end tool work, UI control, very large context, or expensive rework when the expected completed-task cost is lower than Sol; it is neither the default nor merely a last-resort tier. Before browser or desktop control, AMS loads `references/computer-use.md`, confirms the selected session exposes the required tool, prefers shell/API/MCP/direct file access when simpler, and assigns one active controller per interactive surface.
 
 ## Configuration
 
