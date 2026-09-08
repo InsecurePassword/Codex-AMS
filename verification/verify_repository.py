@@ -554,7 +554,7 @@ def main() -> int:
         require(powershell_installer, prior_hash, f"PowerShell lean-candidate predecessor {filename}")
 
     for filename, prior_hash in ASTRA_CANDIDATE_PROFILE_HASHES.items():
-        require(bash_installer, f"{filename}:{prior_hash}", f"Bash Astra-candidate predecessor {filename}")
+        require(bash_installer, f"{filename}:{prior_hash}", f"PowerShell Astra-candidate predecessor {filename}")
         require(powershell_installer, prior_hash, f"PowerShell Astra-candidate predecessor {filename}")
 
     for filename, prior_hash in PUBLISHED_PROFILE_HASHES.items():
@@ -579,7 +579,7 @@ def main() -> int:
     plugin = json.loads(read_text(ROOT / ".codex-plugin/plugin.json"))
     if marketplace.get("name") != "Codex-AMS" or plugin.get("name") != "Codex-AMS":
         fail("marketplace/plugin identity mismatch")
-    if plugin.get("version") != "4.1.0":
+    if plugin.get("version") != "4.1.1":
         fail("plugin version mismatch")
     if plugin.get("skills") != "./adaptive-master-subagent-orchestration/":
         fail("plugin skill path mismatch")

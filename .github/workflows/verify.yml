@@ -98,23 +98,29 @@ jobs:
       - name: Verify multi-harness installer targets
         run: python verification/verify_harness_installers.py
 
-      - name: Verify authenticated remote profile source
-        if: runner.os == 'Linux'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Verify public remote profile source
+        if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
         run: python -c "from tools.install_harnesses import package_profiles; assert len(package_profiles(False)) == 23"
 
-      - name: Verify authenticated remote Windows install
-        if: runner.os == 'Windows'
+      - name: Verify public remote Windows install
+        if: runner.os == 'Windows' && github.ref == 'refs/heads/main'
         shell: powershell
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           $env:AMS_SKILL_HOME = Join-Path $env:RUNNER_TEMP 'ams-remote-skills'
           $env:CODEX_HOME = Join-Path $env:RUNNER_TEMP 'ams-remote-codex'
-          python .\tools\install_harnesses.py --harness codex
+          $script = Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop
+          $script | python - --harness codex
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (-not (Test-Path (Join-Path $env:AMS_SKILL_HOME 'adaptive-master-subagent-orchestration\SKILL.md'))) { exit 1 }
           if (@(Get-ChildItem (Join-Path $env:CODEX_HOME 'agents\ams_*.toml')).Count -ne 24) { exit 1 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install native Codex for discovery test (no model calls)
+        run: npm install --global @openai/codex
+      - name: Verify native Codex skill and plugin discovery
+        run: python verification/verify_harness_installers.py --codex-discovery
 
       - name: Verify Windows runtime-observation fixture
         if: runner.os == 'Windows'

@@ -2,7 +2,9 @@
 """Exercise native-profile translation and selected-target installs without model calls."""
 from __future__ import annotations
 
+from contextlib import ExitStack
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -10,6 +12,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import queue
+import threading
+import time
 import unittest
 from unittest.mock import ANY, patch
 
@@ -125,13 +130,13 @@ else:
         self.assertFalse(self.skill.exists())
         self.assertFalse(self.codex.exists())
 
-    def test_missing_pi_dependency_fails_before_ams_writes(self) -> None:
+    def test_missing_pi_dependency_keeps_shared_skill(self) -> None:
         self.settings["packages"] = ["npm:keep-other-package"]
         (self.pi / "settings.json").write_text(json.dumps(self.settings), encoding="utf-8")
         result = self.wrapper("pi")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Pi requires pi-subagents", result.stdout + result.stderr)
-        self.assertFalse(self.skill.exists())
+        self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
         self.assertFalse((self.pi / "agents").exists())
 
     def test_dependency_install_is_explicit_and_additive(self) -> None:
@@ -143,16 +148,16 @@ else:
         self.assertEqual(after["packages"], ["npm:keep-other-package", "npm:pi-subagents"])
         self.assertEqual(after["compaction"], self.settings["compaction"])
 
-    def test_custom_profile_collision_preserved_before_core_install(self) -> None:
+    def test_custom_profile_collision_preserves_other_targets(self) -> None:
         target = self.oc / "agents/ams_sol_high.md"
         target.parent.mkdir(parents=True)
         target.write_text("custom agent\n", encoding="utf-8")
         result = self.wrapper("all")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(target.read_text(encoding="utf-8"), "custom agent\n")
-        self.assertFalse(self.skill.exists())
-        self.assertFalse(self.codex.exists())
-        self.assertFalse((self.pi / "agents").exists())
+        self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
 
     def test_render_uses_native_fields_and_no_authority_overrides(self) -> None:
         for p in installer.package_profiles():
@@ -168,25 +173,29 @@ else:
                 self.assertIn(p["developer_instructions"], text)
 
     def test_unavailable_provider_never_substitutes_model(self) -> None:
-        with self.assertRaisesRegex(ValueError, "No AMS models"):
-            installer.install("opencode", "not-configured", "openai-codex", False)
-        self.assertFalse(self.skill.exists())
+        status = installer.install("opencode", "not-configured", "auto", False)
+        self.assertEqual(status, 2)
+        self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
         self.assertFalse(self.oc.exists())
 
     def test_only_matching_catalog_models_are_exported(self) -> None:
-        with patch.object(installer, "catalog", return_value={"gpt-5.6-sol"}), patch.object(installer, "install_core"):
+        with patch.object(installer, "catalog", return_value={"gpt-5.6-sol": {"openai"}}), patch.object(installer, "install_core"):
             installer.install("opencode", "openai", "openai-codex", False)
         self.assertEqual(len(list((self.oc / "agents").glob("*.md"))), 5)
 
     def test_rollback_preserves_replacement(self) -> None:
         replacement = self.oc / "agents/ams_sol_high.md"
-        def fail_native(*_args: object) -> None:
-            replacement.unlink()
-            replacement.write_text("replacement from another actor\n", encoding="utf-8")
-            raise RuntimeError("simulated native install failure")
-        with patch.object(installer, "install_core", side_effect=fail_native):
-            with self.assertRaisesRegex(RuntimeError, "simulated"):
-                installer.install("opencode", "openai", "openai-codex", False)
+        original = installer.preflight
+        count = 0
+        def drift(files: dict[Path, bytes]) -> None:
+            nonlocal count
+            count += 1
+            if count == 2:
+                replacement.unlink()
+                replacement.write_text("replacement from another actor\n", encoding="utf-8")
+            original(files)
+        with patch.object(installer, "preflight", side_effect=drift):
+            self.assertEqual(installer.install("opencode"), 2)
         self.assertEqual(replacement.read_text(encoding="utf-8"), "replacement from another actor\n")
         self.assertEqual(list((self.oc / "agents").glob("*.md")), [replacement])
 
@@ -195,12 +204,11 @@ else:
         def remote(path: str) -> bytes:
             return (ROOT / path).read_bytes()
         with patch.object(installer, "remote_bytes", side_effect=remote), \
-                patch.object(installer, "catalog", return_value={"gpt-5.6-sol"}), \
+                patch.object(installer, "catalog", return_value={"gpt-5.6-sol": {"openai"}}), \
                 patch.object(installer, "install_core") as core:
-            installer.install("opencode", "openai", "openai-codex", False, local=False)
+            self.assertEqual(installer.install("opencode", local=False), 0)
         self.assertEqual(len(list((self.oc / "agents").glob("*.md"))), 5)
-        core.assert_called_once()
-        self.assertFalse(core.call_args.args[2])
+        core.assert_called_once_with({"opencode"}, ANY, False)
 
     def test_remote_core_stages_verified_package_then_uses_native_local_installer(self) -> None:
         installer.remote_bytes.cache_clear()
@@ -220,9 +228,89 @@ else:
     def test_remote_codex_skips_harness_catalog(self) -> None:
         with patch.object(installer, "package_profiles") as profiles, \
                 patch.object(installer, "install_core") as core:
-            installer.install("codex", "openai", "openai-codex", False, local=False)
+            self.assertEqual(installer.install("codex", local=False), 0)
         profiles.assert_not_called()
         core.assert_called_once_with({"codex"}, ANY, False)
+
+    def test_auto_finds_nondefault_provider(self) -> None:
+        models = {model: {"my-provider"} for model in MODELS}
+        with patch.object(installer, "catalog", return_value=models):
+            self.assertEqual(installer.install("all"), 0)
+        for home in (self.oc, self.pi):
+            text = (home / "agents/ams_sol_high.md").read_text()
+            self.assertIn('model: "my-provider/gpt-5.6-sol"', text)
+
+    def test_auto_can_use_different_unambiguous_providers(self) -> None:
+        models = {"gpt-5.6-sol": {"one"}, "gpt-6-astra": {"two"}}
+        with patch.object(installer, "catalog", return_value=models):
+            self.assertEqual(installer.install("opencode"), 0)
+        self.assertIn('"one/gpt-5.6-sol"', (self.oc / "agents/ams_sol_high.md").read_text())
+        self.assertIn('"two/gpt-6-astra"', (self.oc / "agents/ams_astra_high.md").read_text())
+
+    def test_ambiguous_provider_requires_choice_and_keeps_previous_route(self) -> None:
+        models = {"gpt-5.6-sol": {"one", "two"}}
+        with patch.object(installer, "catalog", return_value=models):
+            self.assertEqual(installer.install("opencode"), 2)
+            self.assertFalse((self.oc / "agents").exists())
+            self.assertEqual(installer.install("opencode", "two"), 0)
+            before = {p: p.read_bytes() for p in (self.oc / "agents").glob("*.md")}
+            self.assertEqual(installer.install("opencode"), 0)
+        self.assertTrue(all(p.read_bytes() == data for p, data in before.items()))
+
+    def test_empty_opencode_catalog_does_not_block_codex_or_pi(self) -> None:
+        original = installer.catalog
+        def catalog(harness: str, env: dict[str, str]) -> dict[str, set[str]]:
+            return {"real-other-model": {"actual-provider"}} if harness == "opencode" else original(harness, env)
+        with patch.object(installer, "catalog", side_effect=catalog):
+            self.assertEqual(installer.install("all"), 2)
+        self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
+        self.assertFalse((self.oc / "agents").exists())
+
+    def test_no_local_inference_from_working_directory(self) -> None:
+        with patch.object(sys, "argv", [str(ROOT / "tools/install_harnesses.py"), "--harness", "codex"]), \
+                patch.object(installer, "install", return_value=0) as install:
+            self.assertEqual(installer.main(), 0)
+        install.assert_called_once_with("codex", "auto", "auto", False, False)
+
+    def test_catalog_respects_current_project_directory(self) -> None:
+        result = subprocess.CompletedProcess([], 0, "different/gpt-5.6-sol\n", "")
+        with patch.object(installer.subprocess, "run", return_value=result) as run:
+            self.assertEqual(installer.catalog("opencode", os.environ.copy()), {"gpt-5.6-sol": {"different"}})
+        self.assertEqual(run.call_args.kwargs["cwd"], Path.cwd())
+
+    def test_pi_catalog_does_not_force_offline_or_clear_user_choice(self) -> None:
+        for value in (None, "1"):
+            with patch.dict(os.environ):
+                os.environ.pop("PI_OFFLINE", None)
+                if value:
+                    os.environ["PI_OFFLINE"] = value
+                with patch.object(installer, "catalog", return_value={"gpt-5.6-sol": {"custom"}}) as catalog, patch.object(installer, "install_core"):
+                    self.assertEqual(installer.install("pi"), 0)
+                self.assertEqual(catalog.call_args.args[1].get("PI_OFFLINE"), value)
+
+    def test_public_download_does_not_require_token_or_contents_api(self) -> None:
+        with patch.object(installer.urllib.request, "urlopen", return_value=io.BytesIO(b"content")) as fetch, \
+                patch.object(installer, "github_token") as auth:
+            self.assertEqual(installer._remote_bytes("SKILL.md"), b"content")
+        request = fetch.call_args.args[0]
+        self.assertEqual(request.full_url, "https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/SKILL.md")
+        self.assertFalse(request.has_header("Authorization"))
+        auth.assert_not_called()
+
+    def test_remote_manifest_drift_is_rejected(self) -> None:
+        with patch.object(installer, "remote_bytes", side_effect=lambda path: (ROOT / path).read_bytes()), \
+                patch.object(installer, "_remote_bytes", return_value=b"changed"):
+            with self.assertRaisesRegex(ValueError, "manifest changed"):
+                installer.stage_remote_package(self.home)
+
+    def test_invalid_manifest_hash_or_alias_is_rejected(self) -> None:
+        line = "a" * 64 + "\t1\t" + installer.SKILL + "/SKILL.md\n"
+        for body in (line.replace("a" * 64, "oops"), line + line,
+                     line + line.replace("SKILL.md", "skill.md"), line.replace("\t1\t", "\t-1\t")):
+            with self.subTest(body=body), self.assertRaises(ValueError):
+                installer.manifest_entries(b"ams-install-manifest-v1\n" + body.encode())
 
     def test_rejects_redirected_target(self) -> None:
         outside = self.home / "outside"
@@ -232,10 +320,136 @@ else:
             (self.oc / "agents").symlink_to(outside, target_is_directory=True)
         except OSError:
             self.skipTest("Symlink creation unavailable on this runner")
-        with self.assertRaisesRegex(ValueError, "Redirected"):
-            installer.install("opencode", "openai", "openai-codex", False)
+        self.assertEqual(installer.install("opencode"), 2)
         self.assertFalse(list(outside.iterdir()))
 
 
+def codex_skills(executable: str, project: Path, env: dict[str, str]) -> list[dict]:
+    """Ask the actual registry used by the picker; never start a model turn."""
+    messages: queue.Queue = queue.Queue()
+    with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as log:
+        process = subprocess.Popen([executable, "app-server"], cwd=project, env=env,
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log,
+                                   text=True, encoding="utf-8", errors="replace")
+        def read() -> None:
+            assert process.stdout
+            for line in process.stdout:
+                try:
+                    messages.put(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+        reader = threading.Thread(target=read, daemon=True)
+        reader.start()
+        def send(payload: dict) -> None:
+            assert process.stdin
+            process.stdin.write(json.dumps(payload) + "\n")
+            process.stdin.flush()
+        def receive(identifier: int) -> dict:
+            end = time.monotonic() + 60
+            while time.monotonic() < end:
+                message = messages.get(timeout=max(0.1, end - time.monotonic()))
+                if message.get("id") == identifier:
+                    if "error" in message:
+                        raise AssertionError(message["error"])
+                    return message["result"]
+            raise AssertionError("Codex registry did not respond")
+        try:
+            send({"id": 1, "method": "initialize", "params": {
+                "clientInfo": {"name": "ams_installer_test", "version": "1.0.0"},
+                "capabilities": {"experimentalApi": True}}})
+            receive(1)
+            send({"method": "initialized", "params": {}})
+            send({"id": 2, "method": "skills/list", "params": {"cwds": [str(project)], "forceReload": True}})
+            data = receive(2)
+            entries = data.get("data", [])
+            errors = [error for entry in entries for error in entry.get("errors", [])]
+            if errors:
+                raise AssertionError(f"Native skill parsing errors: {errors}")
+            return [skill for entry in entries for skill in entry.get("skills", [])]
+        except (OSError, queue.Empty, AssertionError) as error:
+            log.seek(0)
+            raise AssertionError(f"Codex skill-registry check failed: {error}\n{log.read()}") from error
+        finally:
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=10)
+            reader.join(timeout=5)
+            if process.stdin:
+                process.stdin.close()
+            if process.stdout:
+                process.stdout.close()
+
+
+def verify_native_codex() -> None:
+    executable = shutil.which("codex")
+    if not executable:
+        raise AssertionError("Native Codex must be installed for this check; no mock or skip is permitted.")
+    print(subprocess.check_output([executable, "--version"], text=True).strip(), flush=True)
+    # Codex uses the Windows known folder, which HOME/USERPROFILE do not virtualize.
+    windows_home = None
+    if os.name == "nt":
+        windows_home = Path(subprocess.check_output([
+            "powershell.exe", "-NoProfile", "-Command",
+            "[Environment]::GetFolderPath('UserProfile')"], text=True).strip()).resolve()
+    with tempfile.TemporaryDirectory(prefix="ams-native-discovery-") as temporary:
+        for source in ("standalone", "plugin"):
+            with ExitStack() as cleanup:
+                home = Path(temporary).resolve() / source
+                project = home / "project"
+                project.mkdir(parents=True)
+                env = os.environ.copy()
+                for key in ("AMS_SKILL_HOME", "AMS_INSTALL_PROFILES_ONLY", "AMS_INSTALL_SKILL_ONLY",
+                            "OPENAI_API_KEY", "CODEX_API_KEY", "GH_TOKEN", "GITHUB_TOKEN", "PSModulePath"):
+                    env.pop(key, None)
+                env.update(HOME=str(home), USERPROFILE=str(home), CODEX_HOME=str(home / ".codex"))
+                Path(env["CODEX_HOME"]).mkdir()
+                if source == "standalone":
+                    skill_home = (windows_home or home) / ".agents/skills"
+                    expected = skill_home / installer.SKILL / "SKILL.md"
+                    if expected.parent.exists():
+                        raise AssertionError(f"Refusing to replace an existing skill during the native test: {expected.parent}")
+                    cleanup.callback(shutil.rmtree, expected.parent, ignore_errors=True)
+                    env["AMS_SKILL_HOME"] = str(skill_home)
+                    command = [sys.executable, str(ROOT / "tools/install_harnesses.py"), "--harness", "codex", "--local"]
+                    result = subprocess.run(command, cwd=project, env=env, capture_output=True, text=True, timeout=180)
+                    if result.returncode or not expected.is_file():
+                        raise AssertionError(result.stdout + result.stderr)
+                    print(result.stdout, flush=True)
+                else:
+                    for args in (["plugin", "marketplace", "add", str(ROOT)],
+                                 ["plugin", "add", "Codex-AMS@Codex-AMS"]):
+                        result = subprocess.run([executable, *args], cwd=project, env=env, stdin=subprocess.DEVNULL,
+                                                capture_output=True, text=True, timeout=120)
+                        if result.returncode:
+                            raise AssertionError(f"Native plugin install failed: {args}\n{result.stdout}\n{result.stderr}")
+                skills = codex_skills(executable, project, env)
+                matches = [item for item in skills if item.get("name", "").split(":")[-1] == installer.SKILL]
+                if not matches or not any(item.get("enabled") for item in matches):
+                    raise AssertionError(f"{source}: AMS absent or disabled in native skills/list: {skills}")
+                for item in matches:
+                    if (item.get("interface") or {}).get("displayName") != "AMS":
+                        raise AssertionError(f"{source}: missing AMS picker label: {item}")
+                    if Path(item["path"]).read_bytes() != (ROOT / installer.SKILL / "SKILL.md").read_bytes():
+                        raise AssertionError(f"{source}: registry resolved the wrong skill bytes")
+                print(f"PASS native Codex {source} registry: " + json.dumps(matches), flush=True)
+                if source == "standalone":
+                    disabled = Path(env["CODEX_HOME"]) / "config.toml"
+                    disabled.write_text("[[skills.config]]\npath = " + json.dumps(matches[0]["path"]) + "\nenabled = false\n", encoding="utf-8")
+                    before = disabled.read_bytes()
+                    result = subprocess.run(command, cwd=project, env=env, capture_output=True, text=True, timeout=180)
+                    if result.returncode or disabled.read_bytes() != before:
+                        raise AssertionError("Installer changed or rejected an existing user skill-disable setting")
+                    after = [item for item in codex_skills(executable, project, env) if item.get("name") == installer.SKILL]
+                    if not after or any(item.get("enabled") for item in after):
+                        raise AssertionError("Native skill-disable setting was not preserved")
+                    print("PASS user skill-disable configuration preserved (not silently enabled)", flush=True)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    if sys.argv[1:] == ["--codex-discovery"]:
+        verify_native_codex()
+    else:
+        unittest.main()
