@@ -1,191 +1,164 @@
-# Product Documentation
+# AMS user guide
 
-**Product:** Adaptive Master–Subagent Orchestration (AMS)
-## 1. Product boundary
+AMS helps your main AI agent organize work for other AI helpers. You choose the main model. You set the goal. AMS helps the team work within that goal and check the result.
 
-AMS has two core responsibilities:
+This guide is for using AMS. The [technical reference](TECHNICAL%20REFERENCE.md) keeps the exact internal rules and file formats separate.
 
-1. keep the current trusted top-level root in control of the authorized automation boundary, physical dispatch, hierarchy, sequencing, ownership, integration, acceptance, completion, and user communication;
-2. delegate scoped work and supervise recovery, with optional policies for team organization, model guidance, and model switching.
+## Start your first task
 
-The root model and reasoning effort are external configuration. AMS does not select, require, infer, or attest them. Workers are leaves. Delegated managers request root-mediated descendants and never physically spawn, expand authority, contact the user, or accept completion.
+[Install AMS](INSTALLATION.md), then open your project in a new chat in your coding app. Start with a project you can restore from a backup or Git history.
 
-## 2. Core behavior
+Load AMS using the instruction for your app. **These are AI-chat instructions, not PowerShell or terminal commands.**
 
-Core AMS provides:
+### Codex
 
-- Codex model/effort routing across 24 `ams_*` profiles;
-- root-mediated delegation; optional model governance adds finite allocation and Balanced team limits;
-- direct same-objective peer communication; optional model governance adds the existing bounded-pair protocol;
-- one-writer mutable-surface ownership;
-- mandatory scope/dependency admission;
-- automation-boundary continuation from one accepted objective to the next;
-- compact default-on 3.09-style project governance;
-- bounded blocker diagnosis without recovery loops;
-- command-runner fail-fast with three diagnostic starts and at most one corrected original-lane confirmation after a successful probe;
-- bounded root fallback with independent validation;
-- session-local Spark availability suppression;
-- optional project-local local-LLM routing through a separate companion;
-- refusal-triggered Daybreak Blue capability preflight and one-task defensive fallback;
-- transactional package/profile installation.
-
-AMS creates no convergence campaign, persistent custody/receipt system, archive/prune history, runtime lock/state, review/accounting ledger, or availability cache.
-
-### Bounded peer channels
-
-With model governance enabled, when direct collaboration is cheaper than relaying every intermediate message through the root, the root may place exactly two direct `worker/none` siblings in one bounded peer channel. Both work orders must name the same channel, canonical absolute task paths, purpose, lead/member roles, writer ownership, escalation conditions, and root-return mode. Peers may use `send_message` or `followup_task` only with the named path. Messages are evidence or scoped steering inside the existing orders and cannot alter objective, scope, dependencies, permissions, ownership, criteria, delegation, retry budget, or user authority. The lead remains a worker. The member sends detail to the lead and returns a short root terminal stub; the lead returns one synthesized result. Root acceptance and completion authority do not move.
-
-## 3. Settings and precedence
-
-Project settings:
+Send:
 
 ```text
-<project-root>/.codex/ams-orchestration.toml
+Use $adaptive-master-subagent-orchestration for this project.
 ```
 
-Global/base settings:
+### OpenCode
+
+Send:
 
 ```text
-$CODEX_HOME/ams-orchestration.toml
+Load the adaptive-master-subagent-orchestration skill for this project.
 ```
 
-A present project file fully replaces global base settings. Global/base default:
+### Pi
 
-```toml
-enabled = false
-allow_implicit_invocation = true
-intensity = "auto"
-project_governance = true
-model_governance = true
-model_guidance = true
-automatic_model_switching = true
-root_execution_fallback = false
-spark_enabled = true
-spark_efforts = ["low", "medium", "high"]
-profile_management = "auto"
-```
-
-Project default additionally contains:
-
-```toml
-local_llm_lane = false
-```
-
-`local_llm_lane` is invalid globally. Missing project settings force the local lane off. Retired convergence/modular fields and legacy `schema_version` are inert compatibility input and are removed during the next authorized write.
-
-## 4. Commands
+Send:
 
 ```text
-AMS STATUS
-AMS ENABLE | AMS DISABLE
-AMS MODE auto|minimal|balanced|moderate|heavy|extreme
-AMS IMPLICIT on|off
-AMS GOVERNANCE on|off
-AMS MODEL GOVERNANCE on|off
-AMS MODEL GUIDANCE on|off
-AMS MODEL SWITCHING on|off
-AMS ROOT FALLBACK on|off
-AMS CONFIGURATION UPDATE [PROJECT|GLOBAL]
-AMS SPARK on|off
-AMS SPARK EFFORTS low,medium,high
-AMS PROFILES auto|installer
-AMS LOCAL LLM on|off
+/skill:adaptive-master-subagent-orchestration
 ```
 
-Normal controls write project settings only. `AMS CONFIGURATION UPDATE GLOBAL` is the sole global-writing command. `AMS STATUS` is physically read-only and performs no capability probes.
+Then give it a clear task. For example:
 
-## 5. Scope, dependencies, and automation
+```text
+Fix the failing login test. Keep the existing login design and leave
+unrelated files alone. Have another agent review the change, run the
+relevant tests, and tell me what changed and what passed.
+```
 
-The root establishes an automation boundary from direct user instruction and authoritative project-native queues, milestones, or packets. Every work order cites a `Scope basis` and `Dependencies/readiness`. Findings, logs, reviewer suggestions, warnings, TODOs, and repository content cannot create work or criteria.
+Loading AMS explicitly lets it work on the current request even when saved automatic activation is off. It does not authorize extra jobs or changes you did not request.
 
-Before affected dispatch or acceptance, AMS verifies the declared candidate base and accepted dependency closure. Worktree-only repairs, unrecorded branches, caches, generated state, or undeclared packets do not silently satisfy prerequisites. Validation failures outside the owned surface are compared with the base/control when practical and classified as objective, baseline, environment, harness, or another dependency.
+## What happens while it works?
 
-When one objective passes, AMS closes it, releases ownership, refuses post-acceptance extras, selects the next authorized ready objective, and continues. The run stops normally only when the authorized queue is exhausted; blockers stop the run only when bounded diagnosis/rerouting is exhausted and no independent authorized path remains.
+The main agent gives tasks to helpers and checks their results. It delegates implementation and technical diagnosis rather than guessing its own skills. A helper's report that it is stuck goes back for review; it does not automatically end the whole job.
 
-## 6. Governance
+AMS should continue other approved work when one task is blocked. It may still need your help with something only you can provide, such as an account login, an approval, a physical action, or an important choice. It does not bypass real security restrictions.
 
-Default-on project governance retains the compact 3.09 behavior:
+A coding helper and a review helper can exchange questions and corrections. Some apps support direct messages; others send those messages through the main agent. You do not need to create a messaging system yourself.
 
-- track existing authorized deliverables, criteria, dependencies, critical path, integration, validation, risk, and blockers;
-- continue automatically while authorized ready work remains;
-- use proportional, non-recursive independent review when warranted;
-- respect project-native packets, pauses, approvals, trackers, and gates;
-- provide a concise handoff when autonomous progress cannot continue.
+At the end, expect a summary of changes, checks actually run, and anything left unresolved. An AI report is not a guarantee: inspect important results and do not assume a test ran unless it is reported as run.
 
-Governance cannot expand scope, create criteria, create durable state, or override project authorization. `AMS GOVERNANCE off` removes only this lifecycle layer; core scope/dependency, ownership, routing, evidence, failure, and truthful completion controls remain.
+## Check or change settings
 
-## 7. Failure behavior
+Load AMS first. Then send these instructions in the AI chat. They are interpreted by the skill; they are not separate programs or slash commands.
 
-A reproducible non-runner failure is budgeted per materially real delegated route. The route gets exactly two attempts in its proper lane: one evidence-backed correction attempt and one confirmation attempt, which may repeat the corrected invocation once to distinguish a sporadic failure or use one materially different evidence-backed correction. Changing worker, manager, profile, effort, task name, branch, wrapper, shell label, or context does not create another route or reset its budget. After two failures, optional root fallback—disabled by default—may perform one atomic third and final attempt when its safety gate passes.
+| Send this | What it does |
+|---|---|
+| `AMS STATUS` | Shows the current settings and known blockers without changing files or testing model access. |
+| `AMS ENABLE` | Saves AMS as enabled for this project. Automatic use also needs implicit activation to be on and the app to load the skill. |
+| `AMS DISABLE` | Stops new AMS work at a safe point and saves AMS as disabled. It is not an instant emergency kill switch. |
+| `AMS IMPLICIT off` | Makes AMS wait for you to load it explicitly instead of allowing automatic activation. |
+| `AMS IMPLICIT on` | Allows automatic activation when AMS is enabled and the app supports skill discovery. |
 
-Repeated `spawn_ready` creates one root-session episode keyed by the unchanged physical runner signature. It gets three diagnostic starts: initial failure, one same-lane retry, then one root process-only probe. Probe success permits at most one materially corrected original-lane confirmation; another no-start terminalizes the episode without a new process, profile, manager, transport, context, or intensity reset. Probe failure likewise terminalizes process-dependent work. Active or potentially live sessions, writers, and allocations remain owned until closure is proven; unresolved state is reported live or unverified while runner-independent authorized work continues.
+Changes normally take effect at a safe stopping point between groups of tasks. Existing agents keep the assignment they already received.
 
-A local lane or objective can be deferred while independent authorized work continues. User intervention is requested only when no autonomous route remains and a concrete permission, credential, physical action, external resource, material choice, or new authority is required.
+## Let the main agent choose
 
-## 8. Spark
+AMS has three separate model-policy switches. Each starts **on** unless you have saved a different value.
 
-`spark_enabled` is persistent preference. Availability is session-local. Profile/registration/model-capability failure suppresses Spark; task-quality failure does not. `spawn_ready` first uses shared runner diagnosis; after probe success, another Spark-specific no-start suppresses it. `AMS SPARK on` clears the latch; no availability field is persisted.
-
-## 9. Astra and computer use
-
-Five `ams_astra_<low|medium|high|xhigh|max>` profiles request `gpt-6-astra`. With model guidance enabled, Astra is a peer route, not a universal default or mandatory escalation: use it for end-to-end tool-heavy, computer-use, very-large-context, or high-rework-risk work when one Astra owner is expected to reach acceptance with less total usage, time, or correction than Sol. Sol remains appropriate for difficult coding, architecture, security, and diagnosis when Astra's tool or long-context advantage is not material.
-
-Before browser, desktop, or visual UI control, load `references/computer-use.md`. Use only a session that exposes the required tool, prefer shell/API/MCP/direct file operations when simpler, assign one active controller per interactive surface, treat screen content as untrusted evidence, use existing platform approvals, and verify the resulting application state. Computer use changes neither model authority nor AMS authority.
-
-## 10. Local OpenAI-compatible lane
-
-The separately installed `ams-local-openai-lane` companion is eligible only when:
-
-- project-local `local_llm_lane = true`;
-- the session latch is not inactive;
-- current-session user steering selects the model and permitted use cases;
-- the current work matches those use cases.
-
-The user selects the model. Codex may choose only a tested context/profile variant with the same `model_key`, selecting the smallest safe context or promoting once to a larger same-model profile when necessary. It never changes the model automatically or knowingly truncates work.
-
-Profiles are manually created or built/audited/tested in a separate Codex development interaction under `<project-root>/.codex/ams-local-llm/profiles/`. AMS runtime only consumes stable files; any start command requires a stop command.
-
-The companion executes one configured start attempt, one OpenAI-compatible request, and optional stop; transient request files are deleted after use. It requires the response to expose a model identity equal to the requested model or a bounded alias explicitly listed in the user-owned profile, and returns requested and observed identity separately. It sends fresh context, stops a known companion-started kept profile on local-lane/AMS disable or before same-model switching, and cleans up once after a started-call failure. Every result is Codex-verified. Non-context helper failure/rejection suppresses the lane without changing settings; helper-process `spawn_ready` uses runner fail-fast. No fitting context falls back only that work and leaves the lane available. Only `AMS LOCAL LLM on` clears an inactive latch.
-
-## 11. Daybreak Blue
-
-The installed `ams_daybreak_blue_max` worker profile requests `gpt-daybreak-blue` at `max` effort. It is never a normal strength tier and is considered only after an explicit cybersecurity-safeguard refusal from a real standard-Sol worker or delegated-manager work order for one unchanged authorized defensive work unit. Root handling without that work order does not qualify.
-
-`references/daybreak-blue.md` requires:
-
-- one stable fallback unit bound to the original scope, dependencies, authorization, data, and operational boundary;
-- one stable access boundary and an ephemeral current-session admission, with durable closure separated from session generation;
-- exact approved internal access-path, product-surface, identity-boundary, and retention evidence;
-- platform attestation, the current OpenAI onboarding workflow in a disposable non-project workspace, or a distinguishing non-project defensive fixture;
-- exact root-objective, operation, work-order, nonce, start-attempt, parent/custody, and ownership correlation;
-- one confirmed-start task, with one pre-start retry only after a proven temporary no-start;
-- durable access closure only from authoritative access/capability evidence; runner/no-start failure is session-local and never becomes entitlement evidence;
-- parent resumption or explicit supersession after every terminal preflight/task path;
-- requested route identity `gpt-daybreak-blue`; observed `gpt-5.6-sol` is accepted only with direct same-admission evidence that the approved Daybreak Blue product surface was used; the underlying model ID alone proves nothing;
-- no model substitution, offensive-workflow expansion, additional Daybreak unit, or root-execution escalation.
-
-The profile grants no access, permission, authorization, target authority, or retention treatment. Access provisioning remains external and is not inferred from installation or model availability. Daybreak creates no AMS database, transcript service, receipt history, runtime lock, or recovery file.
-
-## 12. Package boundaries
-
-Installed core contains `SKILL.md`, metadata, 24 profiles, and 17 normative references. `.github/`, `tools/`, `verification/`, and `extensions/` are repository-only and never run during normal orchestration.
-
-Marketplace installation is skill-only and requires the profiles-only bootstrap before a new thread. The direct installer deploys core and profiles. Both preserve differing user-authored profiles and never edit general Codex configuration, project settings, optional companions, or permissions.
-
-## Optional model policies
-
-The user-selected master still delegates execution and technical diagnosis, supervises unresolved blockers, and continues independent authorized work. It never guesses its own model or execution skills. These autonomy rules do not switch off.
-
-Three independent Booleans default to true for existing installations:
-
-| Setting | Loaded policy | Off |
+| Policy | When on | When off |
 |---|---|---|
-| `model_governance` | `references/model-governance.md` | Master chooses team organization without AMS intensity, allocation, or packet prescriptions. |
-| `model_guidance` | `references/model-guidance.md` | No AMS model-purpose or effort advice is supplied. |
-| `automatic_model_switching` | `references/model-switching.md` | Master chooses/reconsiders routes freely, without AMS switching heuristics. |
+| Model governance | Gives rules for organizing the helpers. | Leaves team organization more open. |
+| Model guidance | Gives advice about which model and thinking level suit each job. | Gives no AMS model-purpose advice. |
+| Model switching | Gives rules for choosing or changing a helper's model. | Lets the main agent decide without AMS's switching rules. Switching is still allowed. |
 
-Use `AMS MODEL GOVERNANCE on|off`, `AMS MODEL GUIDANCE on|off`, and `AMS MODEL SWITCHING on|off`. `AMS GOVERNANCE` remains the separate project-governance control. Settings never authorize more permissions, activate local endpoints or Daybreak, or enable root fallback.
+To turn all three off, send:
 
-For native model judgment inside AMS, set the three fields false in the project settings and start a fresh root and fresh agents. This preserves delegation, manager assessment of unresolved blockers, existing failure budgets, scope/validation, and direct coder/reviewer messaging. It is not the same as running without AMS. Turning switching off does not prohibit switching.
+```text
+AMS MODEL GOVERNANCE off
+AMS MODEL GUIDANCE off
+AMS MODEL SWITCHING off
+```
 
-Ordinary profiles now contain only model/effort metadata and general task instructions. AMS role and communication rules are supplied with assignments, not permanently imposed on Sol or another family. The existing bounded two-worker peer protocol remains available when model governance is on; off uses named same-objective collaborators without the peer packet.
+Then start a **fresh chat and fresh helpers** for a clean test. Turning a switch off cannot remove instructions that an existing chat already read.
+
+The main agent still delegates work, gets unresolved helper blocks reviewed, protects existing work, and continues other approved tasks. These switches do not change permissions, turn on local models, or let the main agent take over all coding. They also do not select or change your main model.
+
+To keep model advice but turn off the other two policies, send:
+
+```text
+AMS MODEL GOVERNANCE off
+AMS MODEL GUIDANCE on
+AMS MODEL SWITCHING off
+```
+
+To restore all three policies, send:
+
+```text
+AMS MODEL GOVERNANCE on
+AMS MODEL GUIDANCE on
+AMS MODEL SWITCHING on
+```
+
+`AMS GOVERNANCE on` and `AMS GOVERNANCE off` are different: they control extra **project-level** coordination and review, not these three model policies. Basic scope, delegation, blocker review, and result checks still apply.
+
+## Change how much work happens at once
+
+With model governance on, choose a mode:
+
+| Send this | Meaning |
+|---|---|
+| `AMS MODE auto` | Let AMS choose a useful team size. This is the default. |
+| `AMS MODE minimal` | Keep helper work serial. |
+| `AMS MODE balanced` | Use a small, bounded team. |
+| `AMS MODE heavy` | Use more parallel helpers and managers when useful. |
+| `AMS MODE extreme` | Use every useful, ready task that can safely run within available capacity. |
+
+A mode command also enables AMS for the project. It does not turn model governance on if you turned that off; modes are dormant while model governance is off. `balanced` may appear as `moderate` in status or settings. They mean the same thing.
+
+More helpers can use more credits. Extreme mode does not guarantee faster work and does not create permission to add features. The separate advanced Rush option needs an explicit request for the current task; see the [technical reference](TECHNICAL%20REFERENCE.md#intensity-and-rush).
+
+## Settings and older projects
+
+You do not need to edit a settings file by hand. The commands above handle normal changes.
+
+Project settings are stored in `.codex/ams-orchestration.toml` inside your project. **That name is also used in OpenCode and Pi.** It is AMS's shared settings format, not a request to install Codex. A project settings file replaces the global AMS defaults rather than combining with them.
+
+Installation preserves existing settings. Older files use defaults for missing supported fields. To update an older project's file, send:
+
+```text
+AMS CONFIGURATION UPDATE PROJECT
+AMS STATUS
+```
+
+This keeps supported values, adds missing defaults, and removes recognized retired settings. It does not blindly delete unknown values; an invalid file needs to be corrected. The three new model-policy fields default to on when absent.
+
+A new project is not automatically enabled just because you installed AMS. The skill may create disabled defaults when first used in a trusted project. `AMS STATUS` itself never creates or changes that file.
+
+Global settings and their update command are covered in the [technical reference](TECHNICAL%20REFERENCE.md#settings-and-precedence). Use the project command unless you deliberately want global changes.
+
+## Extra features
+
+Most users do not need these for ordinary coding:
+
+| Feature | What to know |
+|---|---|
+| Local models such as LM Studio or llama.cpp | Need the separately installed [local-model companion](extensions/ams-local-openai-lane/README.md), tested endpoint settings, and your explicit model/use-case choice. `AMS LOCAL LLM on` alone does not start a model. |
+| Browser or desktop control | Requires a tool already available in the selected app/session and your authorization. AMS does not install that tool. |
+| User-visible Codex app tasks | Use the separate [app-task companion](extensions/ams-app-task-lane/README.md) only when you ask for that transport. |
+| Inspecting a Codex session's recorded model details | Use the separate [runtime-observation companion](extensions/ams-runtime-observation/README.md). It does not reveal private reasoning. |
+| Daybreak Blue | A specialized, access-controlled defensive-cyber route in Codex, not a normal model upgrade. Installing its preset does not grant access. |
+
+The installer does not add these companions. It also does not port Codex-specific features to Pi or OpenCode.
+
+## Stop, update, or remove AMS
+
+To stop new AMS work safely, send `AMS DISABLE`. Existing atomic work is allowed to finish and its results are collected. Use your app's own stop controls when you need immediate interruption; disabling AMS is not the same as uninstalling it.
+
+To update, rerun your [installation command](INSTALLATION.md#update-ams). Then start a new chat. For removal, see [Uninstall and downgrade](TECHNICAL%20REFERENCE.md#uninstall-and-downgrade). The shared skill can be used by more than one app, so removing it may affect the others too.

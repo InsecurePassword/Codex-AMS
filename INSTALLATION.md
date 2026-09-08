@@ -1,99 +1,146 @@
-# Installation
+# Install AMS
 
-AMS supports Codex, OpenCode, and Pi. Normal installation pulls directly from canonical `main`; no clone, ZIP extraction, or local package path is required.
+This guide installs AMS into **Codex, OpenCode, Pi, or all three**. It downloads the current files directly from this repository. You do not need to clone the repository, download a ZIP, or find a local installer file.
 
-## Remote installation
+## Before you start
 
-Public downloads need no GitHub account, token, or GitHub CLI. Run in PowerShell:
+You need a working installation of the coding app you want to use, access to its AI models, and **Python 3.11 or newer**. AMS does not install the coding app or give you access to paid models.
+
+Official setup guides: [Codex](https://developers.openai.com/codex/quickstart/), [OpenCode](https://opencode.ai/docs/), [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent), and [Python](https://www.python.org/downloads/).
+
+For OpenCode and Pi, the app's command must work in your terminal. The installer checks the app's model list. If none of the AMS model names is listed, installation stops with an explanation rather than choosing a different model for you.
+
+These commands download and run code from this repository. Run them only if you trust this project. Public downloads do not require a GitHub account or GitHub CLI. See [download problems](#download-problems) if access is restricted or a download fails.
+
+## Windows
+
+Open the Start menu, type **PowerShell**, and open it normally. You do not need to choose "Run as administrator."
+
+Check Python:
+
+```powershell
+python --version
+```
+
+It must report version 3.11 or newer. If the command is missing, install Python and open a new PowerShell window.
+
+**Copy only the install command for the app you use.** Run it in PowerShell, not in the AI chat. It can run from any folder.
+
+### Codex
+
+```powershell
+Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness codex
+```
+
+### OpenCode
+
+```powershell
+Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness opencode
+```
+
+### Pi
+
+```powershell
+Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness pi --install-pi-subagents
+```
+
+Pi needs the `pi-subagents` extension to create helpers. The last option lets Pi install that extension if it is missing. An existing registered copy is reused, not automatically updated.
+
+### All three
+
+Use this only when Codex, OpenCode, and Pi are already set up:
 
 ```powershell
 Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness all --install-pi-subagents
 ```
 
-In Bash:
+Choosing `all` does not skip apps that are missing. Choose one app instead when that is all you need.
+
+## macOS or Linux
+
+Open a terminal and check `python3 --version`. You need Python 3.11 or newer, Bash, and the usual command-line utilities listed in the [technical reference](TECHNICAL%20REFERENCE.md#installer-options).
+
+Use Bash for these commands. Copy only the line for your app:
 
 ```bash
+# Codex
+curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' | python3 - --harness codex
+
+# OpenCode
+curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' | python3 - --harness opencode
+
+# Pi
+curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' | python3 - --harness pi --install-pi-subagents
+
+# All three, when all are already set up
 curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' | python3 - --harness all --install-pi-subagents
 ```
 
-Use `codex`, `opencode`, or `pi` instead of `all` to install only one harness. `--install-pi-subagents` is needed only when Pi is selected and `pi-subagents` is not already registered.
+## Finish and check the installation
 
-The streamed helper fetches the current manifest and package files from `main`, verifies every core file by size and SHA-256, stages them temporarily, and invokes the existing native installer transaction. Temporary package files are removed automatically. No model inference is performed.
+Look for **"Selected harness installation complete."** Read any missing-model notices too. A successful install checks the files; it does not make a paid test call or prove that every model will run on your account.
 
-The streamed helper requires Python 3.11+ for every target. OpenCode/Pi targets also require the selected harness on `PATH`. Windows uses PowerShell 5.1+; Linux/macOS uses Bash and standard utilities.
+Restart the app you installed into and open a **new chat in your project**. Then follow [Start your first task](PRODUCT%20DOCUMENTATION.md#start-your-first-task).
 
-| Target | Native presets | Provider default |
-|---|---|---|
-| Codex | `$CODEX_HOME/agents`, otherwise `~/.codex/agents` (24 TOMLs) | Existing Codex registration |
-| OpenCode | `$OPENCODE_CONFIG_DIR/agents`, otherwise `$XDG_CONFIG_HOME/opencode/agents` or `~/.config/opencode/agents` | `openai` |
-| Pi | `$PI_CODING_AGENT_DIR/agents`, otherwise `~/.pi/agent/agents` | `openai-codex` |
-
-OpenCode/Pi presets are translated from the 23 ordinary AMS profiles. Daybreak is not translated. Only exact model IDs advertised by the selected provider's native model catalog are installed; missing models are reported and never substituted. Provider configuration, credentials, permissions, compaction, and AMS project/global settings are not changed.
-
-For another existing provider, add `--opencode-provider NAME` or `--pi-provider NAME`. For separate Pi launch profiles, set `PI_CODING_AGENT_DIR` to the same directory used by that launcher and run the Pi target for each intended profile.
-
-Differing generated OpenCode/Pi agent files are preserved and block replacement. Restart selected harnesses after installation. In Pi, run `/subagents-doctor` and then `/skill:adaptive-master-subagent-orchestration`. In OpenCode, load the `adaptive-master-subagent-orchestration` skill. Parent relay is used when direct peer messaging is unavailable. Codex-only Daybreak/app-task/runtime-observation capabilities are not ported by this installer.
-
-## Codex plugin marketplace
+For Pi, type this inside Pi to check the subagent extension:
 
 ```text
-codex plugin marketplace add InsecurePassword/Codex-AMS --ref main
-codex plugin add Codex-AMS@Codex-AMS
+/subagents-doctor
 ```
 
-The plugin installs the core skill but current plugin manifests do not register custom-agent profiles. Bootstrap the profiles directly from remote `main`:
+If the check reports a problem, fix that problem before asking AMS to delegate work.
+
+## What was installed?
+
+The installer puts one shared AMS skill in your user account, plus model presets for the apps you selected. A preset tells the app which model and thinking level to request.
+
+Codex gets 24 presets. OpenCode and Pi get only the ordinary presets whose exact model names appear in the selected provider's list, up to 23 each. The specialized Daybreak preset is not installed into OpenCode or Pi.
+
+The installer does not change your main model, existing provider settings, passwords, permissions, automatic conversation compaction, or saved AMS project settings. Optional AMS companions are not included in this install. The explicit Pi option may add `pi-subagents` through Pi's package manager.
+
+## Update AMS
+
+Run the same installation command you used before, then restart the app and start a new chat. Do not run two AMS installers at the same time.
+
+Supported older Codex presets are upgraded. Edited or unrecognized Codex presets are preserved. OpenCode/Pi presets that differ from the generated files also stop replacement; the installer does not guess which edits to keep.
+
+Updating does not turn AMS on or change your saved policy switches. To update an older project's settings, load AMS in that project and send this **in the AI chat**:
+
+```text
+AMS CONFIGURATION UPDATE PROJECT
+AMS STATUS
+```
+
+This keeps supported settings and adds missing defaults. See [Settings and older projects](PRODUCT%20DOCUMENTATION.md#settings-and-older-projects).
+
+## Common problems
+
+| What you see | What to do |
+|---|---|
+| `python` or `python3` is not found | Install Python 3.11 or newer, then open a new terminal. |
+| `opencode` or `pi` is not on PATH | Make sure that app's command works in this terminal. Follow its setup guide, then reopen the terminal. |
+| `No AMS models listed` | Check the selected app's model access. A different provider name may need an [installer option](TECHNICAL%20REFERENCE.md#installer-options). Do not rename another model to pretend it is Sol or Astra. |
+| `Pi requires pi-subagents` | Run the Pi command above with `--install-pi-subagents`. If the extension is deliberately disabled, review that setting first. |
+| A differing agent/profile file is being preserved | Keep a backup and compare your changes before replacing it. Do not delete all agent files or disable the check. |
+| Another installation may be active | Let that installation finish. Do not delete its lock while it is running. |
+| AMS does not appear in the app | Restart into a new chat, check that you used the intended user/Pi profile, and check skill-discovery permissions. See [custom locations](TECHNICAL%20REFERENCE.md#installer-options). |
+
+### Download problems
+
+A `404` or access error can mean the download is unavailable to you. A `403` can also be a GitHub request limit. Do not keep running a failed command or treat an empty response as a successful install.
+
+For an access-controlled download or an API limit, [GitHub CLI](https://cli.github.com/) can use an account with repository access. Sign in once with `gh auth login`, then use this alternative in PowerShell:
 
 ```powershell
-$env:AMS_INSTALL_PROFILES_ONLY = '1'
-try {
-    Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness codex
-}
-finally {
-    Remove-Item Env:AMS_INSTALL_PROFILES_ONLY -ErrorAction SilentlyContinue
-}
+$ams = gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main'
+if ($LASTEXITCODE -ne 0) { throw 'AMS download failed.' }
+$ams | python - --harness all --install-pi-subagents
 ```
 
-```bash
-curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' | AMS_INSTALL_PROFILES_ONLY=1 python3 - --harness codex
-```
+Replace `all` with the app you need; leave off `--install-pi-subagents` for Codex-only or OpenCode-only installs. This is optional, not a requirement for normal public downloads. Bash and token-based details are in the [technical reference](TECHNICAL%20REFERENCE.md#authenticated-downloads).
 
-Profiles-only mode changes only the selected registry and does not replace the shared skill. Start a new Codex thread after installing or upgrading profiles.
+For connection, certificate, or package-download errors, fix the reported connection problem. Do not turn off certificate checks or paste passwords into an installer command.
 
-## Optional authenticated downloads
+## Other installation methods
 
-For access-controlled downloads or GitHub API rate limits, use an existing GitHub CLI login:
-
-```powershell
-gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main' | python - --harness all --install-pi-subagents
-```
-
-In Bash, use `python3` instead of `python`. The helper also reuses `GH_TOKEN` or `GITHUB_TOKEN` when provided. Authentication is optional for public access and does not change the installation targets or settings.
-
-## Offline recovery
-
-`install.ps1 -Local`, `install.sh --local`, and the helper's hidden `--local` mode remain available for recovery/testing when a complete trusted package is already present. They are not the normal installation path.
-
-## Installer scope and verification
-
-Remote installation is fixed to `InsecurePassword/Codex-AMS` `main`; there is no repository/ref override. The installer:
-
-1. reads the canonical manifest and checks safe exact membership;
-2. verifies every staged core file by byte length and SHA-256;
-3. confirms the manifest did not change during staging;
-4. uses the existing transactional native installer with package/profile locking and rollback;
-5. leaves byte-identical profiles unchanged;
-6. upgrades only recognized official predecessor profiles;
-7. preserves and blocks on other differing profiles;
-8. preserves unrelated files and harness/project settings.
-
-The core skill is installed under `$HOME/.agents/skills/adaptive-master-subagent-orchestration/`. Codex profiles use `$CODEX_HOME/agents/` or `$HOME/.codex/agents/`. Optional companions remain separate and are not installed automatically.
-
-## Update, repair, downgrade, and uninstall
-
-- Update/repair: rerun the same remote installation command.
-- Marketplace update: update/reinstall the Codex plugin and rerun the Codex profiles bootstrap.
-- Marketplace uninstall: `codex plugin remove Codex-AMS@Codex-AMS`.
-- Direct uninstall and profile/settings cleanup remain explicit package-maintenance actions.
-- Before downgrade, back up current settings and prepare settings compatible with the older package.
-
-Installation completion triggers no automatic audit, activation, project pause, or user-action request.
+The [technical reference](TECHNICAL%20REFERENCE.md) covers Codex's plugin marketplace, profiles-only installation, existing provider names, separate Pi profiles, offline recovery, optional companions, and removal. The direct commands above are the simplest starting point.
