@@ -7,6 +7,11 @@ repo_name="Codex-AMS"
 repo_ref="main"
 raw_base_url="https://github.com/${repo_owner}/${repo_name}/raw/refs/heads/${repo_ref}"
 manifest_url="${raw_base_url}/install-manifest.txt"
+local_source=""
+if [[ "${1:-}" == "--local" ]]; then
+  local_source="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+  [[ -f "$local_source/install-manifest.txt" ]] || { printf 'Error: local installation requires the complete extracted package.\n' >&2; exit 1; }
+fi
 skill_name="adaptive-master-subagent-orchestration"
 managed_marker="# managed-by: adaptive-master-subagent-orchestration"
 user_agent="AMS-Tree-Installer"
@@ -206,6 +211,12 @@ safe_manifest_path() {
 
 download_file() {
   local url=$1 destination_path=$2
+  if [[ -n "$local_source" ]]; then
+    local source_path="$local_source/${url#"$raw_base_url"/}"
+    [[ -f "$source_path" && ! -L "$source_path" ]] || fail "Local source is not a regular file: $source_path"
+    cp -- "$source_path" "$destination_path"
+    return
+  fi
   curl --fail --silent --show-error --location \
     --retry 2 --retry-delay 1 --connect-timeout 20 --max-time 180 \
     --user-agent "$user_agent" --output "$destination_path" "$url"
@@ -507,6 +518,6 @@ else
   printf 'Installed Adaptive Master-Subagent Orchestration.\n'
   printf 'Skill: %s\n' "$destination"
 fi
-printf 'Repository ref: %s\n' "$repo_ref"
+if [[ -n "$local_source" ]]; then printf 'Source: %s\n' "$local_source"; else printf 'Repository ref: %s\n' "$repo_ref"; fi
 printf 'Profiles: %s (%s changed, %s unchanged)\n' "$agent_home" "$profiles_changed" "$profiles_unchanged"
 printf 'Installation complete. Start a new Codex thread before using newly installed profiles.\n'

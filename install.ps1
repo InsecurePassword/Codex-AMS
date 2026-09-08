@@ -1,4 +1,5 @@
 #requires -Version 5.1
+param([switch]$Local)
 
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
@@ -9,6 +10,7 @@ $RepositoryName = "Codex-AMS"
 $RepositoryRef = "main"
 $RawBaseUrl = "https://github.com/$RepositoryOwner/$RepositoryName/raw/refs/heads/$RepositoryRef"
 $ManifestUrl = "$RawBaseUrl/install-manifest.txt"
+if ($Local -and (-not $PSScriptRoot -or -not (Test-Path -LiteralPath (Join-Path $PSScriptRoot "install-manifest.txt") -PathType Leaf))) { throw "Local installation requires the complete extracted package beside install.ps1." }
 $SkillName = "adaptive-master-subagent-orchestration"
 $ManagedMarker = "# managed-by: adaptive-master-subagent-orchestration"
 $UserAgent = "AMS-Tree-Installer"
@@ -110,6 +112,13 @@ function Get-Sha256 {
 
 function Invoke-Download {
     param([Parameter(Mandatory=$true)][string]$Url, [Parameter(Mandatory=$true)][string]$OutFile)
+    if ($Local) {
+        $Source = Join-Path $PSScriptRoot ($Url.Substring($RawBaseUrl.Length + 1).Replace("/", "\"))
+        $Item = Get-Item -LiteralPath $Source -Force
+        if ($Item.PSIsContainer -or ($Item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw "Local source is not a regular file: $Source" }
+        [IO.File]::Copy($Source, $OutFile, $true)
+        return
+    }
     $Last = $null
     foreach ($Attempt in 1..3) {
         try {
@@ -420,7 +429,7 @@ try {
         Write-Host "Installed Adaptive Master-Subagent Orchestration."
         Write-Host "Skill: $Destination"
     }
-    Write-Host "Repository ref: $RepositoryRef"
+    if ($Local) { Write-Host "Source: $PSScriptRoot" } else { Write-Host "Repository ref: $RepositoryRef" }
     Write-Host "Profiles: $AgentHome ($ProfilesChanged changed, $ProfilesUnchanged unchanged)"
     Write-Host "Installation complete. Start a new Codex thread before using newly installed profiles."
 }

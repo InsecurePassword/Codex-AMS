@@ -1,6 +1,6 @@
 # AMS configuration maintenance
 
-Load for `AMS CONFIGURATION UPDATE [PROJECT|GLOBAL]`, or when a settings file contains fields outside the current schema. Load `project-control.md` first. This reference never runs implicitly, creates migration history, enables AMS, or changes an existing supported value.
+Load for `AMS CONFIGURATION UPDATE [PROJECT|GLOBAL]`, or when a settings file contains fields outside the current schema. Load `project-control.md` first. Compatibility reads never write. Migrate only on an explicit update or another authorized settings write; preserve supported values, create no migration history, and do not implicitly enable AMS.
 
 The only retired compatibility fields are `schema_version`, `convergence_control`, `convergence_correction_limit`, `convergence_redesign_limit`, `spark_available`, `work_order_refinement`, `review_control`, `shared_worktree_verification`, `runtime_observation`, `untrusted_evidence_handling`, `task_graph_safeguards`, `rejected_approach_handoff`, `request_accounting`, and `app_task_lane`. Retired Booleans require Boolean; limits remain corrections `2..12` and redesigns `1..12`; schema version must be scalar. Validate them, never branch on them, and omit them on the next authorized write. Reject every other unknown field.
 

@@ -2,6 +2,20 @@
 
 AMS supports a Codex plugin marketplace installation and a direct repository-tree fallback. Neither path installs optional companions or edits project AMS settings.
 
+## Install from a private repository or downloaded ZIP
+
+Extract the complete trusted package, open its `Codex-AMS` directory, and run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Local
+```
+
+On Linux/macOS: `bash ./install.sh --local`.
+
+This uses the adjacent manifest and package files without network access or GitHub credentials. Hash/membership checks, recognized profile upgrades, rollback, and settings preservation are unchanged. Set `AMS_INSTALL_PROFILES_ONLY=1` for profiles-only installation. Start a new Codex thread after upgrading the skill and profiles.
+
+The online commands below require public access to the repository. A browser login does not authenticate `irm` or `curl`; for this private repository, use the local method.
+
 ## Marketplace installation
 
 ```text
@@ -49,7 +63,7 @@ Bash requires `curl`, `awk`, `sort`, `uniq`, `cmp`, `mktemp`, `wc`, `tr`, `grep`
 
 ## Installer scope and verification
 
-The installers fetch only canonical `main`:
+Without the local option, the installers fetch only canonical `main`:
 
 ```text
 https://github.com/InsecurePassword/Codex-AMS/raw/refs/heads/main/install-manifest.txt

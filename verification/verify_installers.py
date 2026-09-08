@@ -132,6 +132,7 @@ def invoke(
     *,
     profiles_only: bool = False,
     expect_success: bool = True,
+    local: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     env = environment.copy()
     if profiles_only:
@@ -148,6 +149,8 @@ def invoke(
         if not executable:
             raise AssertionError("Bash not found")
         command = [executable, str(script)]
+    if local:
+        command.append("-Local" if os.name == "nt" else "--local")
     return run(command, env, expect_success=expect_success)
 
 
@@ -297,8 +300,41 @@ def main() -> int:
                 raise AssertionError("manifest refusal replaced installed skill")
             (served / "install-manifest.txt").write_bytes(original_manifest)
 
+            local_script = served / ("install.ps1" if os.name == "nt" else "install.sh")
+            patch = patch_powershell if os.name == "nt" else patch_bash
+            patch(ROOT / local_script.name, local_script, "http://127.0.0.1:1")
+            local_env = environment | {
+                "AMS_SKILL_HOME": str(base / "local skills"),
+                "CODEX_HOME": str(base / "local codex"),
+            }
+            local_skill = Path(local_env["AMS_SKILL_HOME"]) / SKILL
+            local_codex = Path(local_env["CODEX_HOME"])
+            invoke(local_script, local_env, profiles_only=True, local=True)
+            if local_skill.exists() or assert_profiles(local_codex) != bootstrap_hashes:
+                raise AssertionError("local profiles-only install mismatch")
+            for _ in range(2):
+                invoke(local_script, local_env, local=True)
+                actual = {p.relative_to(local_skill).as_posix(): sha256(p)
+                          for p in local_skill.rglob("*") if p.is_file()}
+                if actual != skill_hashes or assert_profiles(local_codex) != bootstrap_hashes:
+                    raise AssertionError("local full install/reinstall byte mismatch")
+            local_profile = local_codex / "agents/ams_terra_low.toml"
+            original_profile = local_profile.read_bytes()
+            local_profile.write_bytes(original_profile + b"# user customization\n")
+            invoke(local_script, local_env, local=True, expect_success=False)
+            if local_profile.read_bytes() != original_profile + b"# user customization\n":
+                raise AssertionError("local install replaced a customized profile")
+            local_profile.write_bytes(original_profile)
+            (served / "install-manifest.txt").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+            invoke(local_script, local_env, local=True, expect_success=False)
+            if actual != {p.relative_to(local_skill).as_posix(): sha256(p)
+                          for p in local_skill.rglob("*") if p.is_file()}:
+                raise AssertionError("local manifest refusal changed installed files")
+            (served / "install-manifest.txt").write_bytes(original_manifest)
+
             print(
-                "PASS: profiles-only, full install, idempotence, collision refusal, "
+                "PASS: offline profiles-only/install/reinstall/collision/manifest checks; "
+                "profiles-only, full install, idempotence, collision refusal, "
                 "active/stale/malformed lock handling, and manifest refusal"
             )
         finally:

@@ -244,6 +244,23 @@ class LeanContracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 resolve_settings(invalid, project=True)
 
+    def test_control_entry_and_legacy_settings(self) -> None:
+        skill = (PACKAGE / "SKILL.md").read_text(encoding="utf-8")
+        maintenance = (PACKAGE / "references/configuration-maintenance.md").read_text(encoding="utf-8")
+        self.assertLess(skill.index("Handle AMS control commands"), skill.index("Resolve settings:"))
+        self.assertIn("`AMS STATUS` never writes", skill)
+        self.assertIn("For control-only requests, return", skill)
+        self.assertIn("Compatibility reads never write", maintenance)
+        self.assertNotIn("never runs implicitly", maintenance)
+        original = {"enabled": True, "model_guidance": False, "convergence_control": True}
+        for project in (False, True):
+            resolved = resolve_settings(original, project=project)
+            self.assertTrue(resolved["enabled"])
+            self.assertFalse(resolved["model_guidance"])
+            self.assertTrue(resolved["model_governance"])
+            self.assertEqual(resolve_settings(resolved, project=project), resolved)
+        self.assertIn("convergence_control", original)
+
     def test_scope_admission_and_queue_advance(self) -> None:
         self.assertTrue(admit("C07", True, "in-scope defect"))
         self.assertTrue(admit("C06-R2", True, "authorized blocking dependency"))

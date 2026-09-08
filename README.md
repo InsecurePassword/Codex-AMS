@@ -4,6 +4,8 @@ Adaptive Master–Subagent Orchestration (AMS) keeps the current trusted top-lev
 
 ## Installation
 
+For this private repository, use the complete extracted package: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Local`. See [local installation](INSTALLATION.md#install-from-a-private-repository-or-downloaded-zip); online bootstrap commands require public repository access.
+
 ### Codex plugin marketplace
 
 ```text
