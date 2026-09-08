@@ -4,17 +4,23 @@ AMS supports Codex, OpenCode, and Pi. Normal installation pulls directly from ca
 
 ## Remote installation
 
-Because this repository is private, authenticate GitHub once with `gh auth login` (or set `GH_TOKEN`/`GITHUB_TOKEN` with repository read access). Then run:
+Public downloads need no GitHub account, token, or GitHub CLI. Run in PowerShell:
 
 ```powershell
-gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main' | python - --harness all --install-pi-subagents
+Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness all --install-pi-subagents
 ```
 
-The same command works in Bash. Use `codex`, `opencode`, or `pi` instead of `all` to install only one harness. `--install-pi-subagents` is needed only when Pi is selected and `pi-subagents` is not already registered.
+In Bash:
+
+```bash
+curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' | python3 - --harness all --install-pi-subagents
+```
+
+Use `codex`, `opencode`, or `pi` instead of `all` to install only one harness. `--install-pi-subagents` is needed only when Pi is selected and `pi-subagents` is not already registered.
 
 The streamed helper fetches the current manifest and package files from `main`, verifies every core file by size and SHA-256, stages them temporarily, and invokes the existing native installer transaction. Temporary package files are removed automatically. No model inference is performed.
 
-OpenCode/Pi installation requires Python 3.11+ and the selected harness on `PATH`. Codex-only users may instead use the native plugin marketplace path below without Python.
+The streamed helper requires Python 3.11+ for every target. OpenCode/Pi targets also require the selected harness on `PATH`. Windows uses PowerShell 5.1+; Linux/macOS uses Bash and standard utilities.
 
 | Target | Native presets | Provider default |
 |---|---|---|
@@ -40,7 +46,7 @@ The plugin installs the core skill but current plugin manifests do not register 
 ```powershell
 $env:AMS_INSTALL_PROFILES_ONLY = '1'
 try {
-    gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main' | python - --harness codex
+    Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness codex
 }
 finally {
     Remove-Item Env:AMS_INSTALL_PROFILES_ONLY -ErrorAction SilentlyContinue
@@ -48,10 +54,20 @@ finally {
 ```
 
 ```bash
-gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main' | AMS_INSTALL_PROFILES_ONLY=1 python - --harness codex
+curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' | AMS_INSTALL_PROFILES_ONLY=1 python3 - --harness codex
 ```
 
 Profiles-only mode changes only the selected registry and does not replace the shared skill. Start a new Codex thread after installing or upgrading profiles.
+
+## Optional authenticated downloads
+
+For access-controlled downloads or GitHub API rate limits, use an existing GitHub CLI login:
+
+```powershell
+gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main' | python - --harness all --install-pi-subagents
+```
+
+In Bash, use `python3` instead of `python`. The helper also reuses `GH_TOKEN` or `GITHUB_TOKEN` when provided. Authentication is optional for public access and does not change the installation targets or settings.
 
 ## Offline recovery
 

@@ -4,13 +4,17 @@ Adaptive Master–Subagent Orchestration (AMS) keeps the current trusted top-lev
 
 ## Installation
 
-Authenticate this private repository once with `gh auth login` (or `GH_TOKEN`/`GITHUB_TOKEN`), then install Codex, OpenCode, and Pi directly from `main`:
+Install Codex, OpenCode, and Pi directly from `main`. Public downloads need no GitHub account, token, or GitHub CLI.
 
 ```powershell
-gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main' | python - --harness all --install-pi-subagents
+Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness all --install-pi-subagents
 ```
 
-The same command works in Bash. Replace `all` with `codex`, `opencode`, or `pi` for one harness. No clone, ZIP, or local package path is required; the helper streams and verifies the package from the repository. See [INSTALLATION.md](INSTALLATION.md) for provider selection and Pi profile locations.
+```bash
+curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' | python3 - --harness all --install-pi-subagents
+```
+
+Requires Python 3.11+ and the selected harnesses on `PATH`. Replace `all` with `codex`, `opencode`, or `pi` for one harness. No clone, ZIP, or local package path is required; the helper streams and verifies the package from the repository. See [INSTALLATION.md](INSTALLATION.md) for provider selection, Pi profile locations, and optional authenticated downloads.
 
 Codex can also use its native plugin marketplace:
 
@@ -104,7 +108,7 @@ The local lane consumes stable prebuilt/tested project profiles and never develo
 
 - Codex with plugin/skill and custom-subagent support;
 - PowerShell 5.1+ on Windows or Bash plus standard utilities listed in [INSTALLATION.md](INSTALLATION.md);
-- Python 3.11+ only for repository verification and the optional local/runtime-observation helpers;
+- Python 3.11+ for the remote multi-harness installer, repository verification, and optional local/runtime-observation helpers;
 - approved Daybreak access on the exact internal product surface and boundary only when the optional Daybreak fallback is used.
 
 ## Optional model policies
