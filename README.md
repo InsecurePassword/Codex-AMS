@@ -4,44 +4,22 @@ Adaptive Master–Subagent Orchestration (AMS) keeps the current trusted top-lev
 
 ## Installation
 
-For this private repository, use the complete extracted package: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Local`. See [local installation](INSTALLATION.md#install-from-a-private-repository-or-downloaded-zip); online bootstrap commands require public repository access.
+Authenticate this private repository once with `gh auth login` (or `GH_TOKEN`/`GITHUB_TOKEN`), then install Codex, OpenCode, and Pi directly from `main`:
 
-For Codex, OpenCode, and Pi together, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Local -Harness all`. See [harness targets](INSTALLATION.md#codex-opencode-and-pi-targets) for native provider selection and Pi's existing subagent-package requirement. Codex remains the default target.
+```powershell
+gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main' | python - --harness all --install-pi-subagents
+```
 
-### Codex plugin marketplace
+The same command works in Bash. Replace `all` with `codex`, `opencode`, or `pi` for one harness. No clone, ZIP, or local package path is required; the helper streams and verifies the package from the repository. See [INSTALLATION.md](INSTALLATION.md) for provider selection and Pi profile locations.
+
+Codex can also use its native plugin marketplace:
 
 ```text
 codex plugin marketplace add InsecurePassword/Codex-AMS --ref main
 codex plugin add Codex-AMS@Codex-AMS
 ```
 
-The plugin installs the skill, not custom-agent profiles. Before starting a new Codex thread, deploy all 24 profiles:
-
-```powershell
-$env:AMS_INSTALL_PROFILES_ONLY = '1'
-try {
-    irm 'https://github.com/InsecurePassword/Codex-AMS/raw/refs/heads/main/install.ps1' | iex
-}
-finally {
-    Remove-Item Env:AMS_INSTALL_PROFILES_ONLY -ErrorAction SilentlyContinue
-}
-```
-
-```bash
-curl -fsSL 'https://github.com/InsecurePassword/Codex-AMS/raw/refs/heads/main/install.sh' | AMS_INSTALL_PROFILES_ONLY=1 bash
-```
-
-### Direct fallback installer
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "irm 'https://github.com/InsecurePassword/Codex-AMS/raw/refs/heads/main/install.ps1' | iex"
-```
-
-```bash
-curl -fsSL 'https://github.com/InsecurePassword/Codex-AMS/raw/refs/heads/main/install.sh' | bash
-```
-
-The direct installer deploys the core skill and all 24 profiles. Neither method edits general Codex configuration, project AMS settings, optional companions, operating-system permissions, or unrelated files.
+The plugin installs the skill but not custom-agent profiles; use the remote installer with `--harness codex` and `AMS_INSTALL_PROFILES_ONLY=1` to bootstrap those profiles before a new Codex thread.
 
 ## Runtime model
 

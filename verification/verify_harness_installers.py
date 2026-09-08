@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("install_harnesses", ROOT / "tools/install_harnesses.py")
@@ -189,6 +189,40 @@ else:
                 installer.install("opencode", "openai", "openai-codex", False)
         self.assertEqual(replacement.read_text(encoding="utf-8"), "replacement from another actor\n")
         self.assertEqual(list((self.oc / "agents").glob("*.md")), [replacement])
+
+    def test_remote_source_uses_repository_bytes(self) -> None:
+        installer.remote_bytes.cache_clear()
+        def remote(path: str) -> bytes:
+            return (ROOT / path).read_bytes()
+        with patch.object(installer, "remote_bytes", side_effect=remote), \
+                patch.object(installer, "catalog", return_value={"gpt-5.6-sol"}), \
+                patch.object(installer, "install_core") as core:
+            installer.install("opencode", "openai", "openai-codex", False, local=False)
+        self.assertEqual(len(list((self.oc / "agents").glob("*.md"))), 5)
+        core.assert_called_once()
+        self.assertFalse(core.call_args.args[2])
+
+    def test_remote_core_stages_verified_package_then_uses_native_local_installer(self) -> None:
+        installer.remote_bytes.cache_clear()
+        calls: list[list[str]] = []
+        def remote(path: str) -> bytes:
+            return (ROOT / path).read_bytes()
+        def run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0, "", "")
+        with patch.object(installer, "remote_bytes", side_effect=remote), \
+                patch.object(installer, "_remote_bytes", side_effect=remote), \
+                patch.object(installer.subprocess, "run", side_effect=run):
+            installer.install_core({"opencode"}, os.environ.copy(), local=False)
+        self.assertEqual(len(calls), 1)
+        self.assertIn("-Local" if os.name == "nt" else "--local", calls[0])
+
+    def test_remote_codex_skips_harness_catalog(self) -> None:
+        with patch.object(installer, "package_profiles") as profiles, \
+                patch.object(installer, "install_core") as core:
+            installer.install("codex", "openai", "openai-codex", False, local=False)
+        profiles.assert_not_called()
+        core.assert_called_once_with({"codex"}, ANY, False)
 
     def test_rejects_redirected_target(self) -> None:
         outside = self.home / "outside"

@@ -98,6 +98,24 @@ jobs:
       - name: Verify multi-harness installer targets
         run: python verification/verify_harness_installers.py
 
+      - name: Verify authenticated remote profile source
+        if: runner.os == 'Linux'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python -c "from tools.install_harnesses import package_profiles; assert len(package_profiles(False)) == 23"
+
+      - name: Verify authenticated remote Windows install
+        if: runner.os == 'Windows'
+        shell: powershell
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $env:AMS_SKILL_HOME = Join-Path $env:RUNNER_TEMP 'ams-remote-skills'
+          $env:CODEX_HOME = Join-Path $env:RUNNER_TEMP 'ams-remote-codex'
+          python .\tools\install_harnesses.py --harness codex
+          if (-not (Test-Path (Join-Path $env:AMS_SKILL_HOME 'adaptive-master-subagent-orchestration\SKILL.md'))) { exit 1 }
+          if (@(Get-ChildItem (Join-Path $env:CODEX_HOME 'agents\ams_*.toml')).Count -ne 24) { exit 1 }
+
       - name: Verify Windows runtime-observation fixture
         if: runner.os == 'Windows'
         shell: powershell
