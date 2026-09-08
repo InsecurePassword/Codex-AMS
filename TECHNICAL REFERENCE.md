@@ -234,15 +234,17 @@ The normal entry point is the remotely streamed [tools/install_harnesses.py](too
 
 | Python helper option | Meaning |
 |---|---|
-| `--harness codex`, `opencode`, `pi`, or `all` | Select exactly the registries to install. The argument is required. `all` does not skip missing harnesses. |
-| `--opencode-provider NAME` | Use an existing OpenCode provider ID; default `openai`. |
-| `--pi-provider NAME` | Use an existing Pi provider ID; default `openai-codex`. |
+| `--harness codex`, `opencode`, `pi`, or `all` | Select registries. Required. `all` attempts each app and retains successful installs when another app needs configuration. |
+| `--opencode-provider NAME` | Use an existing OpenCode provider ID; default `auto` discovers unambiguous exact model matches. |
+| `--pi-provider NAME` | Use an existing Pi provider ID; default `auto` discovers unambiguous exact model matches. |
 | `--install-pi-subagents` | Permit Pi's package manager to install `npm:pi-subagents` when not already registered. Valid only for `pi` or `all`. |
 | `--local` | Use an existing complete trusted source tree. Recovery/testing option, not the normal remote install. |
 
-The helper also selects a local source when run as a file inside a complete package. A streamed invocation uses remote canonical `main`. Neither exposes an arbitrary repository/ref override.
+Remote canonical `main` is the default even when the helper is run from a checkout. Only explicit `--local` selects that checkout. Neither exposes an arbitrary repository/ref override.
 
-Only exact model IDs printed by `opencode models` or `pi --list-models` for the selected provider are exported. Missing models are reported; zero matches fails before AMS agent writes. Catalog presence does not verify authentication or that the backend accepts every requested effort. Existing provider settings are not modified and alternate/local models are never aliased as Sol or Astra.
+The helper reads `opencode models` or `pi --list-models` in the caller's working directory, preserving project-specific provider discovery and the user's Pi offline setting. Exact model IDs are matched across providers. A unique provider is selected per model. An exact existing generated preset preserves its prior provider; otherwise ambiguous matches require an explicit provider option and list the actual choices. Missing exact models are reported, not silently substituted. Catalog presence does not verify authentication or that the backend accepts every requested effort.
+
+The shared skill and selected Codex registry are installed before per-app model configuration. OpenCode and Pi are then configured independently. A target failure reports `NOT CONFIGURED`, rolls back only that target's newly created agent files, and retains the shared skill and other successful targets. The helper exits `0` for all selected targets installed, `2` for partial installation, and `1` for a fatal shared-package or argument error. A missing model catalog is not reported as successful model configuration.
 
 | Environment variable | Purpose |
 |---|---|
@@ -258,7 +260,7 @@ Only exact model IDs printed by `opencode models` or `pi --list-models` for the 
 
 Pi dependency installation is explicitly opt-in, reuses registered packages, and does not update an existing package. A newly added package remains installed if a later AMS step fails. Pi's own package manager may add package resources; AMS does not configure unrelated packages, model defaults, permissions, or compaction. Native catalog commands may refresh metadata; `--local` is not a network sandbox for those commands.
 
-The native local wrappers accept `-Harness`, `-OpenCodeProvider`, `-PiProvider`, and `-InstallPiSubagents` in PowerShell, or their lower-case hyphenated equivalents in Bash. They default to Codex. OpenCode/Pi wrapper invocations require `-Local`/`--local`; use the **streamed Python helper**, not a streamed native wrapper, for remote multi-harness installation.
+The native wrappers accept `-Harness`, `-OpenCodeProvider`, `-PiProvider`, and `-InstallPiSubagents` in PowerShell, or their lower-case hyphenated equivalents in Bash. They default to Codex. OpenCode/Pi wrapper invocations fetch and run the shared Python helper remotely unless `-Local`/`--local` was explicitly selected. The streamed Python command remains the simplest cross-harness entry point.
 
 Bash's core installer requires `curl`, `awk`, `sort`, `uniq`, `cmp`, `mktemp`, `wc`, `tr`, `grep`, `head`, `find`, `dirname`, `stat`, `chmod`, `mkdir`, `mv`, `rm`, `cp`, `date`, `sleep`, `ps`, `od`, `hostname`, and `sha256sum` or `shasum`. The shared native transaction runs through Windows PowerShell 5.1+ on Windows.
 
@@ -295,9 +297,11 @@ curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/to
 
 Start a new Codex thread. A downloaded profile is not proof of current-thread registration. For marketplace updates, update the installed skill through Codex's plugin manager, then rerun profiles-only bootstrap; rerunning that bootstrap alone does **not** update the plugin's skill copy. If your Codex version does not expose the plugin commands, use the direct install rather than editing unrelated global configuration.
 
+Codex's skill-picker label is `AMS`; the canonical skill name remains `adaptive-master-subagent-orchestration`. Select its entry after typing `$`, rather than assuming `$AMS` is a registered alias. User-disabled skills stay disabled across reinstalls. The plugin manifest version is bumped for refreshed metadata; it is not an AMS runtime-policy version.
+
 ## Authenticated downloads
 
-Public repository contents can be downloaded without a GitHub account. The helper fetches manifest/package files through GitHub's Contents API. Request limits still apply; it reuses `GH_TOKEN`, then `GITHUB_TOKEN`, then an available GitHub CLI login. An invalid supplied token can prevent access even when public unauthenticated access would work.
+Public downloads use `raw.githubusercontent.com` without authentication first. This avoids spending GitHub Contents API requests on each ordinary public file. Only after an access error does the helper try optional credentials from `GH_TOKEN`, `GITHUB_TOKEN`, or an existing GitHub CLI login and use the Contents API. Public downloads do not depend on a valid stored token when raw access succeeds.
 
 For access-controlled downloads or an API limit, sign in using [GitHub CLI](https://cli.github.com/manual/gh_auth_login) and use the authenticated command in [Installation](INSTALLATION.md#download-problems). The Bash equivalent checks the download before executing it:
 
@@ -357,9 +361,9 @@ Before downgrade, back up complete current settings and prepare a separate older
 
 ## Verification and evidence limits
 
-[The verification workflow](.github/workflows/verify.yml) defines the maintained commands and platform matrix. It compiles Python, checks core membership and profiles, exercises configuration/orchestration contract fixtures, companion helpers, context budgets, native installers, and multi-harness installer fixtures. Authenticated remote-source checks are conditional workflow steps. Inspect the checks for the exact commit you plan to use; this document is not a permanent claim that every future build passes.
+[The verification workflow](.github/workflows/verify.yml) defines the maintained commands and platform matrix. It compiles Python, checks core membership and profiles, exercises configuration/orchestration contract fixtures, companion helpers, context budgets, native installers, and multi-harness installer fixtures. Public remote-source checks are conditional workflow steps. Native Codex discovery checks query the actual `skills/list` registry after separate standalone and plugin installations, without starting a model turn. Inspect the checks for the exact commit you plan to use; this document is not a permanent claim that every future build passes.
 
-The contract tests combine simulated behavior with textual assertions; they do not run an AI model through every scenario. OpenCode/Pi catalog and package-manager fixtures do not prove live account access, effective reasoning effort, direct peer support, or long-duration autonomous behavior. Native installer tests exercise the real filesystem/scripts. End-to-end model/computer-use qualification remains distinct from a green installer job.
+The contract tests combine simulated behavior with textual assertions; they do not run an AI model through every scenario. OpenCode/Pi catalog and package-manager fixtures do not prove live account access, effective reasoning effort, direct peer support, or long-duration autonomous behavior. Native installer tests exercise the real filesystem/scripts; Codex registry checks are not a visual test of a user's particular app window. End-to-end model/computer-use qualification remains distinct from a green installer job.
 
 `tools/measure_context.py --check` measures authored UTF-8 bytes with approximate token estimates. Use `--model-policies off` to compare the disabled-policy path. The historical context and manifest baselines are comparison fixtures, not the current settings schema or extra live profiles. They do not measure billed reasoning tokens or prove total-task cost reduction.
 

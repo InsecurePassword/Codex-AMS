@@ -2,6 +2,7 @@
 """Exercise native-profile translation and selected-target installs without model calls."""
 from __future__ import annotations
 
+from contextlib import ExitStack
 import importlib.util
 import io
 import json
@@ -387,54 +388,64 @@ def verify_native_codex() -> None:
     if not executable:
         raise AssertionError("Native Codex must be installed for this check; no mock or skip is permitted.")
     print(subprocess.check_output([executable, "--version"], text=True).strip(), flush=True)
+    # Codex uses the Windows known folder, which HOME/USERPROFILE do not virtualize.
+    windows_home = None
+    if os.name == "nt":
+        windows_home = Path(subprocess.check_output([
+            "powershell.exe", "-NoProfile", "-Command",
+            "[Environment]::GetFolderPath('UserProfile')"], text=True).strip()).resolve()
     with tempfile.TemporaryDirectory(prefix="ams-native-discovery-") as temporary:
         for source in ("standalone", "plugin"):
-            home = Path(temporary).resolve() / source
-            project = home / "project"
-            project.mkdir(parents=True)
-            env = os.environ.copy()
-            for key in ("AMS_SKILL_HOME", "AMS_INSTALL_PROFILES_ONLY", "AMS_INSTALL_SKILL_ONLY",
-                        "OPENAI_API_KEY", "CODEX_API_KEY", "GH_TOKEN", "GITHUB_TOKEN", "PSModulePath"):
-                env.pop(key, None)
-            env.update(HOME=str(home), USERPROFILE=str(home), CODEX_HOME=str(home / ".codex"))
-            Path(env["CODEX_HOME"]).mkdir()
-            if source == "standalone":
-                # Keep installation inside the isolated home; no Codex scan-root override.
-                env["AMS_SKILL_HOME"] = str(home / ".agents/skills")
-                command = [sys.executable, str(ROOT / "tools/install_harnesses.py"), "--harness", "codex", "--local"]
-                result = subprocess.run(command, cwd=project, env=env, capture_output=True, text=True, timeout=180)
-                expected = home / ".agents/skills" / installer.SKILL / "SKILL.md"
-                if result.returncode or not expected.is_file():
-                    raise AssertionError(result.stdout + result.stderr)
-                print(result.stdout, flush=True)
-            else:
-                for args in (["plugin", "marketplace", "add", str(ROOT)],
-                             ["plugin", "add", "Codex-AMS@Codex-AMS"]):
-                    result = subprocess.run([executable, *args], cwd=project, env=env, stdin=subprocess.DEVNULL,
-                                            capture_output=True, text=True, timeout=120)
-                    if result.returncode:
-                        raise AssertionError(f"Native plugin install failed: {args}\n{result.stdout}\n{result.stderr}")
-            skills = codex_skills(executable, project, env)
-            matches = [item for item in skills if item.get("name", "").split(":")[-1] == installer.SKILL]
-            if not matches or not any(item.get("enabled") for item in matches):
-                raise AssertionError(f"{source}: AMS absent or disabled in native skills/list: {skills}")
-            for item in matches:
-                if (item.get("interface") or {}).get("displayName") != "AMS":
-                    raise AssertionError(f"{source}: missing AMS picker label: {item}")
-                if Path(item["path"]).read_bytes() != (ROOT / installer.SKILL / "SKILL.md").read_bytes():
-                    raise AssertionError(f"{source}: registry resolved the wrong skill bytes")
-            print(f"PASS native Codex {source} registry: " + json.dumps(matches), flush=True)
-            if source == "standalone":
-                disabled = Path(env["CODEX_HOME"]) / "config.toml"
-                disabled.write_text("[[skills.config]]\npath = " + json.dumps(matches[0]["path"]) + "\nenabled = false\n", encoding="utf-8")
-                before = disabled.read_bytes()
-                result = subprocess.run(command, cwd=project, env=env, capture_output=True, text=True, timeout=180)
-                if result.returncode or disabled.read_bytes() != before:
-                    raise AssertionError("Installer changed or rejected an existing user skill-disable setting")
-                after = [item for item in codex_skills(executable, project, env) if item.get("name") == installer.SKILL]
-                if not after or any(item.get("enabled") for item in after):
-                    raise AssertionError("Native skill-disable setting was not preserved")
-                print("PASS user skill-disable configuration preserved (not silently enabled)", flush=True)
+            with ExitStack() as cleanup:
+                home = Path(temporary).resolve() / source
+                project = home / "project"
+                project.mkdir(parents=True)
+                env = os.environ.copy()
+                for key in ("AMS_SKILL_HOME", "AMS_INSTALL_PROFILES_ONLY", "AMS_INSTALL_SKILL_ONLY",
+                            "OPENAI_API_KEY", "CODEX_API_KEY", "GH_TOKEN", "GITHUB_TOKEN", "PSModulePath"):
+                    env.pop(key, None)
+                env.update(HOME=str(home), USERPROFILE=str(home), CODEX_HOME=str(home / ".codex"))
+                Path(env["CODEX_HOME"]).mkdir()
+                if source == "standalone":
+                    skill_home = (windows_home or home) / ".agents/skills"
+                    expected = skill_home / installer.SKILL / "SKILL.md"
+                    if expected.parent.exists():
+                        raise AssertionError(f"Refusing to replace an existing skill during the native test: {expected.parent}")
+                    cleanup.callback(shutil.rmtree, expected.parent, ignore_errors=True)
+                    env["AMS_SKILL_HOME"] = str(skill_home)
+                    command = [sys.executable, str(ROOT / "tools/install_harnesses.py"), "--harness", "codex", "--local"]
+                    result = subprocess.run(command, cwd=project, env=env, capture_output=True, text=True, timeout=180)
+                    if result.returncode or not expected.is_file():
+                        raise AssertionError(result.stdout + result.stderr)
+                    print(result.stdout, flush=True)
+                else:
+                    for args in (["plugin", "marketplace", "add", str(ROOT)],
+                                 ["plugin", "add", "Codex-AMS@Codex-AMS"]):
+                        result = subprocess.run([executable, *args], cwd=project, env=env, stdin=subprocess.DEVNULL,
+                                                capture_output=True, text=True, timeout=120)
+                        if result.returncode:
+                            raise AssertionError(f"Native plugin install failed: {args}\n{result.stdout}\n{result.stderr}")
+                skills = codex_skills(executable, project, env)
+                matches = [item for item in skills if item.get("name", "").split(":")[-1] == installer.SKILL]
+                if not matches or not any(item.get("enabled") for item in matches):
+                    raise AssertionError(f"{source}: AMS absent or disabled in native skills/list: {skills}")
+                for item in matches:
+                    if (item.get("interface") or {}).get("displayName") != "AMS":
+                        raise AssertionError(f"{source}: missing AMS picker label: {item}")
+                    if Path(item["path"]).read_bytes() != (ROOT / installer.SKILL / "SKILL.md").read_bytes():
+                        raise AssertionError(f"{source}: registry resolved the wrong skill bytes")
+                print(f"PASS native Codex {source} registry: " + json.dumps(matches), flush=True)
+                if source == "standalone":
+                    disabled = Path(env["CODEX_HOME"]) / "config.toml"
+                    disabled.write_text("[[skills.config]]\npath = " + json.dumps(matches[0]["path"]) + "\nenabled = false\n", encoding="utf-8")
+                    before = disabled.read_bytes()
+                    result = subprocess.run(command, cwd=project, env=env, capture_output=True, text=True, timeout=180)
+                    if result.returncode or disabled.read_bytes() != before:
+                        raise AssertionError("Installer changed or rejected an existing user skill-disable setting")
+                    after = [item for item in codex_skills(executable, project, env) if item.get("name") == installer.SKILL]
+                    if not after or any(item.get("enabled") for item in after):
+                        raise AssertionError("Native skill-disable setting was not preserved")
+                    print("PASS user skill-disable configuration preserved (not silently enabled)", flush=True)
 
 
 if __name__ == "__main__":
