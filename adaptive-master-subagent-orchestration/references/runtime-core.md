@@ -4,7 +4,7 @@ Active orchestration only; higher-priority instructions and authoritative projec
 
 ## Gates
 
-Resolve `project-control.md`; always load `scope-dependency-control.md`, and `project-governance.md` when enabled. Load each model policy only when its Boolean is true:
+Outside Codex, first load `harness-compatibility.md`. Resolve `project-control.md`; always load `scope-dependency-control.md`, and `project-governance.md` when enabled. Load each model policy only when its Boolean is true:
 
 - `model_governance`: `model-governance.md`
 - `model_guidance`: `model-guidance.md`

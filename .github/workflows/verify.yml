@@ -40,6 +40,8 @@ jobs:
           verification/verify_installers_windows.py
           verification/verify_runtime_observation.py
           verification/verify_local_openai_lane.py
+          tools/install_harnesses.py
+          verification/verify_harness_installers.py
           tools/measure_context.py
           tools/report_sizes.py
           extensions/ams-runtime-observation/tools/inspect-agent-runtime.py
@@ -92,6 +94,9 @@ jobs:
       - name: Verify Windows installer transactions
         if: runner.os == 'Windows'
         run: python verification/verify_installers_windows.py
+
+      - name: Verify multi-harness installer targets
+        run: python verification/verify_harness_installers.py
 
       - name: Verify Windows runtime-observation fixture
         if: runner.os == 'Windows'

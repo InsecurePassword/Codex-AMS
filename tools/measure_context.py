@@ -24,6 +24,7 @@ MODEL_POLICIES = ["references/model-governance.md", "references/model-guidance.m
 
 LAZY_REFERENCES = [
     *MODEL_POLICIES,
+    "references/harness-compatibility.md",
     "references/blocker-diagnosis.md",
     "references/configuration-maintenance.md",
     "references/computer-use.md",

@@ -2,6 +2,8 @@
 
 Use only when a selected profile is missing, unregistered, mismatched, or explicitly being installed or repaired. Direct install deploys 24 profiles; marketplace install needs profiles-only bootstrap before a new thread.
 
+Outside Codex, use `harness-compatibility.md` for native registries and preset installation; the Codex-specific file operations below do not apply. Assignment and authority boundaries still apply.
+
 ## Registry and routes
 
 Prefer `$CODEX_HOME/agents/`, otherwise `$HOME/.codex/agents/`. Use `<project-root>/.codex/agents/` only for deliberate isolation, authoritative project policy, or unavailable global profiles.

@@ -8,10 +8,36 @@ repo_ref="main"
 raw_base_url="https://github.com/${repo_owner}/${repo_name}/raw/refs/heads/${repo_ref}"
 manifest_url="${raw_base_url}/install-manifest.txt"
 local_source=""
-if [[ "${1:-}" == "--local" ]]; then
-  local_source="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-  [[ -f "$local_source/install-manifest.txt" ]] || { printf 'Error: local installation requires the complete extracted package.\n' >&2; exit 1; }
+harness="codex"
+opencode_provider="openai"
+pi_provider="openai-codex"
+install_pi_subagents=0
+while (( $# )); do
+  case "$1" in
+    --local) local_source="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"; shift ;;
+    --harness|--opencode-provider|--pi-provider)
+      (( $# >= 2 )) || { printf 'Error: missing value for %s\n' "$1" >&2; exit 1; }
+      case "$1" in
+        --harness) harness="$2" ;;
+        --opencode-provider) opencode_provider="$2" ;;
+        --pi-provider) pi_provider="$2" ;;
+      esac
+      shift 2 ;;
+    --install-pi-subagents) install_pi_subagents=1; shift ;;
+    *) printf 'Error: unknown argument: %s\n' "$1" >&2; exit 1 ;;
+  esac
+done
+case "$harness" in codex|opencode|pi|all) ;; *) printf 'Error: invalid harness: %s\n' "$harness" >&2; exit 1 ;; esac
+if [[ -n "$local_source" && ! -f "$local_source/install-manifest.txt" ]]; then
+  printf 'Error: local installation requires the complete extracted package.\n' >&2; exit 1
 fi
+if [[ "$harness" != "codex" ]]; then
+  [[ -n "$local_source" ]] || { printf 'Error: OpenCode/Pi installation requires the complete checkout or ZIP and --local.\n' >&2; exit 1; }
+  args=("$local_source/tools/install_harnesses.py" --harness "$harness" --opencode-provider "$opencode_provider" --pi-provider "$pi_provider")
+  (( install_pi_subagents == 0 )) || args+=(--install-pi-subagents)
+  exec python3 "${args[@]}"
+fi
+(( install_pi_subagents == 0 )) || { printf 'Error: --install-pi-subagents requires --harness pi or all.\n' >&2; exit 1; }
 skill_name="adaptive-master-subagent-orchestration"
 managed_marker="# managed-by: adaptive-master-subagent-orchestration"
 user_agent="AMS-Tree-Installer"
@@ -20,6 +46,7 @@ codex_home="${CODEX_HOME:-${HOME}/.codex}"
 destination="${skill_home}/${skill_name}"
 agent_home="${codex_home}/agents"
 profiles_only="${AMS_INSTALL_PROFILES_ONLY:-0}"
+skill_only="${AMS_INSTALL_SKILL_ONLY:-0}"
 max_manifest_bytes=262144
 max_file_bytes=1048576
 max_total_bytes=104857600
@@ -40,6 +67,7 @@ required_files=(
   references/configuration-maintenance.md
   references/computer-use.md
   references/daybreak-blue.md
+  references/harness-compatibility.md
   references/hierarchy-control.md
   references/intensity-control.md
   references/model-governance.md
@@ -67,6 +95,9 @@ case "$profiles_only" in
   0|1) ;;
   *) fail "AMS_INSTALL_PROFILES_ONLY must be unset or exactly 1." ;;
 esac
+
+case "$skill_only" in 0|1) ;; *) fail "AMS_INSTALL_SKILL_ONLY must be unset or exactly 1." ;; esac
+(( skill_only == 0 || profiles_only == 0 )) || fail "Skill-only and profiles-only installation cannot be combined."
 
 for command_name in curl awk sort uniq cmp mktemp wc tr grep head find dirname stat chmod mkdir mv rm cp date sleep ps od hostname; do
   command -v "$command_name" >/dev/null 2>&1 || fail "Required command not found: ${command_name}"
@@ -340,10 +371,14 @@ new_owner_token() {
 }
 
 assert_safe_directory "$skill_home" "Skill parent"
-assert_safe_directory "$codex_home" "CODEX_HOME"
-assert_safe_directory "$agent_home" "Agent registry"
+if (( skill_only == 0 )); then
+  assert_safe_directory "$codex_home" "CODEX_HOME"
+  assert_safe_directory "$agent_home" "Agent registry"
+fi
 
-lock_dir="${codex_home}/.adaptive-master-subagent-orchestration.install.lock"
+lock_parent="$codex_home"
+(( skill_only == 0 )) || lock_parent="$skill_home"
+lock_dir="${lock_parent}/.adaptive-master-subagent-orchestration.install.lock"
 lock_owner_token=$(new_owner_token)
 [[ "$lock_owner_token" =~ ^[0-9a-f]{32}$ ]] || fail "Unable to generate installer owner token."
 lock_acquired=0
@@ -383,7 +418,7 @@ cleanup() {
     if (( candidate_installed == 1 )); then rm -rf -- "$destination"; fi
     if (( existing_moved == 1 )) && [[ -d "$backup_path" ]]; then mv -- "$backup_path" "$destination"; fi
   fi
-  rm -f -- "${agent_home}"/.*.ams-new."$$" 2>/dev/null || true
+  if (( skill_only == 0 )); then rm -f -- "${agent_home}"/.*.ams-new."$$" 2>/dev/null || true; fi
   [[ -z "$stage_root" ]] || rm -rf -- "$stage_root"
   if (( committed == 1 )) && [[ -d "$backup_path" ]]; then rm -rf -- "$backup_path"; fi
   release_install_lock
@@ -469,7 +504,7 @@ done < "$manifest_before"
 
 download_file "$manifest_url" "$manifest_after"
 cmp -s "$manifest_before" "$manifest_after" || fail "Manifest changed during installation."
-assert_profile_preflight "$candidate"
+if (( skill_only == 0 )); then assert_profile_preflight "$candidate"; fi
 
 profile_source_root="$candidate"
 if (( profiles_only == 0 )); then
@@ -487,6 +522,7 @@ fi
 
 profiles_changed=0
 profiles_unchanged=0
+if (( skill_only == 0 )); then
 for profile_file in "${profile_files[@]}"; do
   source_profile="${profile_source_root}/assets/agent-profiles/${profile_file}"
   target_profile="${agent_home}/${profile_file}"
@@ -509,6 +545,7 @@ for profile_file in "${profile_files[@]}"; do
   [[ $(sha256_file "$target_profile") == "$source_hash" ]] || fail "Profile post-write verification failed: ${profile_file}"
   profiles_changed=$((profiles_changed + 1))
 done
+fi
 
 committed=1
 if (( profiles_only == 1 )); then
@@ -519,5 +556,9 @@ else
   printf 'Skill: %s\n' "$destination"
 fi
 if [[ -n "$local_source" ]]; then printf 'Source: %s\n' "$local_source"; else printf 'Repository ref: %s\n' "$repo_ref"; fi
-printf 'Profiles: %s (%s changed, %s unchanged)\n' "$agent_home" "$profiles_changed" "$profiles_unchanged"
-printf 'Installation complete. Start a new Codex thread before using newly installed profiles.\n'
+if (( skill_only == 1 )); then
+  printf 'Shared skill installed; Codex registry unchanged.\n'
+else
+  printf 'Profiles: %s (%s changed, %s unchanged)\n' "$agent_home" "$profiles_changed" "$profiles_unchanged"
+  printf 'Installation complete. Start a new Codex thread before using newly installed profiles.\n'
+fi

@@ -33,6 +33,7 @@ CORE_REFERENCES = {
     "configuration-maintenance.md",
     "computer-use.md",
     "daybreak-blue.md",
+    "harness-compatibility.md",
     "hierarchy-control.md",
     "intensity-control.md",
     "model-governance.md",
@@ -278,8 +279,8 @@ def main() -> int:
         path for path in PACKAGE.rglob("*") if path.is_file() and not path.is_symlink()
     )
     actual_paths = {path.relative_to(ROOT).as_posix() for path in actual_files}
-    if len(actual_files) != 43:
-        fail(f"expected 43 installed-core files, got {len(actual_files)}")
+    if len(actual_files) != 44:
+        fail(f"expected 44 installed-core files, got {len(actual_files)}")
     if set(entries) != actual_paths:
         fail(
             "manifest membership mismatch: "

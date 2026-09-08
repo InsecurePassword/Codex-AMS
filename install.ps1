@@ -1,9 +1,30 @@
 #requires -Version 5.1
-param([switch]$Local)
+param(
+    [switch]$Local,
+    [ValidateSet("codex", "opencode", "pi", "all")][string]$Harness = "codex",
+    [string]$OpenCodeProvider = "openai",
+    [string]$PiProvider = "openai-codex",
+    [switch]$InstallPiSubagents
+)
 
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+$Harness = $Harness.ToLowerInvariant()
+
+if ($Harness -ne "codex") {
+    if (-not $Local) { throw "OpenCode/Pi installation requires the complete checkout or ZIP and -Local." }
+    $Helper = Join-Path $PSScriptRoot "tools\install_harnesses.py"
+    if (-not (Test-Path -LiteralPath $Helper -PathType Leaf)) { throw "Extract the complete package before installing." }
+    $Python = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $Python) { throw "Python 3.11 or newer is required for OpenCode/Pi profile translation." }
+    $HelperArgs = @($Helper, "--harness", $Harness, "--opencode-provider", $OpenCodeProvider, "--pi-provider", $PiProvider)
+    if ($InstallPiSubagents) { $HelperArgs += "--install-pi-subagents" }
+    & $Python.Source @HelperArgs
+    if ($LASTEXITCODE -ne 0) { throw "AMS harness installation failed (exit $LASTEXITCODE)." }
+    return
+}
+if ($InstallPiSubagents) { throw "-InstallPiSubagents requires -Harness pi or all." }
 
 $RepositoryOwner = "InsecurePassword"
 $RepositoryName = "Codex-AMS"
@@ -26,6 +47,9 @@ if ($env:AMS_INSTALL_PROFILES_ONLY) {
     if ($env:AMS_INSTALL_PROFILES_ONLY -cne "1") { throw "AMS_INSTALL_PROFILES_ONLY must be unset or exactly 1." }
     $ProfilesOnly = $true
 }
+$SkillOnly = $env:AMS_INSTALL_SKILL_ONLY -ceq "1"
+if ($env:AMS_INSTALL_SKILL_ONLY -and -not $SkillOnly) { throw "AMS_INSTALL_SKILL_ONLY must be unset or exactly 1." }
+if ($SkillOnly -and $ProfilesOnly) { throw "Skill-only and profiles-only installation cannot be combined." }
 $MaxManifestBytes = 256KB
 $MaxFileBytes = 1MB
 $MaxTotalBytes = 100MB
@@ -46,6 +70,7 @@ $RequiredFiles = @(
     "references/configuration-maintenance.md",
     "references/computer-use.md",
     "references/daybreak-blue.md",
+    "references/harness-compatibility.md",
     "references/hierarchy-control.md",
     "references/intensity-control.md",
     "references/model-governance.md",
@@ -334,10 +359,13 @@ function Release-InstallLock {
 }
 
 Assert-SafeDirectory -Path $SkillHome -Label "Skill parent"
-Assert-SafeDirectory -Path $CodexHome -Label "CODEX_HOME"
-Assert-SafeDirectory -Path $AgentHome -Label "Agent registry"
+if (-not $SkillOnly) {
+    Assert-SafeDirectory -Path $CodexHome -Label "CODEX_HOME"
+    Assert-SafeDirectory -Path $AgentHome -Label "Agent registry"
+}
 
-$LockPath = Join-Path $CodexHome ".adaptive-master-subagent-orchestration.install.lock"
+$LockParent = if ($SkillOnly) { $SkillHome } else { $CodexHome }
+$LockPath = Join-Path $LockParent ".adaptive-master-subagent-orchestration.install.lock"
 $LockAcquired = $false
 $LockOwnerToken = [Guid]::NewGuid().ToString("N")
 $StageRoot = Join-Path $SkillHome (".ams-install-{0}-{1}" -f $PID, [Guid]::NewGuid().ToString("N"))
@@ -377,7 +405,7 @@ try {
     if ((Get-Sha256 $ManifestBefore) -cne (Get-Sha256 $ManifestAfter)) {
         throw "Manifest changed during installation."
     }
-    Assert-ProfilePreflight -SourceRoot $Candidate
+    if (-not $SkillOnly) { Assert-ProfilePreflight -SourceRoot $Candidate }
 
     $ProfileSourceRoot = $Candidate
     if (-not $ProfilesOnly) {
@@ -395,7 +423,8 @@ try {
 
     $ProfilesChanged = 0
     $ProfilesUnchanged = 0
-    foreach ($ProfileFile in $ProfileFiles) {
+    $RegistryProfiles = if ($SkillOnly) { @() } else { $ProfileFiles }
+    foreach ($ProfileFile in $RegistryProfiles) {
         $SourceProfile = Join-Path $ProfileSourceRoot "assets\agent-profiles\$ProfileFile"
         $TargetProfile = Join-Path $AgentHome $ProfileFile
         $SourceHash = Get-Sha256 $SourceProfile
@@ -430,8 +459,13 @@ try {
         Write-Host "Skill: $Destination"
     }
     if ($Local) { Write-Host "Source: $PSScriptRoot" } else { Write-Host "Repository ref: $RepositoryRef" }
-    Write-Host "Profiles: $AgentHome ($ProfilesChanged changed, $ProfilesUnchanged unchanged)"
-    Write-Host "Installation complete. Start a new Codex thread before using newly installed profiles."
+    if ($SkillOnly) {
+        Write-Host "Shared skill installed; Codex registry unchanged."
+    }
+    else {
+        Write-Host "Profiles: $AgentHome ($ProfilesChanged changed, $ProfilesUnchanged unchanged)"
+        Write-Host "Installation complete. Start a new Codex thread before using newly installed profiles."
+    }
 }
 finally {
     if (-not $Committed) {

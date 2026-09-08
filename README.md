@@ -6,6 +6,8 @@ Adaptive Master–Subagent Orchestration (AMS) keeps the current trusted top-lev
 
 For this private repository, use the complete extracted package: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Local`. See [local installation](INSTALLATION.md#install-from-a-private-repository-or-downloaded-zip); online bootstrap commands require public repository access.
 
+For Codex, OpenCode, and Pi together, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Local -Harness all`. See [harness targets](INSTALLATION.md#codex-opencode-and-pi-targets) for native provider selection and Pi's existing subagent-package requirement. Codex remains the default target.
+
 ### Codex plugin marketplace
 
 ```text
