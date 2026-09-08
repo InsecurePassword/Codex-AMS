@@ -16,9 +16,9 @@ A profile requests a route; it does not prove availability, authorization, provi
 
 ## Contract
 
-Exact bundled bytes define the name, model/effort, instructions, and V2 mode hint. Profiles are permission-neutral: no sandbox, approval, network, writable-root, credential, authorization, target, or tool override.
+Exact bundled bytes define the name, model/effort, and neutral task instructions. Ordinary descriptions identify routes only; they contain no model-purpose advice. Profiles are permission-neutral: no sandbox, approval, network, writable-root, credential, authorization, target, or tool override.
 
-Sol, Terra, Luna, and Astra profiles act only as the assigned `worker/none` or `delegated-manager/request`; Spark and Daybreak accept only `worker/none`. Root alone spawns. Workers are leaves; managers return bounded root-mediated dispatch requests within granted scope and allocation. Peer messaging is limited to the named `worker/none` paths in one matching channel and changes no order or authority; the member returns a terminal stub, the lead returns synthesis, and root retains acceptance. All profiles preserve scope, dependencies, ownership, permissions, validation, user work, root-only user contact, and root-only completion.
+Root supplies AMS role, supervision, and communication instructions in each assignment from `runtime-core.md`, adding enabled governance requirements when needed. Changing policy switches never rewrites installed profiles. Sol/Terra/Luna/Astra may be assigned workers or managers; Spark and Daybreak are worker-only within AMS. Daybreak retains its specialized access contract. Peer communication remains available with model governance off; enabled governance adds the bounded-channel protocol.
 
 Before spawn, verify the selected effective regular file matches its expected name, model/effort, managed contract, and permission neutrality. Requested identity is not observed identity. Daybreak remains governed only by `daybreak-blue.md`; profile presence proves nothing.
 

@@ -1,6 +1,6 @@
 ---
 name: adaptive-master-subagent-orchestration
-description: "Top-level AMS controls and cost-aware autonomous multi-agent routing with root-mediated hierarchy."
+description: "Top-level AMS delegation, autonomous recovery, and optional model policies."
 ---
 
 # Adaptive Master-Subagent Orchestration
@@ -13,4 +13,4 @@ Explicit invocation activates the current automation boundary. Implicit activati
 
 For active work load `references/runtime-core.md`, then only references selected by its gates. Missing required material blocks only that capability. Daybreak is refusal-triggered; package completion triggers nothing.
 
-Use project control for `AMS STATUS` and enable/disable, mode, implicit, governance, root fallback, Spark, profiles, local LLM, or configuration-update commands. Status is read-only; normal commands write project settings, and only explicit `GLOBAL` update writes global settings.
+Use project control for `AMS STATUS` and enable/disable, mode, implicit, project/model governance, model guidance/switching, root fallback, Spark, profiles, local LLM, or configuration-update commands. Status is read-only; normal commands write project settings, and only explicit `GLOBAL` update writes global settings.

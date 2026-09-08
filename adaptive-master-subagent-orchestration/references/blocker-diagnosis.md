@@ -1,6 +1,18 @@
 # AMS bounded blocker diagnosis
 
-Use after a reproducible non-runner lane failure. It is evidence-driven, session-only, and creates no campaign, receipt, history, or recovery state. Shared process no-starts use `runtime-core.md` instead.
+Load after a process no-start or reproducible non-runner lane failure, regardless of model-policy switches. Unresolved blocks need manager assessment (or a root-assigned diagnostic agent for direct workers). Supervision never resets attempts or overrides actual restrictions. Keep evidence in session; create no recovery files.
+
+## Shared runner fail-fast
+
+One process no-start episode is keyed by a normalized physical spawn primitive, no-start class, executable/command surface, and sandbox/permission boundary. Work-order, task, profile/model, manager, intensity, Rush/Ultra, transport, and context are labels and never reset the same signature.
+
+Allow only: initial start; one same-lane retry correcting an evidenced invocation defect with the same order/profile/permissions/sandbox; after a second no-start, one root process-only probe with no project access, network, or external effect; then, only after probe success, one materially corrected original-lane confirmation.
+
+Failed probe or no-start confirmation terminalizes the episode. No replacement, route/profile/transport change, cleanup diagnosis, fallback, root execution, mode, hierarchy, Rush, or Ultra adds another process start. The probe is diagnostic and cannot chain.
+
+Proven no-start owns nothing. Active, uncertain, or potentially live workers/managers/descendants/app tasks/writers retain ownership/allocation until closure is proven; late results are evidence only and restore no custody or acceptance. Report unresolved state `live` or `unverified`, do not claim workspace verification, and continue runner-free authorized work. After probe success plus failed Spark/local confirmation, mark that route `inactive-after-failure`; Daybreak keeps its fixed budget.
+
+## Non-runner diagnosis
 
 Capture only decisive evidence: action/work-order, real execution route and invocation class, status/start failure, bounded stderr/output, cwd/relevant environment, scope/ownership/dependencies. Classify invocation/order; tool/model/module/runtime; path/quoting/shell/cwd; permission/sandbox/approval; baseline/hidden dependency; harness/environment; external credential/service/endpoint/physical dependency; or shared runner.
 

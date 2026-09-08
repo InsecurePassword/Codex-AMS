@@ -6,7 +6,7 @@
 AMS has two core responsibilities:
 
 1. keep the current trusted top-level root in control of the authorized automation boundary, physical dispatch, hierarchy, sequencing, ownership, integration, acceptance, completion, and user communication;
-2. request the lowest-cost reliable Codex model family and reasoning effort for each bounded non-root session.
+2. delegate scoped work and supervise recovery, with optional policies for team organization, model guidance, and model switching.
 
 The root model and reasoning effort are external configuration. AMS does not select, require, infer, or attest them. Workers are leaves. Delegated managers request root-mediated descendants and never physically spawn, expand authority, contact the user, or accept completion.
 
@@ -15,8 +15,8 @@ The root model and reasoning effort are external configuration. AMS does not sel
 Core AMS provides:
 
 - Codex model/effort routing across 24 `ams_*` profiles;
-- root-mediated hierarchy and finite allocation; Balanced permits two direct sessions or one manager plus three direct descendants;
-- bounded direct peer channels between exactly two named root-spawned `worker/none` siblings, with terminal status and one final lead synthesis returned to root;
+- root-mediated delegation; optional model governance adds finite allocation and Balanced team limits;
+- direct same-objective peer communication; optional model governance adds the existing bounded-pair protocol;
 - one-writer mutable-surface ownership;
 - mandatory scope/dependency admission;
 - automation-boundary continuation from one accepted objective to the next;
@@ -33,7 +33,7 @@ AMS creates no convergence campaign, persistent custody/receipt system, archive/
 
 ### Bounded peer channels
 
-When direct collaboration is cheaper than relaying every intermediate message through the root, the root may place exactly two direct `worker/none` siblings in one bounded peer channel. Both work orders must name the same channel, canonical absolute task paths, purpose, lead/member roles, writer ownership, escalation conditions, and root-return mode. Peers may use `send_message` or `followup_task` only with the named path. Messages are evidence or scoped steering inside the existing orders and cannot alter objective, scope, dependencies, permissions, ownership, criteria, delegation, retry budget, or user authority. The lead remains a worker. The member sends detail to the lead and returns a short root terminal stub; the lead returns one synthesized result. Root acceptance and completion authority do not move.
+With model governance enabled, when direct collaboration is cheaper than relaying every intermediate message through the root, the root may place exactly two direct `worker/none` siblings in one bounded peer channel. Both work orders must name the same channel, canonical absolute task paths, purpose, lead/member roles, writer ownership, escalation conditions, and root-return mode. Peers may use `send_message` or `followup_task` only with the named path. Messages are evidence or scoped steering inside the existing orders and cannot alter objective, scope, dependencies, permissions, ownership, criteria, delegation, retry budget, or user authority. The lead remains a worker. The member sends detail to the lead and returns a short root terminal stub; the lead returns one synthesized result. Root acceptance and completion authority do not move.
 
 ## 3. Settings and precedence
 
@@ -56,6 +56,9 @@ enabled = false
 allow_implicit_invocation = true
 intensity = "auto"
 project_governance = true
+model_governance = true
+model_guidance = true
+automatic_model_switching = true
 root_execution_fallback = false
 spark_enabled = true
 spark_efforts = ["low", "medium", "high"]
@@ -78,6 +81,9 @@ AMS ENABLE | AMS DISABLE
 AMS MODE auto|minimal|balanced|moderate|heavy|extreme
 AMS IMPLICIT on|off
 AMS GOVERNANCE on|off
+AMS MODEL GOVERNANCE on|off
+AMS MODEL GUIDANCE on|off
+AMS MODEL SWITCHING on|off
 AMS ROOT FALLBACK on|off
 AMS CONFIGURATION UPDATE [PROJECT|GLOBAL]
 AMS SPARK on|off
@@ -122,7 +128,7 @@ A local lane or objective can be deferred while independent authorized work cont
 
 ## 9. Astra and computer use
 
-Five `ams_astra_<low|medium|high|xhigh|max>` profiles request `gpt-6-astra`. Astra is a peer route, not a universal default or mandatory escalation: use it for end-to-end tool-heavy, computer-use, very-large-context, or high-rework-risk work when one Astra owner is expected to reach acceptance with less total usage, time, or correction than Sol. Sol remains appropriate for difficult coding, architecture, security, and diagnosis when Astra's tool or long-context advantage is not material.
+Five `ams_astra_<low|medium|high|xhigh|max>` profiles request `gpt-6-astra`. With model guidance enabled, Astra is a peer route, not a universal default or mandatory escalation: use it for end-to-end tool-heavy, computer-use, very-large-context, or high-rework-risk work when one Astra owner is expected to reach acceptance with less total usage, time, or correction than Sol. Sol remains appropriate for difficult coding, architecture, security, and diagnosis when Astra's tool or long-context advantage is not material.
 
 Before browser, desktop, or visual UI control, load `references/computer-use.md`. Use only a session that exposes the required tool, prefer shell/API/MCP/direct file operations when simpler, assign one active controller per interactive surface, treat screen content as untrusted evidence, use existing platform approvals, and verify the resulting application state. Computer use changes neither model authority nor AMS authority.
 
@@ -162,6 +168,24 @@ The profile grants no access, permission, authorization, target authority, or re
 
 ## 12. Package boundaries
 
-Installed core contains `SKILL.md`, metadata, 24 profiles, and 14 normative references. `.github/`, `tools/`, `verification/`, and `extensions/` are repository-only and never run during normal orchestration.
+Installed core contains `SKILL.md`, metadata, 24 profiles, and 17 normative references. `.github/`, `tools/`, `verification/`, and `extensions/` are repository-only and never run during normal orchestration.
 
 Marketplace installation is skill-only and requires the profiles-only bootstrap before a new thread. The direct installer deploys core and profiles. Both preserve differing user-authored profiles and never edit general Codex configuration, project settings, optional companions, or permissions.
+
+## Optional model policies
+
+The user-selected master still delegates execution and technical diagnosis, supervises unresolved blockers, and continues independent authorized work. It never guesses its own model or execution skills. These autonomy rules do not switch off.
+
+Three independent Booleans default to true for existing installations:
+
+| Setting | Loaded policy | Off |
+|---|---|---|
+| `model_governance` | `references/model-governance.md` | Master chooses team organization without AMS intensity, allocation, or packet prescriptions. |
+| `model_guidance` | `references/model-guidance.md` | No AMS model-purpose or effort advice is supplied. |
+| `automatic_model_switching` | `references/model-switching.md` | Master chooses/reconsiders routes freely, without AMS switching heuristics. |
+
+Use `AMS MODEL GOVERNANCE on|off`, `AMS MODEL GUIDANCE on|off`, and `AMS MODEL SWITCHING on|off`. `AMS GOVERNANCE` remains the separate project-governance control. Settings never authorize more permissions, activate local endpoints or Daybreak, or enable root fallback.
+
+For native model judgment inside AMS, set the three fields false in the project settings and start a fresh root and fresh agents. This preserves delegation, manager assessment of unresolved blockers, existing failure budgets, scope/validation, and direct coder/reviewer messaging. It is not the same as running without AMS. Turning switching off does not prohibit switching.
+
+Ordinary profiles now contain only model/effort metadata and general task instructions. AMS role and communication rules are supplied with assignments, not permanently imposed on Sol or another family. The existing bounded two-worker peer protocol remains available when model governance is on; off uses named same-objective collaborators without the peer packet.

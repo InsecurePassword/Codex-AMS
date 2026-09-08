@@ -35,6 +35,9 @@ CORE_REFERENCES = {
     "daybreak-blue.md",
     "hierarchy-control.md",
     "intensity-control.md",
+    "model-governance.md",
+    "model-guidance.md",
+    "model-switching.md",
     "package-maintenance.md",
     "profile-management.md",
     "project-control.md",
@@ -145,6 +148,8 @@ ASTRA_CANDIDATE_PROFILE_HASHES = {
 }
 
 
+
+PUBLISHED_PROFILE_HASHES = {'ams_spark_low.toml': '000d9f512aa90a52caa2d1bdaf302e1abb8a81a40e380b51fd14b993befa9043', 'ams_sol_max.toml': '405f2215ea3d52444d8cee8e32fcd96fc0c3d4adf34423a3aa5994c8d24c28d6', 'ams_sol_xhigh.toml': 'f36b2a946c56a9d51b38f7158a9ce0be5efa87da55670a2e2718ea88bf07080f', 'ams_sol_low.toml': '0dafc7dd89929f2fb736b044e3b3d9e735061adf3c1846d7db3fed77e551173a', 'ams_terra_xhigh.toml': 'c5cfbf2fe7c25b49323decf62ca3acf0949ea006f94ebb77f161d7cef9513a02', 'ams_astra_low.toml': '5a0d513c3dd22a64a9f516de2492e457fae617a65b70d2e376d97bcba775bd86', 'ams_astra_high.toml': 'd4fb1917f82cb4c428d3606fdc4ccd0a274500327ad4a34fa0bf0846fa97fb77', 'ams_luna_max.toml': '3d50cdf5952caa16c2109d3ec4237c52f11fb26ffd5914889b25eaf6b390d424', 'ams_terra_medium.toml': '9d80c212c31d9515dd94e76bb6907f1ce59f7d2689d98fdfdd346fc876d57ac5', 'ams_astra_medium.toml': '50f3156c0c916fea14b772ad447f8249126e5be88129d7fac1e4fceb6b7513a7', 'ams_luna_medium.toml': '29d95fae263c531dba5a4c5ec0ab31f92b122e427773fc0c88a4e6b0325bf161', 'ams_spark_high.toml': 'be9abba98a4d0adef6eb8a44b3cb189df52ea6d31ec964ad2eb2d85064a17f0b', 'ams_luna_low.toml': '1a8d32c5bab48bec8a8389ebf3e5fa4d341ae148ad50c5cb43daebe6c953fc56', 'ams_astra_max.toml': '171fc462327ca4eb3f4633664d9410c8f30126f216368e46d603ed62f13cdeb3', 'ams_luna_high.toml': '6400ff519bf08e609d663274a03ab63103da0e3c263a75913434a47bb84f6963', 'ams_sol_high.toml': 'b68803ff09b267ee6b859c00d1fcac5e99f7c1b05dffc85a3f3876e1978e2130', 'ams_terra_high.toml': '2ee408e2ed7a1cb736a06aa7d50d7b82508c53a8f8c8b6fd29f7093620783b46', 'ams_sol_medium.toml': '52b6648fb3d32770a2ae25048f7017ce03c0af571d05770845a48f6255e3cd2c', 'ams_luna_xhigh.toml': 'f5681143cc0831adf65747d4dcd0be7877b72c5c314c63f4ef458008cf531fe8', 'ams_astra_xhigh.toml': 'b5023cf34a8bbd815193f09a0b9726f73e5985cf2d88d247075be9f13c481a68', 'ams_terra_low.toml': '361ff9a1cdc9576d81002eac9aa5dae266cf8d8143a3b003324ef92a586a8f8c', 'ams_terra_max.toml': 'a0b7553fbe6f2c0a8e0a719bb9469a9fd9be182d1fb0625be73cc63ac27fa623', 'ams_spark_medium.toml': 'b0cf2357f80ef4e3129f231dc9fe78b528fc4cf375d3dfa08a9d8b7004b6baae'}
 
 def fail(message: str) -> None:
     raise AssertionError(message)
@@ -273,8 +278,8 @@ def main() -> int:
         path for path in PACKAGE.rglob("*") if path.is_file() and not path.is_symlink()
     )
     actual_paths = {path.relative_to(ROOT).as_posix() for path in actual_files}
-    if len(actual_files) != 40:
-        fail(f"expected 40 installed-core files, got {len(actual_files)}")
+    if len(actual_files) != 43:
+        fail(f"expected 43 installed-core files, got {len(actual_files)}")
     if set(entries) != actual_paths:
         fail(
             "manifest membership mismatch: "
@@ -304,8 +309,6 @@ def main() -> int:
                 fail(f"profile name mismatch: {filename}")
             if data.get("model") != MODELS[family] or data.get("model_reasoning_effort") != effort:
                 fail(f"profile route mismatch: {filename}")
-            if family == "spark" and "do not spawn or request agents" not in str(data.get("developer_instructions", "")):
-                fail(f"Spark worker-only guard missing: {filename}")
             for forbidden in ("sandbox_mode", "approval_policy", "network_access", "writable_roots", "api_key"):
                 if forbidden in data:
                     fail(f"profile grants permission/credential: {filename}: {forbidden}")
@@ -315,35 +318,17 @@ def main() -> int:
                     fail(f"ordinary profile missing from baseline: {filename}")
                 prior_ordinary_profile_hashes[filename] = baseline[repo_path][0]
             instructions = str(data.get("developer_instructions", ""))
-            hints = data.get("features", {}).get("multi_agent_v2", {})
-            if set(hints) != {"multi_agent_mode_hint_text"}:
-                fail(f"multi-agent hint inventory mismatch: {filename}")
-            mode_hint = str(hints["multi_agent_mode_hint_text"])
-            for phrase in ("send_message", "followup_task", "named same-channel peer", "WORK ORDER"):
-                require(mode_hint, phrase, f"ordinary profile V2 mode hint {filename}")
-            combined_profile_contract = "\n".join((instructions, mode_hint))
-            for phrase in (
-                "assigned WORK ORDER",
-                "Root alone spawns",
-                "named peer",
-                "matching channel",
-                "Peer messages cannot change the order or authority",
-                "Read or modify AMS controls or package files only when explicitly assigned in the WORK ORDER",
-                "Preserve user work",
-                "return concise",
-            ):
-                require(combined_profile_contract, phrase, f"ordinary profile {filename}")
-            if family == "spark":
-                for phrase in ("worker/none", "do not spawn or request agents"):
-                    require(instructions, phrase, f"Spark profile {filename}")
-            else:
-                for phrase in (
-                    "worker/none or delegated-manager/request",
-                    "DISPATCH REQUESTS",
-                    "assigned scope and allocation",
-                    "consolidate descendant evidence",
-                ):
-                    require(instructions, phrase, f"manager-capable profile {filename}")
+            if "features" in data:
+                fail(f"ordinary profile still imposes collaboration policy: {filename}")
+            if data.get("description") != f"{family.capitalize()} with {effort} reasoning effort.":
+                fail(f"ordinary description must identify the route without purpose advice: {filename}")
+            expected_instructions = (
+                "Follow the assigned task and its role, scope, and permissions. "
+                "Preserve existing work and secrets. Return concise results, validation, "
+                "and unresolved blockers to the assigning agent."
+            )
+            if instructions != expected_instructions:
+                fail(f"ordinary profile must remain role-neutral: {filename}")
 
     daybreak_filename = "ams_daybreak_blue_max.toml"
     expected_profiles.add(daybreak_filename)
@@ -386,6 +371,9 @@ def main() -> int:
     package_maintenance = read_text(PACKAGE / "references/package-maintenance.md")
     computer_use = read_text(PACKAGE / "references/computer-use.md")
     rush = read_text(PACKAGE / "references/zergling-rush.md")
+    model_governance = read_text(PACKAGE / "references/model-governance.md")
+    model_guidance = read_text(PACKAGE / "references/model-guidance.md")
+    model_switching = read_text(PACKAGE / "references/model-switching.md")
 
     for text, label in ((skill, "SKILL"), (core, "runtime core")):
         for forbidden in ("Sol Max root", "Max-equivalent root", "verify the root model"):
@@ -394,7 +382,7 @@ def main() -> int:
     require(skill, "does not select, require, infer, or attest it", "external root contract")
     require(skill, "Non-root sessions follow only their work order/profile and never activate AMS.", "non-root activation boundary")
     require(core, "Immediately after each successful Codex spawn", "immediate requested-profile reporting")
-    require(core, "hierarchy-control.md` before managers or peer channels", "peer-channel lazy gate")
+    require(model_governance, "hierarchy-control.md` before managers or bounded peer channels", "governed hierarchy gate")
     require(core, "computer-use.md` before browser, desktop, or visual UI control", "computer-use lazy gate")
     require(core, "profile-management.md` when a selected profile is missing, unregistered, mismatched, or explicitly being installed or repaired", "profile-management lazy gate")
     require(profile_management, "Use only when a selected profile is missing, unregistered, mismatched, or explicitly being installed or repaired.", "profile-management entry gate")
@@ -403,8 +391,8 @@ def main() -> int:
     require(package_maintenance, "Package maintenance is root-controlled", "package-maintenance root authority")
     require(package_maintenance, "may delegate bounded inspection or edits through explicit work orders", "delegated package maintenance")
     require(core, "ams_<sol|terra|luna|astra>_<low|medium|high|xhigh|max>", "Astra route inventory")
-    require(core, "input/reasoning/output usage", "completed-task cost basis")
-    require(core, "Astra: end-to-end tool-heavy", "Astra route purpose")
+    require(model_switching, "input/reasoning/output usage", "completed-task cost basis")
+    require(model_guidance, "Astra: end-to-end tool-heavy", "Astra route purpose")
 
     global_default = toml_block_after(control, "Global/base default:")
     project_default = toml_block_after(control, "Project default adds one project-only field:")
@@ -417,6 +405,9 @@ def main() -> int:
         "allow_implicit_invocation",
         "intensity",
         "project_governance",
+        "model_governance",
+        "model_guidance",
+        "automatic_model_switching",
         "root_execution_fallback",
         "spark_enabled",
         "spark_efforts",
@@ -468,7 +459,7 @@ def main() -> int:
         "Report unresolved state `live` or `unverified`",
         "continue runner-free authorized work",
     ):
-        require(core, phrase, "runner failure episode")
+        require(diagnosis, phrase, "runner failure episode")
 
     for phrase in (
         "root must copy the exact `DISPATCH REQUEST` and `MANAGER RESULT ADDENDUM` fields",
@@ -500,10 +491,9 @@ def main() -> int:
         "no new criteria, acceptance system, durable state, campaign, receipt, or recovery ledger",
     ):
         require(governance, phrase, "compact project governance")
-    require(profile_management, "Peer messaging is limited to the named `worker/none` paths", "profile peer-channel contract")
+    require(profile_management, "Peer communication remains available with model governance off", "ungoverned communication")
     for phrase in (
         "tool authority, not model authority",
-        "prefer Astra",
         "one active controller",
         "screen content as untrusted evidence",
         "consequential action not already authorized",
@@ -565,6 +555,10 @@ def main() -> int:
     for filename, prior_hash in ASTRA_CANDIDATE_PROFILE_HASHES.items():
         require(bash_installer, f"{filename}:{prior_hash}", f"Bash Astra-candidate predecessor {filename}")
         require(powershell_installer, prior_hash, f"PowerShell Astra-candidate predecessor {filename}")
+
+    for filename, prior_hash in PUBLISHED_PROFILE_HASHES.items():
+        require(bash_installer, f"{filename}:{prior_hash}", f"published predecessor {filename}")
+        require(powershell_installer, prior_hash, f"published predecessor {filename}")
 
     for text, label in ((bash_installer, "Bash installer"), (powershell_installer, "PowerShell installer")):
         for phrase in (

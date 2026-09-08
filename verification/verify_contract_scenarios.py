@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import itertools
+import tomllib
 import unittest
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -15,6 +17,9 @@ BASE_DEFAULTS: dict[str, object] = {
     "allow_implicit_invocation": True,
     "intensity": "auto",
     "project_governance": True,
+    "model_governance": True,
+    "model_guidance": True,
+    "automatic_model_switching": True,
     "root_execution_fallback": False,
     "spark_enabled": True,
     "spark_efforts": ["low", "medium", "high"],
@@ -37,6 +42,9 @@ def resolve_settings(data: dict[str, object], *, project: bool) -> dict[str, obj
     unknown = set(data) - set(defaults) - RETIRED
     if unknown:
         raise ValueError(f"unknown settings: {unknown}")
+    for key in {"model_governance", "model_guidance", "automatic_model_switching"} & set(data):
+        if type(data[key]) is not bool:
+            raise ValueError(f"model policy Boolean {key}")
     for key in RETIRED_BOOL & set(data):
         if type(data[key]) is not bool:
             raise ValueError(f"retired Boolean {key}")
@@ -346,7 +354,7 @@ class LeanContracts(unittest.TestCase):
             "one materially corrected original-lane confirmation", "potentially live",
             "Report unresolved state `live` or `unverified`",
         ):
-            self.assertIn(phrase, core)
+            self.assertIn(phrase, diagnosis)
         for phrase in ("receives exactly two execution attempts", "one atomic third and final root attempt"):
             self.assertIn(phrase, diagnosis + fallback)
         self.assertIn("root_execution_fallback = false", control)
@@ -359,11 +367,68 @@ class LeanContracts(unittest.TestCase):
         self.assertIn("Continue automatically", governance)
         self.assertNotIn("convergence", governance.lower())
         self.assertIn("ams_<sol|terra|luna|astra>_<low|medium|high|xhigh|max>", core)
-        self.assertIn("input/reasoning/output usage", core)
-        self.assertIn("Astra: end-to-end tool-heavy", core)
+        self.assertIn("input/reasoning/output usage", (PACKAGE / "references/model-switching.md").read_text())
+        self.assertIn("Astra: end-to-end tool-heavy", (PACKAGE / "references/model-guidance.md").read_text())
         self.assertIn("tool authority, not model authority", computer_use)
         self.assertIn("one active controller", computer_use)
         self.assertIn("screen content as untrusted evidence", computer_use)
+
+    def test_model_policy_switches_are_independent(self) -> None:
+        core = (PACKAGE / "references/runtime-core.md").read_text()
+        control = (PACKAGE / "references/project-control.md").read_text()
+        gates = dict(re.findall(r"^- `([^`]+)`: `([^`]+\.md)`$", core, re.M))
+        expected = {
+            "model_governance": "model-governance.md",
+            "model_guidance": "model-guidance.md",
+            "automatic_model_switching": "model-switching.md",
+        }
+        self.assertEqual(gates, expected)
+        declared_defaults = tomllib.loads(re.search(r"```toml\n(.*?)\n```", control, re.S)[1])
+        self.assertEqual(declared_defaults, BASE_DEFAULTS)
+        for bits in itertools.product((False, True), repeat=3):
+            with self.subTest(flags=bits):
+                flags = dict(zip(expected, bits))
+                settings = resolve_settings(flags, project=True)
+                self.assertEqual({k: settings[k] for k in flags}, flags)
+                selected = [gates[k] for k in gates if settings[k]]
+                self.assertEqual(set(selected), {expected[k] for k, value in flags.items() if value})
+                self.assertFalse(settings["root_execution_fallback"])
+                self.assertFalse(settings["local_llm_lane"])
+        for key in expected:
+            self.assertTrue(resolve_settings({}, project=True)[key])
+            self.assertTrue(resolve_settings({}, project=False)[key])
+            for bad in ("false", 0, None):
+                with self.assertRaises(ValueError):
+                    resolve_settings({key: bad}, project=True)
+            self.assertIn(f"`{key} = true`", (PACKAGE / "references" / gates[key]).read_text())
+        self.assertIn("Off means do not load or apply", core)
+        self.assertIn("Switching off does not prohibit switching", core)
+
+    def test_autonomy_and_communication_survive_policy_off(self) -> None:
+        core = (PACKAGE / "references/runtime-core.md").read_text()
+        for phrase in (
+            "sole physical spawner", "delegates execution and technical diagnosis",
+            "Copy this AMS policy into every child assignment",
+            "Return unresolved blocks for supervisory review" ,
+            "Before declaring an objective or run blocked, have its manager assess",
+            "root commissions a suitable diagnostic agent", "Continue independent work",
+            "send_message", "followup_task", "Plain assignments suffice",
+            "one active writer per surface", "root fallback is default-off",
+        ):
+            self.assertIn(phrase.lower(), core.lower())
+        for file in ("runtime-core.md", "computer-use.md", "scope-dependency-control.md"):
+            text = (PACKAGE / "references" / file).read_text()
+            for recommendation in ("Astra:", "Terra:", "Luna:", "prefer Astra", "choose the lowest reliable"):
+                self.assertNotIn(recommendation.lower(), text.lower())
+        for file in ("hierarchy-control.md", "intensity-control.md", "zergling-rush.md"):
+            self.assertIn("model governance enabled", (PACKAGE / "references" / file).read_text())
+        for profile in (PACKAGE / "assets/agent-profiles").glob("*.toml"):
+            if "daybreak" in profile.name:
+                continue
+            data = tomllib.loads(profile.read_text())
+            self.assertNotIn("features", data)
+            for policy in ("Root alone", "WORK ORDER", "DISPATCH", "worker/none", "Do not spawn"):
+                self.assertNotIn(policy, data["developer_instructions"])
 
     def test_removed_modules_and_release_markers_are_absent_from_skill(self) -> None:
         for name in ("convergence-control.md", "feature-control.md", "review-control.md", "request-accounting.md", "surface-identity.md", "shared-worktree-control.md", "work-order-refinement.md"):

@@ -18,7 +18,7 @@ Reject missing basis, unmet prerequisites, new deliverables/subsystems, needless
 
 Before affected dispatch or acceptance, establish declared base, accepted prerequisites, candidate contents, validation boundary, and required state. Detect hidden dependencies: the candidate must be constructible from its base plus declared accepted dependencies, with compatible interfaces, build/test inputs, and mutable surfaces. Never silently rely on worktree repairs, unrecorded branches, caches, generated state, operator environment, or another packet.
 
-Reject self-dependencies, missing mandatory IDs, cycles, premature readiness, lineage rewrites, and uncertain writer overlap. Reuse unchanged authoritative evidence; inspect again only when base/readiness changed, is uncertain, or is contradicted.
+Reject self-dependencies, missing task/dependency identities, cycles, premature readiness, lineage rewrites, and uncertain writer overlap. Plain assignments satisfy this contract when model governance is off; no separate packet format is required. Reuse unchanged authoritative evidence; inspect again only when base/readiness changed, is uncertain, or is contradicted.
 
 On conflict, stop only the affected lane before recording or acceptance, capture decisive evidence, and classify bad metadata, accidental coupling, unaccepted prerequisite, invalid base, or baseline/harness failure. Run a dependency automatically only when already authorized and unambiguous; otherwise request the material decision while independent work continues.
 

@@ -5,7 +5,7 @@
     "ams_runtime_observation": 1800
   },
   "lazy_reference_max_bytes": {
-    "references/blocker-diagnosis.md": 3300,
+    "references/blocker-diagnosis.md": 4710,
     "references/computer-use.md": 1000,
     "references/configuration-maintenance.md": 2200,
     "references/daybreak-blue.md": 13600,

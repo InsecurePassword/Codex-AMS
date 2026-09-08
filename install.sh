@@ -37,6 +37,9 @@ required_files=(
   references/daybreak-blue.md
   references/hierarchy-control.md
   references/intensity-control.md
+  references/model-governance.md
+  references/model-guidance.md
+  references/model-switching.md
   references/package-maintenance.md
   references/profile-management.md
   references/project-control.md
@@ -76,6 +79,29 @@ sha256_file() {
 
 is_authorized_prior_profile() {
   case "$1:$2" in
+    "ams_astra_high.toml:d4fb1917f82cb4c428d3606fdc4ccd0a274500327ad4a34fa0bf0846fa97fb77"|\
+    "ams_astra_low.toml:5a0d513c3dd22a64a9f516de2492e457fae617a65b70d2e376d97bcba775bd86"|\
+    "ams_astra_max.toml:171fc462327ca4eb3f4633664d9410c8f30126f216368e46d603ed62f13cdeb3"|\
+    "ams_astra_medium.toml:50f3156c0c916fea14b772ad447f8249126e5be88129d7fac1e4fceb6b7513a7"|\
+    "ams_astra_xhigh.toml:b5023cf34a8bbd815193f09a0b9726f73e5985cf2d88d247075be9f13c481a68"|\
+    "ams_luna_high.toml:6400ff519bf08e609d663274a03ab63103da0e3c263a75913434a47bb84f6963"|\
+    "ams_luna_low.toml:1a8d32c5bab48bec8a8389ebf3e5fa4d341ae148ad50c5cb43daebe6c953fc56"|\
+    "ams_luna_max.toml:3d50cdf5952caa16c2109d3ec4237c52f11fb26ffd5914889b25eaf6b390d424"|\
+    "ams_luna_medium.toml:29d95fae263c531dba5a4c5ec0ab31f92b122e427773fc0c88a4e6b0325bf161"|\
+    "ams_luna_xhigh.toml:f5681143cc0831adf65747d4dcd0be7877b72c5c314c63f4ef458008cf531fe8"|\
+    "ams_sol_high.toml:b68803ff09b267ee6b859c00d1fcac5e99f7c1b05dffc85a3f3876e1978e2130"|\
+    "ams_sol_low.toml:0dafc7dd89929f2fb736b044e3b3d9e735061adf3c1846d7db3fed77e551173a"|\
+    "ams_sol_max.toml:405f2215ea3d52444d8cee8e32fcd96fc0c3d4adf34423a3aa5994c8d24c28d6"|\
+    "ams_sol_medium.toml:52b6648fb3d32770a2ae25048f7017ce03c0af571d05770845a48f6255e3cd2c"|\
+    "ams_sol_xhigh.toml:f36b2a946c56a9d51b38f7158a9ce0be5efa87da55670a2e2718ea88bf07080f"|\
+    "ams_spark_high.toml:be9abba98a4d0adef6eb8a44b3cb189df52ea6d31ec964ad2eb2d85064a17f0b"|\
+    "ams_spark_low.toml:000d9f512aa90a52caa2d1bdaf302e1abb8a81a40e380b51fd14b993befa9043"|\
+    "ams_spark_medium.toml:b0cf2357f80ef4e3129f231dc9fe78b528fc4cf375d3dfa08a9d8b7004b6baae"|\
+    "ams_terra_high.toml:2ee408e2ed7a1cb736a06aa7d50d7b82508c53a8f8c8b6fd29f7093620783b46"|\
+    "ams_terra_low.toml:361ff9a1cdc9576d81002eac9aa5dae266cf8d8143a3b003324ef92a586a8f8c"|\
+    "ams_terra_max.toml:a0b7553fbe6f2c0a8e0a719bb9469a9fd9be182d1fb0625be73cc63ac27fa623"|\
+    "ams_terra_medium.toml:9d80c212c31d9515dd94e76bb6907f1ce59f7d2689d98fdfdd346fc876d57ac5"|\
+    "ams_terra_xhigh.toml:c5cfbf2fe7c25b49323decf62ca3acf0949ea006f94ebb77f161d7cef9513a02"|\
     "ams_luna_high.toml:f727d164f9517f5d654bf8d6192b4db39a1f7a5a67473793daf755c2bbe2abee"|\
     "ams_luna_high.toml:22cd43c99ba332d8e5902f1ee96a9f8c481a21bd9c3b108f2ee6ecdaaf50f986"|\
     "ams_luna_high.toml:f7a8bd41fb963aa79319bbe4ad9531204568d6a212013f1116029ddca9d805d6"|\

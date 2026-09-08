@@ -20,7 +20,10 @@ SCENARIOS = {
     "active_governance": ["SKILL.md", "references/project-control.md", "references/runtime-core.md", "references/scope-dependency-control.md", "references/project-governance.md"],
 }
 
+MODEL_POLICIES = ["references/model-governance.md", "references/model-guidance.md", "references/model-switching.md"]
+
 LAZY_REFERENCES = [
+    *MODEL_POLICIES,
     "references/blocker-diagnosis.md",
     "references/configuration-maintenance.md",
     "references/computer-use.md",
@@ -67,18 +70,19 @@ def baseline_scenarios() -> tuple[str, dict[str, int]]:
     return str(baseline["baseline"]), old
 
 
-def build_report() -> dict[str, object]:
+def build_report(model_policies: bool = True) -> dict[str, object]:
     source, baseline = baseline_scenarios()
-    scenarios = {name: metrics([PACKAGE / path for path in paths]) for name, paths in SCENARIOS.items()}
+    scenarios = {name: metrics([PACKAGE / path for path in paths + (MODEL_POLICIES if model_policies and name != "bootstrap_skill" else [])]) for name, paths in SCENARIOS.items()}
     for name, item in scenarios.items():
         item["baseline_bytes"] = baseline[name]
         item["delta_bytes"] = int(item["bytes"]) - baseline[name]
     return {
         "measurement": "UTF-8 bytes with offline token estimates only",
         "comparison_baseline": source,
+        "model_policies": "on" if model_policies else "off",
         "boundary": {
             "bootstrap_skill": "always-loaded SKILL.md",
-            "active_core": "SKILL + project control + runtime core + mandatory scope/dependency control",
+            "active_core": "SKILL + project control + runtime core + scope/dependency control + selected model policies",
             "active_governance": "active core + compact project governance",
             "lazy_references": "incremental only when selected",
             "companions": "separate skills excluded from core manifest",
@@ -115,8 +119,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--model-policies", choices=("on", "off"), default="on")
     args = parser.parse_args()
-    report = build_report()
+    report = build_report(args.model_policies == "on")
     problems = check_budget(report) if args.check else []
     report["budget_check"] = {"passed": not problems, "problems": problems}
     if args.json:

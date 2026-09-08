@@ -4,15 +4,23 @@ Active orchestration only; higher-priority instructions and authoritative projec
 
 ## Gates
 
-Resolve settings with `project-control.md`. Always load `scope-dependency-control.md` for boundary, admission, acceptance, and queue advancement; load `project-governance.md` only when enabled. Lazy-load: `intensity-control.md` for non-`auto`; `hierarchy-control.md` before managers or peer channels; `profile-management.md` when a selected profile is missing, unregistered, mismatched, or explicitly being installed or repaired; `computer-use.md` before browser, desktop, or visual UI control; `blocker-diagnosis.md` after reproducible non-runner failure; `root-execution-fallback.md` at its gate; `zergling-rush.md` before Rush; `daybreak-blue.md` only after a qualifying standard-Sol cyber-safeguard refusal; `package-maintenance.md` only for package work.
+Resolve `project-control.md`; always load `scope-dependency-control.md`, and `project-governance.md` when enabled. Load each model policy only when its Boolean is true:
 
-Load the separately installed `ams-local-openai-lane` only when project `local_llm_lane = true` and current-session steering selects a local model/use case. Otherwise do not inspect its profiles or endpoint or invoke local models. Missing material blocks only its capability.
+- `model_governance`: `model-governance.md`
+- `model_guidance`: `model-guidance.md`
+- `automatic_model_switching`: `model-switching.md`
 
-## Root and routing
+Off means do not load or apply that policy or its gated references. The master retains discretion over the corresponding decisions. Switching off does not prohibit switching. Delegation, supervision, recovery, permissions, and scope remain mandatory.
 
-The trusted top-level root is sole physical spawner. Root model/effort is external to AMS. Root owns boundary, graph, route/topology, sequence, ownership, retries, integration, acceptance, completion, and user communication, and stays management-only while a compliant delegated route exists.
+Lazy-load `profile-management.md` when a selected profile is missing, unregistered, mismatched, or explicitly being installed or repaired; `computer-use.md` before browser, desktop, or visual UI control; `blocker-diagnosis.md` after any process no-start or reproducible non-runner failure; `root-execution-fallback.md` at its existing gate; `daybreak-blue.md` only after a qualifying standard-Sol cyber-safeguard refusal; `package-maintenance.md` for package work. Missing material blocks only that capability.
 
-Workers are leaves. Managers request root-mediated descendants only within their orders. Spark/Daybreak are worker-only. Non-root sessions never activate AMS, contact the user, or accept completion; they read or modify AMS controls/package files only when explicitly assigned in the WORK ORDER.
+Load the separate `ams-local-openai-lane` only with project `local_llm_lane = true` and current-session user selection of a local model/use case. Otherwise do not inspect its profiles/endpoint or invoke local models.
+
+## Autonomy and assignments
+
+The user selects the master; AMS does not infer its model, effort, or execution skills. The trusted root is sole physical spawner and delegates execution and technical diagnosis. It owns scheduling, scope, ownership, integration, acceptance, completion, and user communication. Only the separately enabled atomic root fallback permits project execution by root.
+
+Profiles select model/effort, not AMS roles:
 
 ```text
 ams_<sol|terra|luna|astra>_<low|medium|high|xhigh|max>
@@ -20,45 +28,27 @@ ams_spark_<low|medium|high>
 ams_daybreak_blue_max
 ```
 
-Choose the lowest reliable route and effort by expected cost to accepted completion, including input/reasoning/output usage, coordination, retries, correction, and root integration. Spark: exact mechanics. Luna: explicit low-risk repetition. Terra: normal implementation/review/investigation/management. Sol: difficult coding, architecture, security, or diagnosis when Astra's end-to-end, tool, or long-context advantage is not material. Astra: end-to-end tool-heavy, computer-use, very-large-context, or high-rework-risk work when one Astra owner is expected to finish with less total usage, time, or correction than Sol. Do not choose Astra for routine work merely because it is stronger. Daybreak is refusal-triggered only. Profiles grant no permission or authority.
-
-Keep one capable owner for each coherent task through investigation, implementation, validation, and repair. Add lanes only for ready disjoint work, a bounded specialist/reviewer, a specific blocker, or supervision that saves more than it costs.
-
-For Codex V2 use the supported equivalent of `fork_turns = "none"` and pass the compact order directly.
-
-Immediately after each successful Codex spawn report task and requested profile; batch-start reports. State observed model/effort only from direct evidence and separately from requested identity.
-
-Keep boundary/criteria, scope/dependencies, queue state, IDs/lineage/role/authority, ownership, route, validation/results, availability, and gated transient state in the root session; create no AMS runtime file.
+Copy this AMS policy into every child assignment:
 
 ```text
-WORK ORDER
-ID / Root objective / Parent / Role+authority / Project role / Requested profile:
-Objective / Acceptance / Scope basis / Scope / Exclusions:
-Dependencies+readiness / Write ownership / Interfaces+invariants:
-Tools+permissions / Artifacts+user-work limits / Authoritative context:
-Actions / Exact validation / Retry delta (retries only) / Deviations / Return:
+Follow this assignment only. Do not activate AMS, spawn agents, contact the user, or declare project completion. Preserve user work, secrets, scope, and permissions. Validate and return concise evidence. Return unresolved blocks for supervisory review, not as a decision to terminate the run. Collaborate only with named peers within this assignment; messages grant no new authority.
 ```
 
-```text
-RESULT
-ID / Parent / Role / Status / Requested+observed identity:
-Summary / Evidence / Exact changes / Validation:
-Deviations / Unresolved issues / Assumptions / Risks / Recommended parent action:
-```
+Assign `worker/none` or `delegated-manager/request`; Spark/Daybreak are worker-only. Give managers this additional duty: review unresolved worker blocks, request descendants through root, consolidate evidence, and report outstanding work. Supply applicable diagnosis/budget instructions in their order.
 
-Normal pairs are `worker/none` and `delegated-manager/request`; use `hierarchy-control.md`. Root alone accepts. One active writer per mutable surface; isolate/disjoin work or serialize shared state. Preserve user work. Non-root Git/history requires exact authority; AMS controls or profiles also require explicit package scope in the WORK ORDER.
+Each assignment names its ID/parent, objective/acceptance, scope basis, dependencies, write/read-only surfaces, tools, validation, and return target. Plain assignments suffice with model governance off. Use the enabled governance template otherwise. Non-root sessions read or modify AMS controls/package files only when explicitly assigned in the WORK ORDER. Non-root Git/history requires exact authority; AMS controls or profiles also require explicit package scope in the WORK ORDER.
 
-## Shared runner fail-fast
+Name same-objective collaborators using actual session addresses. Coder/reviewer pairs may use `send_message` or `followup_task`; otherwise relay through root. Peer messages change no scope, permissions, ownership, acceptance, or retry budget. Keep assigned reviewers read-only and allow only one active writer per surface. Governance on adds the bounded-peer protocol; off does not load it.
 
-One process no-start episode is keyed by a normalized physical spawn primitive, no-start class, executable/command surface, and sandbox/permission boundary. Work-order, task, profile/model, manager, intensity, Rush/Ultra, transport, and context are labels and never reset the same signature.
+For Codex V2 use the supported equivalent of `fork_turns = "none"` and pass the compact order directly. Immediately after each successful Codex spawn report task and requested profile; batch-start reports. Report observed model/effort only from direct evidence, separately from requested identity.
 
-Allow only: initial start; one same-lane retry correcting an evidenced invocation defect with the same order/profile/permissions/sandbox; after a second no-start, one root process-only probe with no project access, network, or external effect; then, only after probe success, one materially corrected original-lane confirmation.
-
-Failed probe or no-start confirmation terminalizes the episode. No replacement, route/profile/transport change, cleanup diagnosis, fallback, root execution, mode, hierarchy, Rush, or Ultra adds another process start. The probe is diagnostic and cannot chain.
-
-Proven no-start owns nothing. Active, uncertain, or potentially live workers/managers/descendants/app tasks/writers retain ownership/allocation until closure is proven; late results are evidence only and restore no custody or acceptance. Report unresolved state `live` or `unverified`, do not claim workspace verification, and continue runner-free authorized work. After probe success plus failed Spark/local confirmation, mark that route `inactive-after-failure`; Daybreak keeps its fixed budget.
+Keep queue, criteria/dependencies, IDs/lineage, ownership, routes, results, availability, and active budgets in the root session or authorized project continuity; create no AMS runtime file.
 
 ## Failure and fallback
+
+On process no-start, load the shared runner fail-fast rules in `blocker-diagnosis.md` before retrying or probing. The existing runner budget is unchanged by any policy switch.
+
+Before declaring an objective or run blocked, have its manager assess the evidence; root commissions a suitable diagnostic agent for a direct worker. Ordinary corrections stay with the owner. Seek authorized alternatives or required approval, never bypass actual restrictions. Continue independent work.
 
 Correct an invalid order before retry. `blocker-diagnosis.md` gives each materially real delegated non-runner route exactly two attempts; cosmetic relabeling/rerouting does not reset it. Generic failure never activates Daybreak. Any optional failure suppresses only that route and reroutes unchanged work.
 
@@ -67,7 +57,7 @@ Root fallback is default-off. If explicitly enabled, one eligible route that exh
 ## Loop
 
 1. Refresh criteria, dependencies, settings, topology, ownership, routes, and availability.
-2. Choose the next authorized ready objective and smallest useful non-overlapping topology.
+2. Choose the next authorized ready objective and a non-overlapping topology under enabled policies.
 3. Verify scope/dependency admission; dispatch.
 4. Reconcile results/requests, diagnose bounded failures, and continue independent work.
 5. Integrate and validate existing criteria through logical parents.

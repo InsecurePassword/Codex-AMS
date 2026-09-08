@@ -1,6 +1,6 @@
 # AMS logical hierarchy control
 
-Load before manager behavior, peer channels, descendant requests/results, or custody changes. If unavailable, flatten safely to direct workers or block that hierarchy; never improvise it.
+Load only with model governance enabled, before manager behavior, bounded peer channels, descendant requests/results, or custody changes. If unavailable, flatten safely to direct workers or block that hierarchy; never improvise it.
 
 ## Manager authority
 

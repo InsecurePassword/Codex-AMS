@@ -42,7 +42,7 @@ The direct installer deploys the core skill and all 24 profiles. Neither method 
 ## Runtime model
 
 - The root is a management lane while a compliant delegated route exists.
-- Workers are leaves; managers request root-mediated descendants. Two explicitly paired root-spawned workers may exchange bounded evidence directly while the root receives terminal status and one final synthesis.
+- Workers are leaves; managers request root-mediated descendants. Assigned same-objective collaborators may exchange scoped evidence directly while the root receives terminal status and one final synthesis.
 - One active writer owns each mutable surface.
 - Every work order has an explicit scope basis and dependency readiness.
 - Completing one bounded objective advances the next authorized objective; it does not stop the automation run.
@@ -56,7 +56,7 @@ The direct installer deploys the core skill and all 24 profiles. Neither method 
 
 ### Bounded peer channels
 
-When two direct `worker/none` sessions must collaborate, the root may name one bounded peer channel in both work orders and provide canonical absolute task paths such as `/root/sol_lead` and `/root/luna_worker`. The peers may use Codex direct messaging for in-scope questions, evidence, and corrections. Peer traffic cannot change scope, dependencies, permissions, ownership, criteria, retry budgets, or authority; a lead remains a worker. The member returns a short terminal stub, the lead returns one final synthesis, and the root alone accepts completion. If direct messaging is unavailable, normal root relay remains valid.
+With model governance enabled, when two direct `worker/none` sessions must collaborate, the root may name one bounded peer channel in both work orders and provide canonical absolute task paths such as `/root/sol_lead` and `/root/luna_worker`. The peers may use Codex direct messaging for in-scope questions, evidence, and corrections. Peer traffic cannot change scope, dependencies, permissions, ownership, criteria, retry budgets, or authority; a lead remains a worker. The member returns a short terminal stub, the lead returns one final synthesis, and the root alone accepts completion. If direct messaging is unavailable, normal root relay remains valid.
 
 ### Astra and computer use
 
@@ -71,6 +71,9 @@ enabled = false
 allow_implicit_invocation = true
 intensity = "auto"
 project_governance = true
+model_governance = true
+model_guidance = true
+automatic_model_switching = true
 root_execution_fallback = false
 spark_enabled = true
 spark_efforts = ["low", "medium", "high"]
@@ -121,3 +124,21 @@ The local lane consumes stable prebuilt/tested project profiles and never develo
 - PowerShell 5.1+ on Windows or Bash plus standard utilities listed in [INSTALLATION.md](INSTALLATION.md);
 - Python 3.11+ only for repository verification and the optional local/runtime-observation helpers;
 - approved Daybreak access on the exact internal product surface and boundary only when the optional Daybreak fallback is used.
+
+## Optional model policies
+
+The user-selected master still delegates execution and technical diagnosis, supervises unresolved blockers, and continues independent authorized work. It never guesses its own model or execution skills. These autonomy rules do not switch off.
+
+Three independent Booleans default to true for existing installations:
+
+| Setting | Loaded policy | Off |
+|---|---|---|
+| `model_governance` | `references/model-governance.md` | Master chooses team organization without AMS intensity, allocation, or packet prescriptions. |
+| `model_guidance` | `references/model-guidance.md` | No AMS model-purpose or effort advice is supplied. |
+| `automatic_model_switching` | `references/model-switching.md` | Master chooses/reconsiders routes freely, without AMS switching heuristics. |
+
+Use `AMS MODEL GOVERNANCE on|off`, `AMS MODEL GUIDANCE on|off`, and `AMS MODEL SWITCHING on|off`. `AMS GOVERNANCE` remains the separate project-governance control. Settings never authorize more permissions, activate local endpoints or Daybreak, or enable root fallback.
+
+For native model judgment inside AMS, set the three fields false in the project settings and start a fresh root and fresh agents. This preserves delegation, manager assessment of unresolved blockers, existing failure budgets, scope/validation, and direct coder/reviewer messaging. It is not the same as running without AMS. Turning switching off does not prohibit switching.
+
+Ordinary profiles now contain only model/effort metadata and general task instructions. AMS role and communication rules are supplied with assignments, not permanently imposed on Sol or another family. The existing bounded two-worker peer protocol remains available when model governance is on; off uses named same-objective collaborators without the peer packet.

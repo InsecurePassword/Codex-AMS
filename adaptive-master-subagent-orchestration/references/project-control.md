@@ -17,6 +17,9 @@ enabled = false
 allow_implicit_invocation = true
 intensity = "auto"
 project_governance = true
+model_governance = true
+model_guidance = true
+automatic_model_switching = true
 root_execution_fallback = false
 spark_enabled = true
 spark_efforts = ["low", "medium", "high"]
@@ -41,6 +44,9 @@ AMS ENABLE | AMS DISABLE
 AMS MODE auto|minimal|balanced|moderate|heavy|extreme
 AMS IMPLICIT on|off
 AMS GOVERNANCE on|off
+AMS MODEL GOVERNANCE on|off
+AMS MODEL GUIDANCE on|off
+AMS MODEL SWITCHING on|off
 AMS ROOT FALLBACK on|off
 AMS CONFIGURATION UPDATE [PROJECT|GLOBAL]
 AMS SPARK on|off
@@ -49,7 +55,11 @@ AMS PROFILES auto|installer
 AMS LOCAL LLM on|off
 ```
 
-Status probes nothing and reports source/validity, activation/intensity, governance/fallback, profile policy, Spark/local preference and session availability, boundary, and blockers. Other commands change only the named project field while preserving current values, adding defaults, and dropping retired fields; mode also enables AMS. Only explicit global update writes global. New project settings copy effective base, add local false, then apply the requested change. Configuration update loads `configuration-maintenance.md`.
+`AMS GOVERNANCE` controls project governance. `AMS MODEL GOVERNANCE`, `AMS MODEL GUIDANCE`, and `AMS MODEL SWITCHING` set the three corresponding model-policy Booleans above. They default true, including for older settings. Off never disables delegated execution, supervisory blocker review, safe ownership, or continued work. Intensity/Rush preferences are dormant with model governance off; no command silently enables another policy.
+
+Apply policy changes to subsequent assignments, not active agents or installed profiles. For a clean off-policy test use a fresh root and new children; previously read instructions remain in context.
+
+Status probes nothing and reports source/validity, activation/intensity, project governance/fallback, all three model-policy switches, profile policy, Spark/local preference and session availability, boundary, and blockers. Other commands change only the named project field while preserving current values, adding defaults, and dropping retired fields; mode also enables AMS. Only explicit global update writes global. New project settings copy effective base, add local false, then apply the requested change. Configuration update loads `configuration-maintenance.md`.
 
 Apply at a safe wave boundary unless explicitly immediate. Disable stops new dispatch, lets atomic work finish, collects evidence, closes incompatible sessions, writes false, and creates no terminal record. Local on clears its session latch but selects no model. Local off or AMS disable makes one no-retry/probe `--stop-only` call only for a known companion-started kept model; never stop a preexisting model, and cleanup failure cannot veto the setting.
 

@@ -1,6 +1,6 @@
 # Zergling Rush
 
-Rush prioritizes wall-clock speed and may use much more model usage. Activate only from an unambiguous current-turn instruction such as `Use Zergling Rush for this task`, `AMS ZERGLING RUSH`, or `AMS MODE ZERGLING-RUSH`; briefly warn before dispatch. Settings, prior consent, old handoffs, “be fast,” and normal modes do not consent. Stored `zergling-rush` is preference only. Consent applies to one objective/session.
+Use only with model governance enabled. Rush prioritizes wall-clock speed and may use much more model usage. Activate only from an unambiguous current-turn instruction such as `Use Zergling Rush for this task`, `AMS ZERGLING RUSH`, or `AMS MODE ZERGLING-RUSH`; briefly warn before dispatch. Settings, prior consent, old handoffs, “be fast,” and normal modes do not consent. Stored `zergling-rush` is preference only. Consent applies to one objective/session.
 
 Rush relaxes normal economic restraint, not authority, scope, dependencies, quality, or safety. It may fill useful capacity with independent lanes, choose stronger routes to shorten the critical path, and use valuable competing investigation or redundant validation.
 

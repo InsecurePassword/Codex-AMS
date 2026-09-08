@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Codex AMS",
     "shortDescription": "Adaptive multi-agent orchestration for Codex.",
-    "longDescription": "Routes bounded work to cost-appropriate subagents with scope, dependency, and failure controls.",
+    "longDescription": "Delegates scoped work with autonomous recovery and optional model policies.",
     "developerName": "InsecurePassword",
     "category": "Productivity",
     "capabilities": [
