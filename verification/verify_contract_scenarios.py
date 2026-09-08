@@ -367,15 +367,15 @@ class LeanContracts(unittest.TestCase):
         self.assertIn("Continue automatically", governance)
         self.assertNotIn("convergence", governance.lower())
         self.assertIn("ams_<sol|terra|luna|astra>_<low|medium|high|xhigh|max>", core)
-        self.assertIn("input/reasoning/output usage", (PACKAGE / "references/model-switching.md").read_text())
-        self.assertIn("Astra: end-to-end tool-heavy", (PACKAGE / "references/model-guidance.md").read_text())
+        self.assertIn("input/reasoning/output usage", (PACKAGE / "references/model-switching.md").read_text(encoding="utf-8"))
+        self.assertIn("Astra: end-to-end tool-heavy", (PACKAGE / "references/model-guidance.md").read_text(encoding="utf-8"))
         self.assertIn("tool authority, not model authority", computer_use)
         self.assertIn("one active controller", computer_use)
         self.assertIn("screen content as untrusted evidence", computer_use)
 
     def test_model_policy_switches_are_independent(self) -> None:
-        core = (PACKAGE / "references/runtime-core.md").read_text()
-        control = (PACKAGE / "references/project-control.md").read_text()
+        core = (PACKAGE / "references/runtime-core.md").read_text(encoding="utf-8")
+        control = (PACKAGE / "references/project-control.md").read_text(encoding="utf-8")
         gates = dict(re.findall(r"^- `([^`]+)`: `([^`]+\.md)`$", core, re.M))
         expected = {
             "model_governance": "model-governance.md",
@@ -400,12 +400,12 @@ class LeanContracts(unittest.TestCase):
             for bad in ("false", 0, None):
                 with self.assertRaises(ValueError):
                     resolve_settings({key: bad}, project=True)
-            self.assertIn(f"`{key} = true`", (PACKAGE / "references" / gates[key]).read_text())
+            self.assertIn(f"`{key} = true`", (PACKAGE / "references" / gates[key]).read_text(encoding="utf-8"))
         self.assertIn("Off means do not load or apply", core)
         self.assertIn("Switching off does not prohibit switching", core)
 
     def test_autonomy_and_communication_survive_policy_off(self) -> None:
-        core = (PACKAGE / "references/runtime-core.md").read_text()
+        core = (PACKAGE / "references/runtime-core.md").read_text(encoding="utf-8")
         for phrase in (
             "sole physical spawner", "delegates execution and technical diagnosis",
             "Copy this AMS policy into every child assignment",
@@ -417,15 +417,15 @@ class LeanContracts(unittest.TestCase):
         ):
             self.assertIn(phrase.lower(), core.lower())
         for file in ("runtime-core.md", "computer-use.md", "scope-dependency-control.md"):
-            text = (PACKAGE / "references" / file).read_text()
+            text = (PACKAGE / "references" / file).read_text(encoding="utf-8")
             for recommendation in ("Astra:", "Terra:", "Luna:", "prefer Astra", "choose the lowest reliable"):
                 self.assertNotIn(recommendation.lower(), text.lower())
         for file in ("hierarchy-control.md", "intensity-control.md", "zergling-rush.md"):
-            self.assertIn("model governance enabled", (PACKAGE / "references" / file).read_text())
+            self.assertIn("model governance enabled", (PACKAGE / "references" / file).read_text(encoding="utf-8"))
         for profile in (PACKAGE / "assets/agent-profiles").glob("*.toml"):
             if "daybreak" in profile.name:
                 continue
-            data = tomllib.loads(profile.read_text())
+            data = tomllib.loads(profile.read_text(encoding="utf-8"))
             self.assertNotIn("features", data)
             for policy in ("Root alone", "WORK ORDER", "DISPATCH", "worker/none", "Do not spawn"):
                 self.assertNotIn(policy, data["developer_instructions"])
