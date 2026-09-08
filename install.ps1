@@ -2,8 +2,8 @@
 param(
     [switch]$Local,
     [ValidateSet("codex", "opencode", "pi", "all")][string]$Harness = "codex",
-    [string]$OpenCodeProvider = "openai",
-    [string]$PiProvider = "openai-codex",
+    [string]$OpenCodeProvider = "auto",
+    [string]$PiProvider = "auto",
     [switch]$InstallPiSubagents
 )
 
@@ -13,15 +13,20 @@ $ProgressPreference = "SilentlyContinue"
 $Harness = $Harness.ToLowerInvariant()
 
 if ($Harness -ne "codex") {
-    if (-not $Local) { throw "OpenCode/Pi installation requires the complete checkout or ZIP and -Local." }
-    $Helper = Join-Path $PSScriptRoot "tools\install_harnesses.py"
-    if (-not (Test-Path -LiteralPath $Helper -PathType Leaf)) { throw "Extract the complete package before installing." }
     $Python = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $Python) { throw "Python 3.11 or newer is required for OpenCode/Pi profile translation." }
-    $HelperArgs = @($Helper, "--harness", $Harness, "--opencode-provider", $OpenCodeProvider, "--pi-provider", $PiProvider)
+    if (-not $Python) { throw "Python 3.11 or newer is required for OpenCode/Pi installation." }
+    $HelperArgs = @("--harness", $Harness, "--opencode-provider", $OpenCodeProvider, "--pi-provider", $PiProvider)
     if ($InstallPiSubagents) { $HelperArgs += "--install-pi-subagents" }
-    & $Python.Source @HelperArgs
-    if ($LASTEXITCODE -ne 0) { throw "AMS harness installation failed (exit $LASTEXITCODE)." }
+    if ($Local) {
+        $Helper = Join-Path $PSScriptRoot "tools\install_harnesses.py"
+        if (-not (Test-Path -LiteralPath $Helper -PathType Leaf)) { throw "Local installation requires the complete package." }
+        & $Python.Source $Helper @HelperArgs --local
+    }
+    else {
+        $Source = Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop
+        $Source | & $Python.Source - @HelperArgs
+    }
+    if ($LASTEXITCODE -ne 0) { throw "AMS installation was not complete for every target (exit $LASTEXITCODE); see the target results above." }
     return
 }
 if ($InstallPiSubagents) { throw "-InstallPiSubagents requires -Harness pi or all." }

@@ -9,8 +9,8 @@ raw_base_url="https://github.com/${repo_owner}/${repo_name}/raw/refs/heads/${rep
 manifest_url="${raw_base_url}/install-manifest.txt"
 local_source=""
 harness="codex"
-opencode_provider="openai"
-pi_provider="openai-codex"
+opencode_provider="auto"
+pi_provider="auto"
 install_pi_subagents=0
 while (( $# )); do
   case "$1" in
@@ -32,10 +32,15 @@ if [[ -n "$local_source" && ! -f "$local_source/install-manifest.txt" ]]; then
   printf 'Error: local installation requires the complete extracted package.\n' >&2; exit 1
 fi
 if [[ "$harness" != "codex" ]]; then
-  [[ -n "$local_source" ]] || { printf 'Error: OpenCode/Pi installation requires the complete checkout or ZIP and --local.\n' >&2; exit 1; }
-  args=("$local_source/tools/install_harnesses.py" --harness "$harness" --opencode-provider "$opencode_provider" --pi-provider "$pi_provider")
+  args=(--harness "$harness" --opencode-provider "$opencode_provider" --pi-provider "$pi_provider")
   (( install_pi_subagents == 0 )) || args+=(--install-pi-subagents)
-  exec python3 "${args[@]}"
+  if [[ -n "$local_source" ]]; then
+    exec python3 "$local_source/tools/install_harnesses.py" "${args[@]}" --local
+  fi
+  source=$(curl --fail --silent --show-error --location --max-time 180 \
+    'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py')
+  printf '%s\n' "$source" | python3 - "${args[@]}"
+  exit $?
 fi
 (( install_pi_subagents == 0 )) || { printf 'Error: --install-pi-subagents requires --harness pi or all.\n' >&2; exit 1; }
 skill_name="adaptive-master-subagent-orchestration"

@@ -24,7 +24,6 @@ import tomllib
 
 SCRIPT = Path(__file__).resolve()
 ROOT = SCRIPT.parents[1] if SCRIPT.name != "<stdin>" else Path.cwd()
-LOCAL_PACKAGE = SCRIPT.name != "<stdin>" and (ROOT / "install-manifest.txt").is_file()
 REPOSITORY = "InsecurePassword/Codex-AMS"
 REF = "main"
 SKILL = "adaptive-master-subagent-orchestration"
@@ -64,26 +63,25 @@ def github_token() -> str | None:
 
 def _remote_bytes(path: str) -> bytes:
     quoted = "/".join(urllib.parse.quote(part, safe="") for part in path.split("/"))
-    url = f"https://api.github.com/repos/{REPOSITORY}/contents/{quoted}?ref={REF}"
-    headers = {
-        "Accept": "application/vnd.github.raw+json",
-        "User-Agent": "AMS-Tree-Installer",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    token = github_token()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    # Public installs use raw downloads, not one rate-limited API request per file.
+    url = f"https://raw.githubusercontent.com/{REPOSITORY}/{REF}/{quoted}"
+    headers = {"User-Agent": "AMS-Tree-Installer"}
     request = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
-            return response.read()
+            data = response.read(1048577)
     except urllib.error.HTTPError as error:
-        if error.code in (401, 403, 404):
-            raise ValueError(
-                "Remote repository access failed. Authenticate GitHub CLI with `gh auth login` "
-                "or set GH_TOKEN/GITHUB_TOKEN with read access to InsecurePassword/Codex-AMS."
-            ) from error
-        raise
+        token = github_token() if error.code in (401, 403, 404) else None
+        if not token:
+            raise ValueError(f"Repository download failed (HTTP {error.code}): {path}. "
+                             "Check connectivity and repository access; no files were substituted.") from error
+        url = f"https://api.github.com/repos/{REPOSITORY}/contents/{quoted}?ref={REF}"
+        headers.update(Accept="application/vnd.github.raw+json", Authorization=f"Bearer {token}")
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60) as response:
+            data = response.read(1048577)
+    if len(data) > 1048576:
+        raise ValueError(f"Repository file exceeds the installation size limit: {path}")
+    return data
 
 
 @lru_cache(maxsize=None)
@@ -100,41 +98,41 @@ def source_bytes(path: str, local: bool) -> bytes:
 
 
 def manifest_entries(data: bytes) -> dict[str, tuple[str, int]]:
-    if not data.startswith(b"ams-install-manifest-v1\n") or b"\r" in data:
+    if (not data.startswith(b"ams-install-manifest-v1\n") or not data.endswith(b"\n")
+            or b"\r" in data or len(data) > 262144):
         raise ValueError("Invalid installation manifest.")
     entries: dict[str, tuple[str, int]] = {}
+    folded: set[str] = set()
     for row in data.decode("utf-8").splitlines()[1:]:
         digest, length_text, name = row.split("\t")
         parts = name.split("/")
         if (parts[0] != SKILL or any(part in ("", ".", "..") for part in parts)
-                or not re.fullmatch(r"[A-Za-z0-9._/-]+", name) or name in entries):
-            raise ValueError(f"Unsafe or duplicate manifest path: {name}")
+                or not re.fullmatch(r"[A-Za-z0-9._/-]+", name) or name.casefold() in folded
+                or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                or not length_text.isdecimal() or not 0 < int(length_text) <= 1048576):
+            raise ValueError(f"Unsafe or duplicate manifest entry: {name}")
         entries[name] = (digest, int(length_text))
-    if not entries:
-        raise ValueError("Installation manifest contains no package files.")
+        folded.add(name.casefold())
+    if not entries or sum(size for _, size in entries.values()) > 104857600:
+        raise ValueError("Installation manifest has invalid membership or total size.")
     return entries
 
 
 def package_profiles(local: bool = True) -> list[dict[str, str]]:
-    """Verify manifest-listed model profiles before translating them."""
     entries = manifest_entries(source_bytes("install-manifest.txt", local))
-    profile_entries = sorted(
-        name for name in entries
-        if "/assets/agent-profiles/" in name and name.endswith(".toml")
-    )
-    if len(profile_entries) != 24:
-        raise ValueError(f"Expected 24 manifest-listed model profiles, found {len(profile_entries)}.")
-    profiles: list[dict[str, str]] = []
-    for name in profile_entries:
+    names = sorted(name for name in entries if "/assets/agent-profiles/" in name and name.endswith(".toml"))
+    if len(names) != 24:
+        raise ValueError(f"Expected 24 manifest-listed model profiles, found {len(names)}.")
+    profiles = []
+    for name in names:
         data = source_bytes(name, local)
         digest, length = entries[name]
         if len(data) != length or hashlib.sha256(data).hexdigest() != digest:
             raise ValueError(f"Package integrity check failed: {name}")
         profile = tomllib.loads(data.decode("utf-8"))
-        stem = Path(name).stem
-        if profile["name"] != stem:
+        if profile["name"] != Path(name).stem:
             raise ValueError(f"Profile name mismatch: {name}")
-        if stem != "ams_daybreak_blue_max":
+        if profile["name"] != "ams_daybreak_blue_max":
             profiles.append(profile)
     return profiles
 
@@ -143,23 +141,57 @@ def cli(harness: str, arguments: list[str], *, env: dict[str, str]) -> str:
     executable = shutil.which(harness)
     if not executable:
         raise ValueError(f"{harness} is not on PATH. Install the harness first.")
-    result = subprocess.run([executable, *arguments], cwd=Path.home(), env=env,
+    result = subprocess.run([executable, *arguments], cwd=Path.cwd(), env=env,
                             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
     if result.returncode:
         raise RuntimeError(f"{harness} {' '.join(arguments)} failed (exit {result.returncode}); no model was invoked.")
     return re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
 
 
-def catalog(harness: str, provider: str, env: dict[str, str]) -> set[str]:
+def catalog(harness: str, env: dict[str, str]) -> dict[str, set[str]]:
     output = cli(harness, ["models"] if harness == "opencode" else ["--list-models"], env=env)
-    models: set[str] = set()
+    models: dict[str, set[str]] = {}
     for line in output.splitlines():
         fields = line.split()
-        if harness == "opencode" and len(fields) == 1 and fields[0].startswith(provider + "/"):
-            models.add(fields[0].split("/", 1)[1])
-        elif harness == "pi" and len(fields) >= 2 and fields[0] == provider:
-            models.add(fields[1])
+        if harness == "opencode" and len(fields) == 1 and "/" in fields[0]:
+            provider, model = fields[0].split("/", 1)
+        elif harness == "pi" and len(fields) >= 2 and fields[0].lower() != "provider":
+            provider, model = fields[:2]
+        else:
+            continue
+        if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", provider) and model:
+            models.setdefault(model, set()).add(provider)
     return models
+
+
+def select_profiles(profiles: list[dict[str, str]], models: dict[str, set[str]],
+                    harness: str, provider: str, agent_home: Path) -> dict[Path, bytes]:
+    files: dict[Path, bytes] = {}
+    for profile in profiles:
+        candidates = models.get(profile["model"], set())
+        if provider != "auto":
+            candidates = candidates & {provider}
+        if not candidates:
+            continue
+        target = agent_home / (profile["name"] + ".md")
+        safe_path(target)
+        if len(candidates) > 1:
+            # Reinstall keeps an exact previously generated route; never guess a paid provider.
+            prior = target.read_bytes() if target.is_file() else None
+            previous = [p for p in candidates if prior == render(profile, harness, p)]
+            if len(previous) != 1:
+                raise ValueError(f"{profile['model']} is listed by multiple providers: "
+                                 f"{', '.join(sorted(candidates))}. Select --{harness}-provider NAME.")
+            candidates = set(previous)
+        files[target] = render(profile, harness, next(iter(candidates)))
+    if not files:
+        providers = sorted({p for available in models.values() for p in available})
+        examples = ", ".join(sorted(models)[:8]) or "(empty model catalog)"
+        raise ValueError("No exact AMS model IDs found" +
+                         (f" under provider {provider!r}" if provider != "auto" else " in any provider") +
+                         f". Listed providers: {', '.join(providers) or '(none)'}. "
+                         f"Model examples: {examples}. No model names were substituted.")
+    return files
 
 
 def pi_package(pi_home: Path) -> bool:
@@ -186,6 +218,7 @@ def render(profile: dict[str, str], harness: str, provider: str) -> bytes:
         fields.update(mode="subagent", reasoningEffort=profile["model_reasoning_effort"])
     else:
         fields.update(name=profile["name"], thinking=profile["model_reasoning_effort"], systemPromptMode="append")
+    # JSON-quoted strings are valid YAML; no YAML dependency or provider settings edits.
     frontmatter = "\n".join(f"{key}: {json.dumps(value)}" for key, value in fields.items())
     return (f"---\n{frontmatter}\n---\n{MARKER}\n\n{profile['developer_instructions'].strip()}\n").encode("utf-8")
 
@@ -210,6 +243,7 @@ def create_files(files: dict[Path, bytes], created: list[tuple[Path, tuple[int, 
             with os.fdopen(fd, "wb") as stream:
                 stream.write(data)
             identity = Path(temporary).stat()
+            # Link is create-only on Windows and Unix; it never overwrites another actor's file.
             os.link(temporary, path)
             created.append((path, (identity.st_dev, identity.st_ino), data))
         finally:
@@ -261,89 +295,95 @@ def install_core(targets: set[str], env: dict[str, str], local: bool) -> None:
             executable = shutil.which("powershell.exe")
             if not executable:
                 raise ValueError("Windows PowerShell is required for the core installer.")
-            command = [executable, "-NoProfile", "-ExecutionPolicy", "Bypass",
-                       "-File", str(script), "-Local"]
+            command = [executable, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), "-Local"]
             native_env.pop("PSModulePath", None)
         else:
             command = ["bash", str(script), "--local"]
         subprocess.run(command, cwd=package_root, env=native_env, check=True, timeout=300)
 
 
-def install(harness: str, opencode_provider: str, pi_provider: str,
-            install_pi: bool, local: bool = True) -> None:
+def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "auto",
+            install_pi: bool = False, local: bool = True) -> int:
     targets = {"codex", "opencode", "pi"} if harness == "all" else {harness}
+    if not targets <= {"codex", "opencode", "pi"}:
+        raise ValueError("Unknown harness.")
     if install_pi and "pi" not in targets:
         raise ValueError("Installing pi-subagents requires the pi or all target.")
     env = os.environ.copy()
     if env.get("AMS_INSTALL_PROFILES_ONLY", "1") != "1":
         raise ValueError("AMS_INSTALL_PROFILES_ONLY must be unset or exactly 1.")
     providers = {"opencode": opencode_provider, "pi": pi_provider}
-    for provider in providers.values():
-        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", provider):
-            raise ValueError("Provider names may contain only letters, digits, dot, underscore, and hyphen.")
+    if any(not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", p) for p in providers.values()):
+        raise ValueError("Invalid provider name.")
+    homes = {
+        "pi": home_path("PI_CODING_AGENT_DIR", Path.home() / ".pi/agent"),
+        "opencode": home_path("OPENCODE_CONFIG_DIR", home_path("XDG_CONFIG_HOME", Path.home() / ".config") / "opencode"),
+    }
+    if {"pi", "opencode"} <= targets and homes["pi"] == homes["opencode"]:
+        raise ValueError("OpenCode and Pi must have separate agent directories.")
+    env["PI_CODING_AGENT_DIR"] = str(homes["pi"])
     profiles = package_profiles(local) if targets - {"codex"} else []
-    pi_home = home_path("PI_CODING_AGENT_DIR", Path.home() / ".pi/agent")
-    opencode_home = home_path("OPENCODE_CONFIG_DIR", home_path("XDG_CONFIG_HOME", Path.home() / ".config") / "opencode")
-    homes = {"opencode": opencode_home, "pi": pi_home}
-    env["PI_CODING_AGENT_DIR"] = str(pi_home)
-    env["PI_OFFLINE"] = "1"
-    files: dict[Path, bytes] = {}
-    summaries: list[str] = []
+    # Model catalogs do not control installation of the shared skill or Codex's registry.
+    install_core(targets, env, local)
+    if env.get("AMS_INSTALL_PROFILES_ONLY") != "1":
+        skill = home_path("AMS_SKILL_HOME", Path.home() / ".agents/skills") / SKILL / "SKILL.md"
+        print(f"Shared AMS skill installed: {skill}")
+    if "codex" in targets:
+        print("codex: skill/profile installation completed.")
+    incomplete: list[str] = []
     for target in sorted(targets - {"codex"}):
-        available = catalog(target, providers[target], env)
-        selected = [p for p in profiles if p["model"] in available]
-        if not selected:
-            raise ValueError(f"No AMS models listed for {target} provider {providers[target]!r}. Configure that provider or select its exact provider ID; no model substitution was made.")
-        for profile in selected:
-            path = homes[target] / "agents" / (profile["name"] + ".md")
-            if path in files:
-                raise ValueError("OpenCode and Pi must have separate agent directories.")
-            files[path] = render(profile, target, providers[target])
-        missing = sorted({p["model"] for p in profiles} - available)
-        summaries.append(f"{target}: {len(selected)} native agent presets in {homes[target] / 'agents'}")
-        if missing:
-            summaries.append(f"{target}: not advertised by this provider, not installed: {', '.join(missing)}")
-    preflight(files)
-    if "pi" in targets and not pi_package(pi_home):
-        if not install_pi:
-            raise ValueError("Pi requires pi-subagents. Re-run with -InstallPiSubagents (PowerShell) or --install-pi-subagents (Bash) to install it through pi; this explicitly permits that package download.")
-        package_env = env.copy()
-        package_env.pop("PI_OFFLINE", None)
-        cli("pi", ["install", "npm:pi-subagents"], env=package_env)
-        if not pi_package(pi_home):
-            raise RuntimeError("Pi did not register pi-subagents; no AMS files were installed.")
-    created: list[tuple[Path, tuple[int, int], bytes]] = []
-    try:
-        create_files(files, created)
-        install_core(targets, env, local)
-        preflight(files)
-        if any(not p.is_file() or p.read_bytes() != data for p, data in files.items()):
-            raise ValueError("Final native agent verification failed.")
-    except BaseException:
-        rollback(created)
-        raise
-    for summary in summaries:
-        print(summary)
-    print("Selected harness installation complete. Restart selected harnesses; in Pi run /subagents-doctor.")
-    print("Catalog membership and file bytes checked, not model access or live inference. Daybreak and optional companions remain Codex-only.")
-    print("Existing models, credentials, permissions, compaction, and AMS project settings were not changed.")
+        created: list[tuple[Path, tuple[int, int], bytes]] = []
+        try:
+            models = catalog(target, env)
+            files = select_profiles(profiles, models, target, providers[target], homes[target] / "agents")
+            preflight(files)
+            if target == "pi" and not pi_package(homes["pi"]):
+                if not install_pi:
+                    raise ValueError("Pi requires pi-subagents. Add --install-pi-subagents to permit its installation.")
+                package_env = env.copy()
+                cli("pi", ["install", "npm:pi-subagents"], env=package_env)
+                if not pi_package(homes["pi"]):
+                    raise RuntimeError("Pi did not register pi-subagents.")
+            create_files(files, created)
+            preflight(files)
+            if any(not p.is_file() or p.read_bytes() != data for p, data in files.items()):
+                raise ValueError("Final native agent verification failed.")
+            print(f"{target}: {len(files)} native agent presets installed in {homes[target] / 'agents'}")
+            omitted = len(profiles) - len(files)
+            if omitted:
+                print(f"{target}: {omitted} presets omitted because their exact model IDs are not listed.")
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+            rollback(created)
+            incomplete.append(target)
+            print(f"{target}: NOT CONFIGURED: {error}", file=sys.stderr)
+        except BaseException:
+            rollback(created)
+            raise
+    print("Restart the selected apps to reload skills and agents. In Codex type $ and select AMS.")
+    print(f"Exact Codex skill name: ${SKILL}. Pi: /skill:{SKILL}.")
+    print("Providers, credentials, permissions, compaction, and AMS project settings were not changed.")
+    if incomplete:
+        print(f"Partial installation: {', '.join(incomplete)} still need configuration. "
+              "Successful targets and the shared skill were retained.", file=sys.stderr)
+        return 2
+    print("All selected targets installed. Model access and effective effort still depend on the harness/provider.")
+    return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--harness", choices=("codex", "opencode", "pi", "all"), required=True)
-    parser.add_argument("--opencode-provider", default="openai")
-    parser.add_argument("--pi-provider", default="openai-codex")
+    parser.add_argument("--opencode-provider", default="auto", help="Provider ID, or auto (default).")
+    parser.add_argument("--pi-provider", default="auto", help="Provider ID, or auto (default).")
     parser.add_argument("--install-pi-subagents", action="store_true")
-    parser.add_argument("--local", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--local", action="store_true", help="Use the complete package beside this script instead of downloading.")
     args = parser.parse_args()
     try:
-        install(args.harness, args.opencode_provider, args.pi_provider,
-                args.install_pi_subagents, args.local or LOCAL_PACKAGE)
+        return install(args.harness, args.opencode_provider, args.pi_provider,
+                       args.install_pi_subagents, args.local)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
-    return 0
 
 
 if __name__ == "__main__":

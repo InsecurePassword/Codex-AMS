@@ -1,5 +1,5 @@
 interface:
-  display_name: "Adaptive Master–Subagent Orchestration"
+  display_name: "AMS"
   short_description: "Route bounded work with scope, dependency, and failure controls"
   default_prompt: "Use $adaptive-master-subagent-orchestration; resolve effective project/global settings before top-level project work."
 policy:
