@@ -93,7 +93,7 @@ else:
         self.codex.mkdir()
         (self.codex / "config.toml").write_text('model = "leave-me-alone"\n', encoding="utf-8")
         self.oc.mkdir()
-        (self.oc / "opencode.jsonc")).write_text('// keep comments\n{"permission":{"bash":"ask"}}\n', encoding="utf-8")
+        (self.oc / "opencode.jsonc").write_text('// keep comments\n{"permission":{"bash":"ask"}}\n', encoding="utf-8")
         before = {p: p.read_bytes() for p in (self.pi / "settings.json", self.codex / "config.toml", self.oc / "opencode.jsonc")}
         self.assert_ok(self.wrapper("all"))
         self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
