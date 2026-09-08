@@ -93,7 +93,7 @@ else:
         self.codex.mkdir()
         (self.codex / "config.toml").write_text('model = "leave-me-alone"\n', encoding="utf-8")
         self.oc.mkdir()
-        (self.oc / "opencode.jsonc").write_text('// keep comments\n{"permission":{"bash":"ask"}}\n', encoding="utf-8")
+        (self.oc / "opencode.jsonc")).write_text('// keep comments\n{"permission":{"bash":"ask"}}\n', encoding="utf-8")
         before = {p: p.read_bytes() for p in (self.pi / "settings.json", self.codex / "config.toml", self.oc / "opencode.jsonc")}
         self.assert_ok(self.wrapper("all"))
         self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
@@ -399,10 +399,14 @@ def verify_native_codex() -> None:
             env.update(HOME=str(home), USERPROFILE=str(home), CODEX_HOME=str(home / ".codex"))
             Path(env["CODEX_HOME"]).mkdir()
             if source == "standalone":
+                # Keep installation inside the isolated home; no Codex scan-root override.
+                env["AMS_SKILL_HOME"] = str(home / ".agents/skills")
                 command = [sys.executable, str(ROOT / "tools/install_harnesses.py"), "--harness", "codex", "--local"]
                 result = subprocess.run(command, cwd=project, env=env, capture_output=True, text=True, timeout=180)
-                if result.returncode:
+                expected = home / ".agents/skills" / installer.SKILL / "SKILL.md"
+                if result.returncode or not expected.is_file():
                     raise AssertionError(result.stdout + result.stderr)
+                print(result.stdout, flush=True)
             else:
                 for args in (["plugin", "marketplace", "add", str(ROOT)],
                              ["plugin", "add", "Codex-AMS@Codex-AMS"]):
