@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the actual packaged Desktop server, not the standalone CLI registry."""
+"""Exercise the actual packaged Desktop server, including an already-open app."""
 from __future__ import annotations
 
 import base64
@@ -64,13 +64,6 @@ def main(desktop: Path) -> None:
                    PATH=os.pathsep.join(map(str, (desktop, Path(sys.executable).parent,
                         system / "WindowsPowerShell/v1.0", system))),
                    NO_PROXY="127.0.0.1,localhost,::1", no_proxy="127.0.0.1,localhost,::1")
-        result = subprocess.run([sys.executable, str(ROOT / "tools/install_harnesses.py"),
-                                 "--harness", "opencode", "--local", "--opencode-provider", "ams-test"],
-                                cwd=home, env=env, capture_output=True, text=True,
-                                encoding="utf-8", errors="replace", timeout=300)
-        print(result.stdout, flush=True)
-        if result.returncode:
-            raise AssertionError(result.stderr)
         debug_port = port()
         with (home / "desktop.log").open("w", encoding="utf-8") as log:
             process = subprocess.Popen([str(executable), f"--remote-debugging-port={debug_port}"],
@@ -102,23 +95,28 @@ def main(desktop: Path) -> None:
                         request = urllib.request.Request(ready["url"].rstrip("/") + path, headers=headers)
                         with opener.open(request, timeout=60) as response:
                             return json.load(response)
+                    old = {item["name"] for item in get("/agent") if item.get("mode") == "subagent"}
+                    print("Desktop before install: " + ", ".join(sorted(old)), flush=True)
+                    result = subprocess.run([sys.executable, str(ROOT / "tools/install_harnesses.py"),
+                                             "--harness", "opencode", "--local", "--opencode-provider", "ams-test"],
+                                            cwd=home, env=env, capture_output=True, text=True,
+                                            encoding="utf-8", errors="replace", timeout=300)
+                    print(result.stdout, flush=True)
+                    if result.returncode:
+                        raise AssertionError(result.stderr)
                     agents = get("/agent")
                     names = {item["name"] for item in agents}
                     wanted = {p["name"] for p in profiles}
-                    print("Actual Desktop /agent names: " + ", ".join(sorted(names)), flush=True)
-                    if not wanted <= names:
-                        raise AssertionError("Desktop server missing: " + ", ".join(sorted(wanted - names)))
-                    print("Desktop config agent count: " + str(len(get("/config").get("agent", {}))), flush=True)
+                    print("Actual Desktop /agent names after install: " + ", ".join(sorted(names)), flush=True)
                     tools = get("/experimental/tool?provider=ams-test&model=gpt-5.6-sol")
                     task = next(item for item in tools if item.get("id") == "task")
-                    description = task.get("description", "")
-                    missing = {name for name in wanted if name not in description}
+                    missing = {name for name in wanted if name not in task.get("description", "")}
                     print("Desktop task description AMS matches: " + str(len(wanted - missing)), flush=True)
-                    if missing:
-                        raise AssertionError("Desktop Task tool missing: " + ", ".join(sorted(missing)))
+                    if not wanted <= names or missing:
+                        raise AssertionError("CLI installation succeeded but already-open Desktop did not refresh AMS agents")
                     if settings.read_bytes() != before:
                         raise AssertionError("Provider settings changed")
-                    print("PASS actual packaged Desktop server and Task tool expose all 23 AMS agents; no model calls.", flush=True)
+                    print("PASS actual packaged Desktop refreshes all 23 AMS agents; no model calls.", flush=True)
                     browser.close()
             finally:
                 subprocess.run(["taskkill.exe", "/PID", str(process.pid), "/T", "/F"],
