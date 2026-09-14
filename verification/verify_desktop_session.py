@@ -64,6 +64,8 @@ def main(desktop: Path) -> None:
                    PATH=os.pathsep.join(map(str, (desktop, Path(sys.executable).parent,
                         system / "WindowsPowerShell/v1.0", system))),
                    NO_PROXY="127.0.0.1,localhost,::1", no_proxy="127.0.0.1,localhost,::1")
+        for key in ("APPDATA", "LOCALAPPDATA", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "CODEX_HOME"):
+            Path(env[key]).mkdir(parents=True, exist_ok=True)
         debug_port = port()
         with (home / "desktop.log").open("w", encoding="utf-8") as log:
             process = subprocess.Popen([str(executable), f"--remote-debugging-port={debug_port}"],
@@ -76,7 +78,8 @@ def main(desktop: Path) -> None:
                             break
                     except OSError:
                         if process.poll() is not None or time.monotonic() >= deadline:
-                            raise AssertionError("Packaged Desktop did not start its test debugging endpoint")
+                            log.flush()
+                            raise AssertionError("Packaged Desktop did not start: " + (home / "desktop.log").read_text(encoding="utf-8", errors="replace"))
                         time.sleep(1)
                 with sync_playwright() as playwright:
                     browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{debug_port}")
