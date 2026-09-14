@@ -34,9 +34,13 @@ Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/
 
 ### OpenCode
 
+**Finish or pause active work and quit OpenCode Desktop before installing.** An already-open Desktop can keep its old helper list even when the new files were installed correctly. A new chat in that same running app is not enough to refresh its server.
+
+If Desktop is still running, the installer prints **`WAITING FOR DESKTOP TO CLOSE`** before changing any AMS files. Quit Desktop normally and the installer continues automatically. Keep Desktop closed until installation finishes, then reopen it. If it remains open for two minutes, the installer stops without changing AMS files. It does not kill the app, stop your agents, delete chats, or change permissions.
+
 On Windows, `OpenCode.exe` may open the desktop app instead of accepting terminal commands. AMS checks for a separate command-line helper without opening the desktop app. Some production Desktop releases have no such helper. In that case, AMS reads the app's version, downloads the same version of the official OpenCode CLI, checks its size and SHA-256 checksum, and uses it only for setup. The temporary download is removed afterward, including when setup fails.
 
-You do not need to install Node.js, npm, another copy of OpenCode, or change PATH for this Windows Desktop setup. It requires internet access to the matching official OpenCode release. Your desktop app, existing providers, and model settings are not replaced.
+You do not need to use OpenCode CLI, install Node.js or npm, install another permanent copy of OpenCode, or change PATH. This Windows Desktop setup requires internet access to the matching official OpenCode release. Your desktop app, existing providers, and model settings are not replaced.
 
 ```powershell
 Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness opencode
@@ -52,17 +56,17 @@ Pi needs the `pi-subagents` extension to create helpers. The last option lets Pi
 
 ### All three
 
-Use this to install the shared skill and set up each app:
+Use this to install the shared skill and set up each app. The same Windows Desktop close check applies before installation begins:
 
 ```powershell
 Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness all --install-pi-subagents
 ```
 
-Choosing `all` attempts each app. A missing OpenCode/Pi command, unavailable model, or missing extension does not undo the Codex installation or prevent the other app from being checked. Read the per-app results; a partial install is not a claim that every app is ready.
+Choosing `all` attempts each app after this initial check. A missing OpenCode/Pi command, unavailable model, or missing extension does not undo the Codex installation or prevent the other app from being checked. Read the per-app results; a partial install is not a claim that every app is ready.
 
 ## macOS or Linux
 
-Open a terminal and check `python3 --version`. You need Python 3.11 or newer, Bash, and the usual command-line utilities listed in the [technical reference](TECHNICAL%20REFERENCE.md#installer-options). OpenCode's command-line program must be available; the automatic Desktop-only download described above is for Windows.
+Open a terminal and check `python3 --version`. You need Python 3.11 or newer, Bash, and the usual command-line utilities listed in the [technical reference](TECHNICAL%20REFERENCE.md#installer-options). OpenCode's command-line program must be available; automatic Desktop-only downloads and running-app detection described above are for Windows. Quit Desktop before installing on these systems too.
 
 Use Bash for these commands. Copy only the line for your app:
 
@@ -84,9 +88,9 @@ curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/to
 
 Look for **"All selected targets installed."** Read any omitted-model notices too. **"Partial installation"** means the named apps still need configuration; the shared skill and successful installs were kept. A successful install checks the files, not paid model access or actual thinking levels.
 
-For OpenCode, the installer prints the exact CLI it used and confirms that all generated agents appear in that CLI's registry. Empty command output or missing agents is a setup failure, not a successful install. A desktop connected to a different server needs AMS installed on that server instead. Keep the installer terminal output when reporting a problem; an AI chat's later summary does not show which setup step failed.
+For OpenCode, the installer prints the exact setup helper it used and confirms that all generated agents appear in that helper's registry. On Windows it also requires Desktop to remain closed through this check, so you can reopen it with a fresh server afterward. Empty output, missing agents, or reopening Desktop during setup is not reported as a completed OpenCode installation. A desktop connected to a different server needs AMS installed on that server instead. Keep the installer terminal output when reporting a problem; an AI chat's later summary does not show which setup step failed.
 
-Restart the app you installed into and open a **new chat in your project**. In Codex, type `$` and choose **AMS** from the skill list. Its exact skill name remains `$adaptive-master-subagent-orchestration`; `$AMS` is not a separate registered alias. Then follow [Start your first task](PRODUCT%20DOCUMENTATION.md#start-your-first-task).
+Open OpenCode Desktop after installation, or restart Codex/Pi as applicable, and open a **new chat in your project**. In Codex, type `$` and choose **AMS** from the skill list. Its exact skill name remains `$adaptive-master-subagent-orchestration`; `$AMS` is not a separate registered alias. Then follow [Start your first task](PRODUCT%20DOCUMENTATION.md#start-your-first-task).
 
 A plugin and a directly installed skill are separate copies. Update a marketplace-managed copy through Codex's plugin manager; the direct installer updates the shared skill. If a skill was deliberately disabled, use Codex's skill controls to enable it yourself. The installer does not override that choice.
 
@@ -108,7 +112,7 @@ The installer does not change your main model, existing provider settings, passw
 
 ## Update AMS
 
-Run the same installation command you used before, then restart the app and start a new chat. Do not run two AMS installers at the same time.
+Run the same installation command you used before. For OpenCode Desktop, finish or pause work and quit the app first; the Windows installer waits if it is still open. After installation, reopen the app and start a new chat. Do not run two AMS installers at the same time.
 
 Supported older Codex presets are upgraded. Edited or unrecognized Codex presets are preserved. OpenCode/Pi presets that differ from the generated files also stop replacement for that app; the installer does not guess which edits to keep. An exact existing provider choice is retained when the model is listed under several providers.
 
@@ -125,6 +129,8 @@ This keeps supported settings and adds missing defaults. See [Settings and older
 
 | What you see | What to do |
 |---|---|
+| `WAITING FOR DESKTOP TO CLOSE` | Finish or pause active work, then quit OpenCode Desktop normally. Leave the installer running; it continues when the app and its server exit. Opening a new chat does not close the old server. |
+| `Desktop was reopened during installation` | Quit Desktop and rerun. Keep it closed until setup finishes. Do not delete profiles or change task permissions to hide this error. |
 | `python` or `python3` is not found | Install Python 3.11 or newer, then open a new terminal. |
 | `pi` is not on PATH | Make sure Pi's command works in this terminal. Follow its setup guide, then reopen the terminal. Other completed installs remain usable. |
 | `No working OpenCode CLI found` | The installer found neither a usable CLI nor a supported Windows Desktop package. Check the paths in the error. For a custom CLI location, set `AMS_OPENCODE_CLI` to its full path and rerun. Do not point it at the desktop launcher. |
