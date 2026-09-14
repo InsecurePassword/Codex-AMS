@@ -1,0 +1,38 @@
+name: Verify packaged OpenCode Desktop
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  desktop:
+    name: Windows / actual packaged Desktop session
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test driver
+        run: python -m pip install playwright
+      - name: Extract official Desktop
+        shell: pwsh
+        run: |
+          $setup = Join-Path $env:RUNNER_TEMP 'opencode-desktop.exe'
+          Invoke-WebRequest 'https://github.com/anomalyco/opencode/releases/download/v1.18.30/opencode-desktop-win-x64.exe' -OutFile $setup
+          if ((Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'dcf723272c930f5dfa73a8561818ae4ad1a346384a859111ffeb554e19ce6567') { throw 'Desktop hash mismatch' }
+          $outer = Join-Path $env:RUNNER_TEMP 'opencode-setup'
+          $desktop = Join-Path $env:RUNNER_TEMP 'opencode-production'
+          & 7z x $setup "-o$outer" -y
+          if ($LASTEXITCODE -ne 0) { throw 'Extraction failed' }
+          $payload = @(Get-ChildItem $outer -Recurse -Filter 'app-64.7z')
+          if ($payload.Count -ne 1) { throw 'Desktop payload missing' }
+          & 7z x $payload[0].FullName "-o$desktop" -y
+          if ($LASTEXITCODE -ne 0) { throw 'Extraction failed' }
+      - name: Verify actual Desktop agent and Task visibility
+        shell: pwsh
+        run: python verification/verify_desktop_session.py (Join-Path $env:RUNNER_TEMP 'opencode-production')
