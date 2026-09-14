@@ -16,6 +16,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -152,6 +153,70 @@ def windows_gui(path: Path) -> bool:
         pe = stream.read(94)
     return (len(pe) == 94 and pe[:4] == b"PE\0\0"
             and int.from_bytes(pe[92:94], "little") == 2)
+
+
+def running_opencode_desktops(env: dict[str, str]) -> dict[int, str]:
+    """Inspect this Windows session's Desktop processes; never stop them or read credentials."""
+    if os.name != "nt":
+        return {}
+    powershell = shutil.which("powershell.exe")
+    if not powershell:
+        raise ValueError("Windows PowerShell is required to check whether OpenCode Desktop is still running.")
+    script = r"""$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$session = [Diagnostics.Process]::GetCurrentProcess().SessionId
+$items = @(Get-Process | Where-Object {
+    $_.SessionId -eq $session -and $_.ProcessName -match '^opencode(?:[ -](?:desktop|beta|dev))?$'
+} | ForEach-Object { @{ id = $_.Id; path = $_.Path } })
+ConvertTo-Json -InputObject $items -Compress
+"""
+    check_env = env.copy()
+    check_env.pop("PSModulePath", None)
+    result = subprocess.run([powershell, "-NoProfile", "-NonInteractive", "-Command", script],
+                            env=check_env, stdin=subprocess.DEVNULL, capture_output=True,
+                            text=True, encoding="utf-8", errors="replace", timeout=20)
+    if result.returncode:
+        raise RuntimeError("Could not inspect OpenCode Desktop processes. No process was stopped.")
+    try:
+        rows = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise ValueError("Invalid OpenCode Desktop process-check response.") from error
+    if not isinstance(rows, list):
+        raise ValueError("Invalid OpenCode Desktop process-check response.")
+    active: dict[int, str] = {}
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("id"), int) or row["id"] <= 0:
+            raise ValueError("Invalid OpenCode Desktop process identity.")
+        location = row.get("path")
+        if not location:
+            active[row["id"]] = "OpenCode (executable path unavailable)"
+            continue
+        if not isinstance(location, str):
+            raise ValueError("Invalid OpenCode Desktop process path.")
+        try:
+            if windows_gui(Path(location)):
+                active[row["id"]] = location
+        except FileNotFoundError:
+            continue  # The process exited during inspection.
+    return active
+
+
+def wait_for_opencode_desktop_exit(env: dict[str, str], timeout: float = 120) -> None:
+    """Prevent a successful file install from leaving an already-open Desktop on its old agent cache."""
+    active = running_opencode_desktops(env)
+    if not active:
+        return
+    print("opencode: WAITING FOR DESKTOP TO CLOSE. Finish or pause your work, then quit OpenCode Desktop normally.", flush=True)
+    print("The installer will continue automatically after Desktop exits (up to 120 seconds). Keep it closed until installation finishes.", flush=True)
+    print("No AMS files have been changed. The installer will not close apps or terminate your agents.", flush=True)
+    print("OpenCode Desktop process IDs: " + ", ".join(map(str, sorted(active))), flush=True)
+    deadline = time.monotonic() + timeout
+    while active:
+        if time.monotonic() >= deadline:
+            raise RuntimeError("OpenCode Desktop is still running. No AMS files were changed. Quit Desktop normally, then run the installer again.")
+        time.sleep(1)
+        active = running_opencode_desktops(env)
+    print("opencode: Desktop has exited. Continuing installation.", flush=True)
 
 
 def desktop_version(executable: Path) -> str | None:
@@ -504,6 +569,8 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
     if {"pi", "opencode"} <= targets and homes["pi"] == homes["opencode"]:
         raise ValueError("OpenCode and Pi must have separate agent directories.")
     env["PI_CODING_AGENT_DIR"] = str(homes["pi"])
+    if "opencode" in targets:
+        wait_for_opencode_desktop_exit(env)
     profiles = package_profiles(local) if targets - {"codex"} else []
     # Model catalogs do not control installation of the shared skill or Codex's registry.
     install_core(targets, env, local)
@@ -535,12 +602,15 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
             create_files(files, created)
             if target == "opencode":
                 verify_opencode_agents(files, target_env)
+                if running_opencode_desktops(target_env):
+                    raise RuntimeError("Desktop was reopened during installation. Quit it normally and rerun so its server loads the installed agents.")
             preflight(files)
             if any(not p.is_file() or p.read_bytes() != data for p, data in files.items()):
                 raise ValueError("Final native agent verification failed.")
             print(f"{target}: {len(files)} native agent presets installed in {homes[target] / 'agents'}")
             if target == "opencode":
                 print(f"opencode: all {len(files)} installed agents confirmed by the CLI registry.")
+                print("opencode: installation finished. Open Desktop now to load these agents in a fresh server.")
             omitted = len(profiles) - len(files)
             if omitted:
                 print(f"{target}: {omitted} presets omitted because their exact model IDs are not listed.")
