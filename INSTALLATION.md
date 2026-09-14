@@ -8,7 +8,7 @@ You need a working installation of the coding app you want to use, access to its
 
 Official setup guides: [Codex](https://developers.openai.com/codex/quickstart/), [OpenCode](https://opencode.ai/docs/), [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent), and [Python](https://www.python.org/downloads/).
 
-For Pi, its command must work in your terminal. For OpenCode, the installer can use an installed command-line program or the helper bundled with OpenCode Desktop. The installer finds exact AMS model names across the app's listed providers automatically. If an app needs more setup, it reports that app as **NOT CONFIGURED** and keeps the shared skill and other successful installs. It never disguises another model as Sol or Astra.
+For Pi, its command must work in your terminal. For OpenCode, the installer uses an available command-line program. Windows Desktop releases that do not include one are handled automatically using a temporary download matching the installed app version. The installer finds exact AMS model names across the app's listed providers automatically. If an app needs more setup, it reports that app as **NOT CONFIGURED** and keeps the shared skill and other successful installs. It never disguises another model as Sol or Astra.
 
 These commands download and run code from this repository. Run them only if you trust this project. Public downloads do not require a GitHub account or GitHub CLI. See [download problems](#download-problems) if access is restricted or a download fails.
 
@@ -34,7 +34,9 @@ Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/
 
 ### OpenCode
 
-On Windows, `OpenCode.exe` may open the desktop app instead of accepting terminal commands. The installer automatically looks for its `opencode-cli.exe` helper beside the app or in its `resources` folder. You do not need to rename files, change PATH, or install a second OpenCode when that helper is available.
+On Windows, `OpenCode.exe` may open the desktop app instead of accepting terminal commands. AMS checks for a separate command-line helper without opening the desktop app. Some production Desktop releases have no such helper. In that case, AMS reads the app's version, downloads the same version of the official OpenCode CLI, checks its size and SHA-256 checksum, and uses it only for setup. The temporary download is removed afterward, including when setup fails.
+
+You do not need to install Node.js, npm, another copy of OpenCode, or change PATH for this Windows Desktop setup. It requires internet access to the matching official OpenCode release. Your desktop app, existing providers, and model settings are not replaced.
 
 ```powershell
 Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness opencode
@@ -60,7 +62,7 @@ Choosing `all` attempts each app. A missing OpenCode/Pi command, unavailable mod
 
 ## macOS or Linux
 
-Open a terminal and check `python3 --version`. You need Python 3.11 or newer, Bash, and the usual command-line utilities listed in the [technical reference](TECHNICAL%20REFERENCE.md#installer-options).
+Open a terminal and check `python3 --version`. You need Python 3.11 or newer, Bash, and the usual command-line utilities listed in the [technical reference](TECHNICAL%20REFERENCE.md#installer-options). OpenCode's command-line program must be available; the automatic Desktop-only download described above is for Windows.
 
 Use Bash for these commands. Copy only the line for your app:
 
@@ -82,7 +84,7 @@ curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/to
 
 Look for **"All selected targets installed."** Read any omitted-model notices too. **"Partial installation"** means the named apps still need configuration; the shared skill and successful installs were kept. A successful install checks the files, not paid model access or actual thinking levels.
 
-For OpenCode, the installer prints the exact CLI it used and confirms that all generated agents appear in that CLI's registry. Empty command output or missing agents is a setup failure, not a successful install. A desktop connected to a different server needs AMS installed on that server instead.
+For OpenCode, the installer prints the exact CLI it used and confirms that all generated agents appear in that CLI's registry. Empty command output or missing agents is a setup failure, not a successful install. A desktop connected to a different server needs AMS installed on that server instead. Keep the installer terminal output when reporting a problem; an AI chat's later summary does not show which setup step failed.
 
 Restart the app you installed into and open a **new chat in your project**. In Codex, type `$` and choose **AMS** from the skill list. Its exact skill name remains `$adaptive-master-subagent-orchestration`; `$AMS` is not a separate registered alias. Then follow [Start your first task](PRODUCT%20DOCUMENTATION.md#start-your-first-task).
 
@@ -102,7 +104,7 @@ The installer puts one shared AMS skill in your user account, plus model presets
 
 Codex gets 24 presets. OpenCode and Pi get only the ordinary presets whose exact model names appear in their model lists, up to 23 each. The provider is chosen automatically when the match is unique. The specialized Daybreak preset is not installed into OpenCode or Pi.
 
-The installer does not change your main model, existing provider settings, passwords, permissions, automatic conversation compaction, or saved AMS project settings. Optional AMS companions are not included in this install. The explicit Pi option may add `pi-subagents` through Pi's package manager.
+The installer does not change your main model, existing provider settings, passwords, permissions, automatic conversation compaction, or saved AMS project settings. Optional AMS companions are not included in this install. The explicit Pi option may add `pi-subagents` through Pi's package manager. A temporary OpenCode CLI is not a new permanent app or background service.
 
 ## Update AMS
 
@@ -125,8 +127,9 @@ This keeps supported settings and adds missing defaults. See [Settings and older
 |---|---|
 | `python` or `python3` is not found | Install Python 3.11 or newer, then open a new terminal. |
 | `pi` is not on PATH | Make sure Pi's command works in this terminal. Follow its setup guide, then reopen the terminal. Other completed installs remain usable. |
-| `No working OpenCode CLI found` | The installer did not find a usable command-line helper. Check the paths in the error. Repair the desktop installation or install the official OpenCode CLI. For a custom location, set `AMS_OPENCODE_CLI` to the full path of the command-line executable and rerun. Do not point it at the desktop launcher. |
-| `OpenCode CLI returned no output` | This is an executable/CLI problem, not proof that your account lacks models. Use the CLI path printed by the installer to check the app. |
+| `No working OpenCode CLI found` | The installer found neither a usable CLI nor a supported Windows Desktop package. Check the paths in the error. For a custom CLI location, set `AMS_OPENCODE_CLI` to its full path and rerun. Do not point it at the desktop launcher. |
+| The matching OpenCode release cannot be downloaded or verified | Keep the error output. Check the connection and installed Desktop version. Do not turn off checksum checks or substitute another version. A working separately installed CLI can also be used. |
+| `OpenCode CLI returned no output` | This is an executable/CLI problem, not proof that your account lacks models. Keep the installer output, including its selected CLI path. |
 | `OpenCode did not register the installed agents` | Check the active config directory and project overrides. Do not delete existing profiles or change permissions merely to make this check pass. |
 | `No exact AMS model IDs found` | Read the providers and model examples printed with the message. Check that app's model access. The installer searched its catalog; it cannot give an account models it does not have. |
 | A model is listed by multiple providers | Add `--opencode-provider NAME` or `--pi-provider NAME`, using one of the actual names printed in the error. This chooses your existing provider; it does not create an account. |
@@ -140,7 +143,7 @@ This keeps supported settings and adds missing defaults. See [Settings and older
 
 A `404` or access error can mean the download is unavailable to you. A `403` can also be a GitHub request limit. Do not keep running a failed command or treat an empty response as a successful install.
 
-For an access-controlled download or an API limit, [GitHub CLI](https://cli.github.com/) can use an account with repository access. Sign in once with `gh auth login`, then use this alternative in PowerShell:
+For an access-controlled AMS download or an API limit, [GitHub CLI](https://cli.github.com/) can use an account with repository access. Sign in once with `gh auth login`, then use this alternative in PowerShell:
 
 ```powershell
 $ams = gh api -H 'Accept: application/vnd.github.raw+json' 'repos/InsecurePassword/Codex-AMS/contents/tools/install_harnesses.py?ref=main'
@@ -148,10 +151,10 @@ if ($LASTEXITCODE -ne 0) { throw 'AMS download failed.' }
 $ams | python - --harness all --install-pi-subagents
 ```
 
-Replace `all` with the app you need; leave off `--install-pi-subagents` for Codex-only or OpenCode-only installs. This is optional, not a requirement for normal public downloads. Bash and token-based details are in the [technical reference](TECHNICAL%20REFERENCE.md#authenticated-downloads).
+Replace `all` with the app you need; leave off `--install-pi-subagents` for Codex-only or OpenCode-only installs. This is optional, not a requirement for normal public downloads. It authenticates AMS downloads, not the separate public OpenCode release download. Bash and token-based details are in the [technical reference](TECHNICAL%20REFERENCE.md#authenticated-downloads).
 
 For connection, certificate, or package-download errors, fix the reported connection problem. Do not turn off certificate checks or paste passwords into an installer command.
 
 ## Other installation methods
 
-The [technical reference](TECHNICAL%20REFERENCE.md) covers Codex's plugin marketplace, profiles-only installation, existing provider names, separate Pi profiles, offline recovery, optional companions, and removal. The direct commands above are the simplest starting point.
+The [technical reference](TECHNICAL%20REFERENCE.md) covers Codex's plugin marketplace, profiles-only installation, existing provider names, separate Pi profiles, offline recovery, optional companions, and removal. The direct commands above are the simplest starting point. Local-source mode selects where AMS files come from; Windows Desktop still needs the temporary CLI download when no usable CLI is installed.
