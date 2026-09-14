@@ -137,15 +137,92 @@ def package_profiles(local: bool = True) -> list[dict[str, str]]:
     return profiles
 
 
+def windows_gui(path: Path) -> bool:
+    """Inspect the PE subsystem without launching a Windows desktop application."""
+    if path.suffix.lower() != ".exe":
+        return False
+    with path.open("rb") as stream:
+        header = stream.read(64)
+        if len(header) < 64 or header[:2] != b"MZ":
+            return False
+        stream.seek(int.from_bytes(header[60:64], "little"))
+        pe = stream.read(94)
+    return (len(pe) == 94 and pe[:4] == b"PE\0\0"
+            and int.from_bytes(pe[92:94], "little") == 2)
+
+
+def opencode_cli(env: dict[str, str]) -> str:
+    """Find a working CLI, preferring the desktop's own sidecar over its GUI."""
+    override = env.get("AMS_OPENCODE_CLI")
+    if override:
+        selected = Path(override).expanduser()
+        if not selected.is_absolute():
+            raise ValueError("AMS_OPENCODE_CLI must be the full path to a CLI executable.")
+        candidates = [selected]
+    else:
+        directories = [Path(p.strip('"')) for p in env.get("PATH", "").split(os.pathsep) if p]
+        if os.name == "nt" and env.get("LOCALAPPDATA"):
+            local = Path(env["LOCALAPPDATA"])
+            directories += [local / "Programs/@opencode-aidesktop", local / "Programs/OpenCode", local / "OpenCode"]
+        candidates = []
+        for directory in directories:
+            # Electron uses resources/; older Tauri packages use a sibling sidecar.
+            candidates += [directory / "resources/opencode-cli.exe", directory / "opencode-cli.exe"]
+            for name in ("opencode", "opencode.exe", "opencode.cmd", "opencode.bat", "opencode-cli"):
+                candidates.append(directory / name)
+    checked: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = os.path.normcase(os.path.abspath(candidate))
+        if key in seen:
+            continue
+        seen.add(key)
+        if not candidate.is_file():
+            continue
+        try:
+            if windows_gui(candidate):
+                checked.append(f"{candidate}: desktop launcher, not run")
+                continue
+            result = subprocess.run([str(candidate.absolute()), "--version"], cwd=Path.cwd(), env=env,
+                                    stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                                    encoding="utf-8", errors="replace", timeout=15)
+            version = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout).strip()
+            if result.returncode == 0 and re.fullmatch(
+                    r"(?:opencode(?:-cli)?\s+)?v?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", version, re.IGNORECASE):
+                return str(candidate.absolute())
+            checked.append(f"{candidate}: no valid CLI version (exit {result.returncode})")
+        except (OSError, subprocess.SubprocessError) as error:
+            checked.append(f"{candidate}: {type(error).__name__}")
+    detail = "; ".join(checked) or "No CLI executable found in the selected locations."
+    raise ValueError("No working OpenCode CLI found. " + detail +
+                     " Use the desktop's opencode-cli.exe or an installed OpenCode CLI; "
+                     "set AMS_OPENCODE_CLI to its full path for a custom location. "
+                     "No provider or model availability was inferred.")
+
+
 def cli(harness: str, arguments: list[str], *, env: dict[str, str]) -> str:
-    executable = shutil.which(harness)
+    executable = (env.get("AMS_OPENCODE_CLI") or opencode_cli(env)
+                  if harness == "opencode" else shutil.which(harness))
     if not executable:
         raise ValueError(f"{harness} is not on PATH. Install the harness first.")
-    result = subprocess.run([executable, *arguments], cwd=Path.cwd(), env=env,
+    result = subprocess.run([executable, *arguments], cwd=Path.cwd(), env=env, stdin=subprocess.DEVNULL,
                             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
     if result.returncode:
         raise RuntimeError(f"{harness} {' '.join(arguments)} failed (exit {result.returncode}); no model was invoked.")
-    return re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    output = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    if harness == "opencode" and not output.strip():
+        raise ValueError(f"OpenCode CLI returned no output for {' '.join(arguments)}: {executable}. "
+                         "This is not evidence that your account lacks AMS models.")
+    return output
+
+
+def verify_opencode_agents(files: dict[Path, bytes], env: dict[str, str]) -> None:
+    output = cli("opencode", ["agent", "list"], env=env)
+    names = set(re.findall(r"^([^\s]+) \((?:subagent|all)\)\s*$", output, re.MULTILINE))
+    missing = {path.stem for path in files} - names
+    if missing:
+        raise ValueError("OpenCode did not register the installed agents: " + ", ".join(sorted(missing)) +
+                         ". Check the active config directory and disabled/project agent overrides.")
 
 
 def catalog(harness: str, env: dict[str, str]) -> dict[str, set[str]]:
@@ -334,7 +411,11 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
     for target in sorted(targets - {"codex"}):
         created: list[tuple[Path, tuple[int, int], bytes]] = []
         try:
-            models = catalog(target, env)
+            target_env = env.copy()
+            if target == "opencode":
+                target_env["AMS_OPENCODE_CLI"] = opencode_cli(target_env)
+                print(f"opencode: using CLI {target_env['AMS_OPENCODE_CLI']}", flush=True)
+            models = catalog(target, target_env)
             files = select_profiles(profiles, models, target, providers[target], homes[target] / "agents")
             preflight(files)
             if target == "pi" and not pi_package(homes["pi"]):
@@ -345,10 +426,14 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
                 if not pi_package(homes["pi"]):
                     raise RuntimeError("Pi did not register pi-subagents.")
             create_files(files, created)
+            if target == "opencode":
+                verify_opencode_agents(files, target_env)
             preflight(files)
             if any(not p.is_file() or p.read_bytes() != data for p, data in files.items()):
                 raise ValueError("Final native agent verification failed.")
             print(f"{target}: {len(files)} native agent presets installed in {homes[target] / 'agents'}")
+            if target == "opencode":
+                print(f"opencode: all {len(files)} installed agents confirmed by the CLI registry.")
             omitted = len(profiles) - len(files)
             if omitted:
                 print(f"{target}: {omitted} presets omitted because their exact model IDs are not listed.")

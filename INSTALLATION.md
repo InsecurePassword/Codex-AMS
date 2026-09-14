@@ -8,7 +8,7 @@ You need a working installation of the coding app you want to use, access to its
 
 Official setup guides: [Codex](https://developers.openai.com/codex/quickstart/), [OpenCode](https://opencode.ai/docs/), [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent), and [Python](https://www.python.org/downloads/).
 
-For OpenCode and Pi, the app's command must work in your terminal. The installer finds exact AMS model names across the app's listed providers automatically. If an app needs more setup, it reports that app as **NOT CONFIGURED** and keeps the shared skill and other successful installs. It never disguises another model as Sol or Astra.
+For Pi, its command must work in your terminal. For OpenCode, the installer can use an installed command-line program or the helper bundled with OpenCode Desktop. The installer finds exact AMS model names across the app's listed providers automatically. If an app needs more setup, it reports that app as **NOT CONFIGURED** and keeps the shared skill and other successful installs. It never disguises another model as Sol or Astra.
 
 These commands download and run code from this repository. Run them only if you trust this project. Public downloads do not require a GitHub account or GitHub CLI. See [download problems](#download-problems) if access is restricted or a download fails.
 
@@ -33,6 +33,8 @@ Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/
 ```
 
 ### OpenCode
+
+On Windows, `OpenCode.exe` may open the desktop app instead of accepting terminal commands. The installer automatically looks for its `opencode-cli.exe` helper beside the app or in its `resources` folder. You do not need to rename files, change PATH, or install a second OpenCode when that helper is available.
 
 ```powershell
 Invoke-RestMethod 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/tools/install_harnesses.py' -ErrorAction Stop | python - --harness opencode
@@ -80,6 +82,8 @@ curl -fsSL 'https://raw.githubusercontent.com/InsecurePassword/Codex-AMS/main/to
 
 Look for **"All selected targets installed."** Read any omitted-model notices too. **"Partial installation"** means the named apps still need configuration; the shared skill and successful installs were kept. A successful install checks the files, not paid model access or actual thinking levels.
 
+For OpenCode, the installer prints the exact CLI it used and confirms that all generated agents appear in that CLI's registry. Empty command output or missing agents is a setup failure, not a successful install. A desktop connected to a different server needs AMS installed on that server instead.
+
 Restart the app you installed into and open a **new chat in your project**. In Codex, type `$` and choose **AMS** from the skill list. Its exact skill name remains `$adaptive-master-subagent-orchestration`; `$AMS` is not a separate registered alias. Then follow [Start your first task](PRODUCT%20DOCUMENTATION.md#start-your-first-task).
 
 A plugin and a directly installed skill are separate copies. Update a marketplace-managed copy through Codex's plugin manager; the direct installer updates the shared skill. If a skill was deliberately disabled, use Codex's skill controls to enable it yourself. The installer does not override that choice.
@@ -120,7 +124,10 @@ This keeps supported settings and adds missing defaults. See [Settings and older
 | What you see | What to do |
 |---|---|
 | `python` or `python3` is not found | Install Python 3.11 or newer, then open a new terminal. |
-| `opencode` or `pi` is not on PATH | Make sure that app's command works in this terminal. Follow its setup guide, then reopen the terminal. Other completed installs remain usable. |
+| `pi` is not on PATH | Make sure Pi's command works in this terminal. Follow its setup guide, then reopen the terminal. Other completed installs remain usable. |
+| `No working OpenCode CLI found` | The installer did not find a usable command-line helper. Check the paths in the error. Repair the desktop installation or install the official OpenCode CLI. For a custom location, set `AMS_OPENCODE_CLI` to the full path of the command-line executable and rerun. Do not point it at the desktop launcher. |
+| `OpenCode CLI returned no output` | This is an executable/CLI problem, not proof that your account lacks models. Use the CLI path printed by the installer to check the app. |
+| `OpenCode did not register the installed agents` | Check the active config directory and project overrides. Do not delete existing profiles or change permissions merely to make this check pass. |
 | `No exact AMS model IDs found` | Read the providers and model examples printed with the message. Check that app's model access. The installer searched its catalog; it cannot give an account models it does not have. |
 | A model is listed by multiple providers | Add `--opencode-provider NAME` or `--pi-provider NAME`, using one of the actual names printed in the error. This chooses your existing provider; it does not create an account. |
 | `Pi requires pi-subagents` | Run the Pi command above with `--install-pi-subagents`. If the extension is deliberately disabled, review that setting first. |

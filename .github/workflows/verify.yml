@@ -122,6 +122,11 @@ jobs:
       - name: Verify native Codex skill and plugin discovery
         run: python verification/verify_harness_installers.py --codex-discovery
 
+      - name: Install native OpenCode for discovery test (no model calls)
+        run: npm install --global opencode-ai
+      - name: Verify native OpenCode installer and agent discovery
+        run: python verification/verify_harness_installers.py --opencode-discovery
+
       - name: Verify Windows runtime-observation fixture
         if: runner.os == 'Windows'
         shell: powershell

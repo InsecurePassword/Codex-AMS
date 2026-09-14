@@ -45,7 +45,12 @@ class HarnessInstall(unittest.TestCase):
         fake.write_text('''import json, os, pathlib, sys
 name, *args = sys.argv[1:]
 models = %r
-if name == "opencode" and args == ["models"]:
+if name == "opencode" and args == ["--version"]:
+    print("1.2.3")
+elif name == "opencode" and args == ["agent", "list"]:
+    root = pathlib.Path(os.environ["OPENCODE_CONFIG_DIR"]) / "agents"
+    for agent in sorted(root.glob("*.md")): print(agent.stem + " (subagent)")
+elif name == "opencode" and args == ["models"]:
     print("\\n".join("openai/"+m for m in models))
 elif name == "pi" and args == ["--list-models"]:
     print("provider model context max-out reasoning images")
@@ -74,7 +79,7 @@ else:
         self.context = patch.dict(os.environ, environment)
         self.context.start()
         self.addCleanup(self.context.stop)
-        for key in ("AMS_INSTALL_PROFILES_ONLY", "AMS_INSTALL_SKILL_ONLY"):
+        for key in ("AMS_INSTALL_PROFILES_ONLY", "AMS_INSTALL_SKILL_ONLY", "AMS_OPENCODE_CLI"):
             os.environ.pop(key, None)
 
     def wrapper(self, harness: str, *extra: str) -> subprocess.CompletedProcess[str]:
@@ -276,8 +281,9 @@ else:
 
     def test_catalog_respects_current_project_directory(self) -> None:
         result = subprocess.CompletedProcess([], 0, "different/gpt-5.6-sol\n", "")
+        env = dict(os.environ, AMS_OPENCODE_CLI=shutil.which("opencode"))
         with patch.object(installer.subprocess, "run", return_value=result) as run:
-            self.assertEqual(installer.catalog("opencode", os.environ.copy()), {"gpt-5.6-sol": {"different"}})
+            self.assertEqual(installer.catalog("opencode", env), {"gpt-5.6-sol": {"different"}})
         self.assertEqual(run.call_args.kwargs["cwd"], Path.cwd())
 
     def test_pi_catalog_does_not_force_offline_or_clear_user_choice(self) -> None:
@@ -322,6 +328,139 @@ else:
             self.skipTest("Symlink creation unavailable on this runner")
         self.assertEqual(installer.install("opencode"), 2)
         self.assertFalse(list(outside.iterdir()))
+
+
+    def test_registration_failure_rolls_back_only_new_opencode_files(self) -> None:
+        self.assertEqual(installer.install("all"), 0)
+        existing = self.oc / "agents/ams_sol_high.md"
+        before = existing.read_bytes()
+        for path in (self.oc / "agents").glob("*.md"):
+            if path != existing:
+                path.unlink()
+        with patch.object(installer, "verify_opencode_agents", side_effect=ValueError("registry mismatch")):
+            self.assertEqual(installer.install("all"), 2)
+        self.assertEqual(list((self.oc / "agents").glob("*.md")), [existing])
+        self.assertEqual(existing.read_bytes(), before)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
+
+    def test_all_keeps_codex_and_pi_when_only_gui_is_available(self) -> None:
+        with patch.object(installer, "opencode_cli", side_effect=ValueError("desktop launcher, not run")):
+            self.assertEqual(installer.install("all"), 2)
+        self.assertFalse((self.oc / "agents").exists())
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
+
+
+class OpenCodeExecutable(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.home = Path(self.temp.name).resolve()
+        self.desktop = self.home / "Programs/@opencode-aidesktop"
+        self.desktop.mkdir(parents=True)
+        self.gui = self.desktop / "opencode.exe"
+        self.pe(self.gui, 2)
+        self.env = {"PATH": str(self.desktop)}
+
+    @staticmethod
+    def pe(path: Path, subsystem: int, magic: int = 0x20b) -> None:
+        data = bytearray(256)
+        data[:2] = b"MZ"
+        data[60:64] = (64).to_bytes(4, "little")
+        data[64:68] = b"PE\0\0"
+        data[88:90] = magic.to_bytes(2, "little")
+        data[156:158] = subsystem.to_bytes(2, "little")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+
+    def test_electron_and_tauri_sidecars_take_priority_without_gui_launch(self) -> None:
+        for relative in ("resources/opencode-cli.exe", "opencode-cli.exe"):
+            with self.subTest(relative=relative):
+                sidecar = self.desktop / relative
+                self.pe(sidecar, 3)
+                with patch.object(installer.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "1.2.3\n", "")) as run:
+                    self.assertEqual(installer.opencode_cli(self.env), str(sidecar))
+                self.assertEqual(run.call_args.args[0], [str(sidecar), "--version"])
+                self.assertEqual(run.call_args.kwargs["stdin"], subprocess.DEVNULL)
+                sidecar.unlink()
+
+    def test_gui_is_never_run_and_later_path_cli_is_found(self) -> None:
+        other = self.home / "npm"
+        other.mkdir()
+        cli = other / "opencode.cmd"
+        cli.write_text("fixture")
+        self.env["PATH"] += os.pathsep + str(other)
+        with patch.object(installer.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "1.2.3", "")) as run:
+            self.assertEqual(installer.opencode_cli(self.env), str(cli))
+        self.assertEqual(run.call_count, 1)
+        self.assertEqual(run.call_args.args[0][0], str(cli))
+
+    def test_gui_only_reports_executable_problem_without_querying_models(self) -> None:
+        with patch.object(installer.subprocess, "run") as run:
+            with self.assertRaisesRegex(ValueError, "desktop launcher, not run"):
+                installer.opencode_cli(self.env)
+        run.assert_not_called()
+
+    def test_console_pe32_and_pe64_are_not_classified_as_gui(self) -> None:
+        for magic in (0x10b, 0x20b):
+            for subsystem in (2, 3):
+                self.pe(self.gui, subsystem, magic)
+                self.assertEqual(installer.windows_gui(self.gui), subsystem == 2)
+        self.gui.write_bytes(b"MZ")
+        self.assertFalse(installer.windows_gui(self.gui))
+
+    def test_empty_invalid_nonzero_and_timed_out_versions_are_rejected(self) -> None:
+        sidecar = self.desktop / "opencode-cli.exe"
+        self.pe(sidecar, 3)
+        cases = [subprocess.CompletedProcess([], 0, "", ""),
+                 subprocess.CompletedProcess([], 0, "Electron launched", ""),
+                 subprocess.CompletedProcess([], 1, "1.2.3", ""),
+                 subprocess.TimeoutExpired("fixture", 15)]
+        for result in cases:
+            options = {"side_effect": result} if isinstance(result, Exception) else {"return_value": result}
+            with self.subTest(result=result), patch.object(installer.subprocess, "run", **options) as run:
+                with self.assertRaisesRegex(ValueError, "No working OpenCode CLI"):
+                    installer.opencode_cli(self.env)
+                self.assertEqual(run.call_args.kwargs["timeout"], 15)
+                self.assertTrue(all(call.args[0][0] != str(self.gui) for call in run.call_args_list))
+
+    def test_explicit_cli_path_is_honored_and_not_silently_replaced(self) -> None:
+        selected = self.home / "custom cli/opencode.exe"
+        self.pe(selected, 3)
+        self.env["AMS_OPENCODE_CLI"] = str(selected)
+        with patch.object(installer.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "v1.2.3-beta.1\n", "")) as run:
+            self.assertEqual(installer.opencode_cli(self.env), str(selected))
+        self.assertEqual(run.call_args.args[0], [str(selected), "--version"])
+        self.env["AMS_OPENCODE_CLI"] = str(self.gui)
+        with patch.object(installer.subprocess, "run") as run:
+            with self.assertRaisesRegex(ValueError, "No working OpenCode CLI"):
+                installer.opencode_cli(self.env)
+            run.assert_not_called()
+        self.env["AMS_OPENCODE_CLI"] = "relative.exe"
+        with self.assertRaisesRegex(ValueError, "full path"):
+            installer.opencode_cli(self.env)
+
+    def test_blank_catalog_or_agent_output_is_not_model_unavailability(self) -> None:
+        self.env["AMS_OPENCODE_CLI"] = str(self.desktop / "opencode-cli.exe")
+        for args in (["models"], ["agent", "list"]):
+            with patch.object(installer.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "\n", "")):
+                with self.assertRaisesRegex(ValueError, "CLI returned no output"):
+                    installer.cli("opencode", args, env=self.env)
+
+    def test_registry_requires_all_installed_subagents(self) -> None:
+        files = {self.home / "ams_sol_high.md": b"", self.home / "ams_astra_high.md": b""}
+        cases = [("ams_sol_high (subagent)\r\nams_astra_high (subagent)\r\n", True),
+                 ("ams_sol_high (subagent)\n", False),
+                 ("ams_sol_high (primary)\nams_astra_high (subagent)\n", False),
+                 ("general (subagent)\n  ams_sol_high (subagent)\n", False)]
+        for text, valid in cases:
+            with self.subTest(text=text), patch.object(installer, "cli", return_value=text):
+                if valid:
+                    installer.verify_opencode_agents(files, self.env)
+                else:
+                    with self.assertRaisesRegex(ValueError, "did not register"):
+                        installer.verify_opencode_agents(files, self.env)
 
 
 def codex_skills(executable: str, project: Path, env: dict[str, str]) -> list[dict]:
@@ -448,8 +587,71 @@ def verify_native_codex() -> None:
                     print("PASS user skill-disable configuration preserved (not silently enabled)", flush=True)
 
 
+def verify_native_opencode() -> None:
+    """Install and enumerate real OpenCode agents with a synthetic, no-inference provider."""
+    executable = installer.opencode_cli(os.environ.copy())
+    print(subprocess.check_output([executable, "--version"], text=True).strip(), flush=True)
+    with tempfile.TemporaryDirectory(prefix="ams-opencode-native-") as temporary:
+        home = Path(temporary).resolve()
+        project = home / "project"
+        project.mkdir()
+        env = os.environ.copy()
+        for key in tuple(env):
+            if key.startswith(("OPENCODE_", "AMS_")):
+                env.pop(key)
+        env.update(HOME=str(home), USERPROFILE=str(home), AMS_SKILL_HOME=str(home / "skills"),
+                   CODEX_HOME=str(home / "codex"), OPENCODE_CONFIG_DIR=str(home / "config/opencode"),
+                   XDG_CONFIG_HOME=str(home / "config"), XDG_DATA_HOME=str(home / "data"),
+                   XDG_CACHE_HOME=str(home / "cache"), XDG_STATE_HOME=str(home / "state"),
+                   OPENCODE_TEST_HOME=str(home), AMS_OPENCODE_CLI=executable)
+        if os.name == "nt":
+            # Exercise the user's Electron layout with the real CLI binary, not a CLI mock.
+            npm = shutil.which("npm")
+            if not npm:
+                raise AssertionError("npm is required for the native Windows desktop-layout fixture")
+            modules = Path(subprocess.check_output([npm, "root", "-g"], text=True).strip())
+            binaries = [p for root in (modules / "opencode-ai/node_modules", modules)
+                        for p in root.glob("opencode-windows-x64*/bin/opencode.exe")]
+            if not binaries:
+                raise AssertionError("Native OpenCode Windows package binary not found")
+            desktop = home / "Programs/@opencode-aidesktop"
+            OpenCodeExecutable.pe(desktop / "opencode.exe", 2)
+            sidecar = desktop / "resources/opencode-cli.exe"
+            sidecar.parent.mkdir()
+            shutil.copy2(sorted(binaries)[0], sidecar)
+            env.pop("AMS_OPENCODE_CLI")
+            env["PATH"] = str(desktop) + os.pathsep + env["PATH"]
+            if installer.opencode_cli(env) != str(sidecar):
+                raise AssertionError("Desktop sidecar was not selected ahead of the GUI/PATH CLI")
+        config = Path(env["OPENCODE_CONFIG_DIR"])
+        config.mkdir(parents=True)
+        settings = config / "opencode.json"
+        settings.write_text(json.dumps({"enabled_providers": ["ams-test"], "provider": {
+            "ams-test": {"npm": "@ai-sdk/openai-compatible", "name": "AMS fixture (no inference)",
+                         "options": {"baseURL": "http://127.0.0.1:9/v1", "apiKey": "fixture-not-a-secret"},
+                         "models": {model: {"name": model, "reasoning": True,
+                                            "limit": {"context": 128000, "output": 16000}} for model in MODELS}}}
+        }), encoding="utf-8")
+        before = settings.read_bytes()
+        command = [sys.executable, str(ROOT / "tools/install_harnesses.py"), "--harness", "opencode",
+                   "--opencode-provider", "ams-test", "--local"]
+        for _ in range(2):
+            result = subprocess.run(command, cwd=project, env=env, capture_output=True, text=True,
+                                    encoding="utf-8", errors="replace", timeout=300)
+            print(result.stdout, flush=True)
+            if result.returncode:
+                raise AssertionError(result.stderr)
+            files = {p: p.read_bytes() for p in (config / "agents").glob("ams_*.md")}
+            if len(files) != 23 or settings.read_bytes() != before:
+                raise AssertionError("Native OpenCode install changed settings or omitted profiles")
+            installer.verify_opencode_agents(files, env)
+        print("PASS real OpenCode CLI install, 23 registered subagents, reinstall, and settings preservation; no model call.", flush=True)
+
+
 if __name__ == "__main__":
     if sys.argv[1:] == ["--codex-discovery"]:
         verify_native_codex()
+    elif sys.argv[1:] == ["--opencode-discovery"]:
+        verify_native_opencode()
     else:
         unittest.main()
