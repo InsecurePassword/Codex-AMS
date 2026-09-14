@@ -42,6 +42,7 @@ jobs:
           verification/verify_local_openai_lane.py
           tools/install_harnesses.py
           verification/verify_harness_installers.py
+          verification/verify_desktop_bootstrap.py
           tools/measure_context.py
           tools/report_sizes.py
           extensions/ams-runtime-observation/tools/inspect-agent-runtime.py
@@ -98,6 +99,9 @@ jobs:
       - name: Verify multi-harness installer targets
         run: python verification/verify_harness_installers.py
 
+      - name: Verify production Desktop bootstrap boundaries
+        run: python verification/verify_desktop_bootstrap.py
+
       - name: Verify public remote profile source
         if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
         run: python -c "from tools.install_harnesses import package_profiles; assert len(package_profiles(False)) == 23"
@@ -131,3 +135,31 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: .\verification\Verify-RuntimeObservation.ps1
+
+  production-desktop:
+    name: Windows / official production Desktop without CLI
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Extract official OpenCode Desktop 1.18.30
+        shell: pwsh
+        run: |
+          $setup = Join-Path $env:RUNNER_TEMP 'opencode-desktop.exe'
+          Invoke-WebRequest 'https://github.com/anomalyco/opencode/releases/download/v1.18.30/opencode-desktop-win-x64.exe' -OutFile $setup
+          if ((Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'dcf723272c930f5dfa73a8561818ae4ad1a346384a859111ffeb554e19ce6567') { throw 'Desktop archive hash mismatch' }
+          $outer = Join-Path $env:RUNNER_TEMP 'opencode-setup'
+          $desktop = Join-Path $env:RUNNER_TEMP 'opencode-production'
+          & 7z x $setup "-o$outer" -y
+          if ($LASTEXITCODE -ne 0) { throw 'Desktop setup extraction failed' }
+          $payload = @(Get-ChildItem $outer -Recurse -Filter 'app-64.7z')
+          if ($payload.Count -ne 1) { throw 'Desktop payload not found' }
+          & 7z x $payload[0].FullName "-o$desktop" -y
+          if ($LASTEXITCODE -ne 0) { throw 'Desktop application extraction failed' }
+          if (-not (Test-Path (Join-Path $desktop 'resources\app.asar'))) { throw 'Production app.asar missing' }
+      - name: Verify Desktop-only installation and reinstall (no model calls)
+        shell: pwsh
+        run: python verification/verify_desktop_bootstrap.py --native (Join-Path $env:RUNNER_TEMP 'opencode-production')

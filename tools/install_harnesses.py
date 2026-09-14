@@ -7,16 +7,19 @@ from functools import lru_cache
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import re
 import shutil
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 
 if sys.version_info < (3, 11):
     raise SystemExit("OpenCode/Pi installation requires Python 3.11 or newer.")
@@ -151,7 +154,94 @@ def windows_gui(path: Path) -> bool:
             and int.from_bytes(pe[92:94], "little") == 2)
 
 
-def opencode_cli(env: dict[str, str]) -> str:
+def desktop_version(executable: Path) -> str | None:
+    """Read Electron's package metadata without executing or editing the desktop app."""
+    archive = executable.parent / "resources/app.asar"
+    if not archive.is_file():
+        return None
+    safe_path(archive)
+    with archive.open("rb") as stream:
+        prefix = stream.read(8)
+        if len(prefix) != 8:
+            raise ValueError(f"Invalid desktop package: {archive}")
+        marker, length = struct.unpack("<II", prefix)
+        if marker != 4 or not 8 <= length <= 16 * 1024 * 1024:
+            raise ValueError(f"Invalid desktop package header: {archive}")
+        header = stream.read(length)
+        if len(header) != length:
+            raise ValueError(f"Truncated desktop package: {archive}")
+        size = struct.unpack_from("<I", header, 4)[0]
+        if size > length - 8:
+            raise ValueError(f"Invalid desktop package index: {archive}")
+        entry = json.loads(header[8:8 + size]).get("files", {}).get("package.json", {})
+        offset, size = str(entry.get("offset", "")), entry.get("size", 0)
+        if not offset.isdecimal() or not isinstance(size, int) or not 0 < size <= 65536:
+            raise ValueError(f"Missing desktop package metadata: {archive}")
+        stream.seek(8 + length + int(offset))
+        package = json.loads(stream.read(size))
+    version = package.get("version", "")
+    if package.get("name") != "@opencode-ai/desktop" or not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        raise ValueError(f"Not a supported stable OpenCode Desktop package: {archive}")
+    return version
+
+
+def download_desktop_cli(version: str, directory: Path) -> str:
+    """Stage a checksum-verified official CLI matching Windows Desktop; never install it globally."""
+    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        raise ValueError("Invalid OpenCode Desktop version.")
+    arch = {"amd64": "x64-baseline", "x86_64": "x64-baseline", "arm64": "arm64", "aarch64": "arm64"}.get(platform.machine().lower())
+    if not arch:
+        raise ValueError("Unsupported Windows architecture for temporary OpenCode CLI.")
+    name = f"opencode-windows-{arch}.zip"
+    base = "https://github.com/anomalyco/opencode/releases/download/v" + version
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/anomalyco/opencode/releases/tags/v{version}",
+        headers={"User-Agent": "AMS-Tree-Installer"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        metadata = response.read(1048577)
+    if len(metadata) > 1048576:
+        raise ValueError("OpenCode release metadata exceeds the size limit.")
+    release = json.loads(metadata)
+    matches = [a for a in release.get("assets", []) if a.get("name") == name]
+    if release.get("tag_name") != "v" + version or release.get("draft") or release.get("prerelease") or len(matches) != 1:
+        raise ValueError(f"No exact official OpenCode {version} CLI asset: {name}")
+    asset = matches[0]
+    digest, size = asset.get("digest", ""), asset.get("size", 0)
+    if (not re.fullmatch(r"sha256:[0-9a-f]{64}", digest) or not isinstance(size, int)
+            or not 0 < size <= 256 * 1024 * 1024 or asset.get("browser_download_url") != base + "/" + name):
+        raise ValueError("OpenCode CLI release asset has invalid URL, size, or checksum metadata.")
+    archive = directory / name
+    checksum, total = hashlib.sha256(), 0
+    print(f"opencode: downloading temporary official CLI {version} ({size // 1048576} MiB).", flush=True)
+    with urllib.request.urlopen(urllib.request.Request(base + "/" + name, headers={"User-Agent": "AMS-Tree-Installer"}), timeout=60) as response, archive.open("xb") as output:
+        while chunk := response.read(1048576):
+            total += len(chunk)
+            if total > size:
+                raise ValueError("OpenCode CLI download exceeds its declared size.")
+            checksum.update(chunk)
+            output.write(chunk)
+    if total != size or checksum.hexdigest() != digest[7:]:
+        raise ValueError("OpenCode CLI download failed its size/SHA-256 check.")
+    executable = directory / "opencode.exe"
+    try:
+        with zipfile.ZipFile(archive) as bundle:
+            binaries = [i for i in bundle.infolist() if i.filename.split("/")[-1] == "opencode.exe"]
+            if len(binaries) != 1:
+                raise ValueError("OpenCode CLI archive must contain exactly one executable.")
+            entry = binaries[0]
+            if (".." in entry.filename.split("/") or "\\" in entry.filename
+                    or stat.S_ISLNK(entry.external_attr >> 16) or not 0 < entry.file_size <= 512 * 1024 * 1024):
+                raise ValueError("Invalid OpenCode CLI archive member.")
+            with bundle.open(entry) as source, executable.open("xb") as output:
+                shutil.copyfileobj(source, output)
+            if executable.stat().st_size != entry.file_size:
+                raise ValueError("OpenCode CLI extraction size mismatch.")
+    except zipfile.BadZipFile as error:
+        raise ValueError("Invalid OpenCode CLI archive.") from error
+    return str(executable)
+
+
+def opencode_cli(env: dict[str, str], download_dir: Path | None = None) -> str:
     """Find a working CLI, preferring the desktop's own sidecar over its GUI."""
     override = env.get("AMS_OPENCODE_CLI")
     if override:
@@ -171,6 +261,7 @@ def opencode_cli(env: dict[str, str]) -> str:
             for name in ("opencode", "opencode.exe", "opencode.cmd", "opencode.bat", "opencode-cli"):
                 candidates.append(directory / name)
     checked: list[str] = []
+    desktops: list[tuple[Path, str]] = []
     seen: set[str] = set()
     for candidate in candidates:
         key = os.path.normcase(os.path.abspath(candidate))
@@ -182,6 +273,10 @@ def opencode_cli(env: dict[str, str]) -> str:
         try:
             if windows_gui(candidate):
                 checked.append(f"{candidate}: desktop launcher, not run")
+                if not override and download_dir is not None and os.name == "nt":
+                    version = desktop_version(candidate)
+                    if version:
+                        desktops.append((candidate, version))
                 continue
             result = subprocess.run([str(candidate.absolute()), "--version"], cwd=Path.cwd(), env=env,
                                     stdin=subprocess.DEVNULL, capture_output=True, text=True,
@@ -191,8 +286,18 @@ def opencode_cli(env: dict[str, str]) -> str:
                     r"(?:opencode(?:-cli)?\s+)?v?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", version, re.IGNORECASE):
                 return str(candidate.absolute())
             checked.append(f"{candidate}: no valid CLI version (exit {result.returncode})")
-        except (OSError, subprocess.SubprocessError) as error:
-            checked.append(f"{candidate}: {type(error).__name__}")
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            checked.append(f"{candidate}: {error}")
+    if desktops and download_dir is not None:
+        desktop, version = desktops[0]
+        print(f"opencode: Desktop {version} at {desktop} has no usable installed CLI.", flush=True)
+        executable = download_desktop_cli(version, download_dir)
+        result = subprocess.run([executable, "--version"], cwd=Path.cwd(), env=env,
+                                stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=30)
+        if result.returncode or result.stdout.strip().removeprefix("v") != version:
+            raise ValueError("Downloaded OpenCode CLI does not report the exact Desktop version.")
+        return executable
     detail = "; ".join(checked) or "No CLI executable found in the selected locations."
     raise ValueError("No working OpenCode CLI found. " + detail +
                      " Use the desktop's opencode-cli.exe or an installed OpenCode CLI; "
@@ -410,10 +515,12 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
     incomplete: list[str] = []
     for target in sorted(targets - {"codex"}):
         created: list[tuple[Path, tuple[int, int], bytes]] = []
+        cli_directory = None
         try:
             target_env = env.copy()
             if target == "opencode":
-                target_env["AMS_OPENCODE_CLI"] = opencode_cli(target_env)
+                cli_directory = tempfile.TemporaryDirectory(prefix="ams-opencode-cli-")
+                target_env["AMS_OPENCODE_CLI"] = opencode_cli(target_env, Path(cli_directory.name))
                 print(f"opencode: using CLI {target_env['AMS_OPENCODE_CLI']}", flush=True)
             models = catalog(target, target_env)
             files = select_profiles(profiles, models, target, providers[target], homes[target] / "agents")
@@ -444,6 +551,9 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
         except BaseException:
             rollback(created)
             raise
+        finally:
+            if cli_directory is not None:
+                cli_directory.cleanup()
     print("Restart the selected apps to reload skills and agents. In Codex type $ and select AMS.")
     print(f"Exact Codex skill name: ${SKILL}. Pi: /skill:{SKILL}.")
     print("Providers, credentials, permissions, compaction, and AMS project settings were not changed.")
