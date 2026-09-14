@@ -624,9 +624,9 @@ def verify_native_opencode() -> None:
             if installer.opencode_cli(env) != str(sidecar):
                 raise AssertionError("Desktop sidecar was not selected ahead of the GUI/PATH CLI")
         config = Path(env["OPENCODE_CONFIG_DIR"])
-        config.mkdir(parents=True)
+        config.mkdir(parents=True, exist_ok=True)
         settings = config / "opencode.json"
-        settings.write_text(json.dumps({"enabled_providers": ["ams-test"], "provider": {
+        settings.write_text(json.dumps({"$schema": "https://opencode.ai/config.json", "enabled_providers": ["ams-test"], "provider": {
             "ams-test": {"npm": "@ai-sdk/openai-compatible", "name": "AMS fixture (no inference)",
                          "options": {"baseURL": "http://127.0.0.1:9/v1", "apiKey": "fixture-not-a-secret"},
                          "models": {model: {"name": model, "reasoning": True,
