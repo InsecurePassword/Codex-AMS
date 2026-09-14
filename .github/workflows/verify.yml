@@ -43,6 +43,7 @@ jobs:
           tools/install_harnesses.py
           verification/verify_harness_installers.py
           verification/verify_desktop_bootstrap.py
+          verification/verify_desktop_session.py
           tools/measure_context.py
           tools/report_sizes.py
           extensions/ams-runtime-observation/tools/inspect-agent-runtime.py
@@ -102,6 +103,9 @@ jobs:
       - name: Verify production Desktop bootstrap boundaries
         run: python verification/verify_desktop_bootstrap.py
 
+      - name: Verify Desktop installation lifecycle boundaries
+        run: python verification/verify_desktop_session.py --unit
+
       - name: Verify public remote profile source
         if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
         run: python -c "from tools.install_harnesses import package_profiles; assert len(package_profiles(False)) == 23"
@@ -137,7 +141,7 @@ jobs:
         run: .\verification\Verify-RuntimeObservation.ps1
 
   production-desktop:
-    name: Windows / official production Desktop without CLI
+    name: Windows / official production Desktop installation and session
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
@@ -163,3 +167,8 @@ jobs:
       - name: Verify Desktop-only installation and reinstall (no model calls)
         shell: pwsh
         run: python verification/verify_desktop_bootstrap.py --native (Join-Path $env:RUNNER_TEMP 'opencode-production')
+      - name: Install Desktop test driver
+        run: python -m pip install playwright
+      - name: Verify actual Desktop installation lifecycle and Task visibility
+        shell: pwsh
+        run: python verification/verify_desktop_session.py (Join-Path $env:RUNNER_TEMP 'opencode-production')
