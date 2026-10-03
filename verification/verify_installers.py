@@ -359,6 +359,54 @@ def hardlink_prerequisite(base: Path, script: Path, environment: dict[str, str])
     print('PASS unsupported hard links fail before live mutation')
 
 
+def configured_root_aliases(base: Path, script: Path, environment: dict[str, str]) -> None:
+    """Root ancestor aliases work; root leaves and descendants remain guarded."""
+    if os.name == "nt":
+        return  # This fixture exercises Bash's physical-root anchoring.
+    base.mkdir()
+    physical = base.resolve() / "physical"
+    physical.mkdir()
+    alias = base.resolve() / "alias"
+    alias.symlink_to(physical, target_is_directory=True)
+    env = environment | {"AMS_SKILL_HOME": str(alias / "skills"), "CODEX_HOME": str(alias / "codex")}
+    for _ in range(2):
+        invoke(script, env)
+        assert_profiles(physical / "codex")
+        if (physical / "skills" / SKILL / "SKILL.md").read_bytes() != (ROOT / SKILL / "SKILL.md").read_bytes():
+            raise AssertionError("Alias-root skill installation or reinstall failed")
+    for kind in ("skill-root", "codex-root", "agents", "profile"):
+        case = physical / kind
+        case.mkdir()
+        outside = case / "outside"
+        outside.mkdir()
+        (outside / "sentinel").write_bytes(b"unrelated work")
+        skills, codex = case / "skills", case / "codex"
+        suffix = ""
+        if kind == "skill-root":
+            skills.symlink_to(outside, target_is_directory=True)
+            suffix = "/"  # Root-leaf checks also cover trailing path syntax.
+        elif kind == "codex-root":
+            codex.symlink_to(outside, target_is_directory=True)
+            suffix = "/."
+        elif kind == "agents":
+            codex.mkdir()
+            (codex / "agents").symlink_to(outside, target_is_directory=True)
+        else:
+            (codex / "agents").mkdir(parents=True)
+            target = outside / "profile.toml"
+            target.write_bytes((ROOT / SKILL / "assets/agent-profiles/ams_sol_low.toml").read_bytes())
+            (codex / "agents/ams_sol_low.toml").symlink_to(target)
+        before = {p.name: p.read_bytes() for p in outside.iterdir()}
+        selected = environment | {"AMS_SKILL_HOME": str(skills) + (suffix if kind == "skill-root" else ""),
+                                  "CODEX_HOME": str(codex) + (suffix if kind == "codex-root" else "")}
+        result = invoke(script, selected, expect_success=False)
+        if "redirected" not in result.stdout + result.stderr:
+            raise AssertionError(f"Missing redirected-path refusal for {kind}")
+        if {p.name: p.read_bytes() for p in outside.iterdir()} != before:
+            raise AssertionError(f"Redirected {kind} changed unrelated files")
+    print("PASS configured-root ancestor aliases install/reinstall; root and descendant redirects refused")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as temporary_directory:
         base = Path(temporary_directory)
@@ -591,6 +639,7 @@ def main() -> int:
                 if not redirected_spark.is_symlink() or outside.read_bytes() != old["ams_spark_low.toml"]:
                     raise AssertionError("Retirement followed or removed an unowned Spark redirect")
 
+            configured_root_aliases(base / "root-alias-fixture", script, environment)
             hardlink_prerequisite(base / "hardlink-fixture", script, environment)
             preservation_races(base / "race-fixtures", script, environment, served)
 

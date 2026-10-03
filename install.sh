@@ -48,8 +48,6 @@ managed_marker="# managed-by: adaptive-master-subagent-orchestration"
 user_agent="AMS-Tree-Installer"
 skill_home="${AMS_SKILL_HOME:-${HOME:?HOME is not set}/.agents/skills}"
 codex_home="${CODEX_HOME:-${HOME}/.codex}"
-destination="${skill_home}/${skill_name}"
-agent_home="${codex_home}/agents"
 profiles_only="${AMS_INSTALL_PROFILES_ONLY:-0}"
 skill_only="${AMS_INSTALL_SKILL_ONLY:-0}"
 max_manifest_bytes=262144
@@ -261,6 +259,22 @@ assert_safe_directory() {
   [[ ! -e "$path" || -d "$path" ]] || fail "${label} is not a directory: ${path}"
   mkdir -p -- "$path"
   [[ -d "$path" && ! -L "$path" ]] || fail "${label} could not be established safely: ${path}"
+}
+
+canonical_install_root() {
+  local path=$1 label=$2
+  # Strip only trailing separators/dot spelling so a redirected root leaf
+  # cannot hide behind a trailing slash. Ancestor aliases are pinned once.
+  while :; do
+    case "$path" in
+      /) break ;;
+      */.) path=${path%/.}; [[ -n "$path" ]] || path=/ ;;
+      */) path=${path%/} ;;
+      *) break ;;
+    esac
+  done
+  assert_safe_directory "$path" "$label"
+  (cd -P -- "$path" && pwd -P)
 }
 
 safe_manifest_path() {
@@ -511,9 +525,13 @@ new_owner_token() {
   od -An -N16 -tx1 /dev/urandom | tr -d ' \n'
 }
 
-assert_safe_directory "$skill_home" "Skill parent"
+skill_home=$(canonical_install_root "$skill_home" "Skill parent")
 if (( skill_only == 0 )); then
-  assert_safe_directory "$codex_home" "CODEX_HOME"
+  codex_home=$(canonical_install_root "$codex_home" "CODEX_HOME")
+fi
+destination="${skill_home}/${skill_name}"
+agent_home="${codex_home}/agents"
+if (( skill_only == 0 )); then
   assert_safe_directory "$agent_home" "Agent registry"
 fi
 

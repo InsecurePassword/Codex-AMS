@@ -2,7 +2,7 @@
 """Exercise native-profile translation and selected-target installs without model calls."""
 from __future__ import annotations
 
-from contextlib import ExitStack
+from contextlib import ExitStack, chdir
 import importlib.util
 import io
 import json
@@ -254,7 +254,7 @@ module.stage_remote_package = capture_stage
 assert module.install("codex", local=False) == 0
 assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not cleaned"
 """.replace("SOURCE_ROOT", repr(str(ROOT)))
-        for mode in ("relative", "absolute", "default"):
+        for mode in ("relative", "absolute", "default", "alias-relative", "alias-absolute"):
             with self.subTest(mode=mode):
                 base = self.home / mode
                 caller = base / "caller"
@@ -263,7 +263,25 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
                 home.mkdir()
                 env = os.environ.copy()
                 env.update(HOME=str(home), USERPROFILE=str(home))
-                if mode == "relative":
+                if mode.startswith("alias-"):
+                    work = base / "work"
+                    (work / "project").mkdir(parents=True)
+                    try:
+                        (caller / "current").symlink_to(work / "project", target_is_directory=True)
+                    except OSError:
+                        continue  # Other path fixtures still run without symlink privileges.
+                    selected = Path("current") / ".."
+                    if mode == "alias-absolute":
+                        selected = caller / selected
+                    env.update(AMS_SKILL_HOME=str(selected / "skills"), CODEX_HOME=str(selected / "codex"))
+                    # Derive the oracle from the original path using host semantics,
+                    # independently of the installer (Windows normalizes parent parts).
+                    with chdir(caller):
+                        skill_home = Path(env["AMS_SKILL_HOME"]).resolve()
+                        codex_home = Path(env["CODEX_HOME"]).resolve()
+                    if os.name != "nt":
+                        self.assertEqual((skill_home, codex_home), (work / "skills", work / "codex"))
+                elif mode == "relative":
                     env.update(AMS_SKILL_HOME="relative skills", CODEX_HOME="relative codex")
                     skill_home, codex_home = caller / "relative skills", caller / "relative codex"
                 elif mode == "absolute":
@@ -291,6 +309,90 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
                 profiles = ROOT / installer.SKILL / "assets/agent-profiles"
                 self.assertEqual({p.name: p.read_bytes() for p in (codex_home / "agents").glob("ams_*.toml")},
                                  {p.name: p.read_bytes() for p in profiles.glob("ams_*.toml")})
+                if mode.startswith("alias-") and os.name != "nt":
+                    self.assertFalse((caller / "skills").exists())
+                    self.assertFalse((caller / "codex").exists())
+
+    def test_native_selected_root_ancestor_aliases_preserve_descendant_guards(self) -> None:
+        physical = self.home / "physical"
+        physical.mkdir()
+        alias = self.home / "alias"
+        try:
+            alias.symlink_to(physical, target_is_directory=True)
+        except OSError:
+            self.skipTest("Runner cannot create directory symlinks")
+        for harness, variable in (("opencode", "OPENCODE_CONFIG_DIR"), ("pi", "PI_CODING_AGENT_DIR")):
+            home = physical / harness
+            home.mkdir()
+            if harness == "pi":
+                (home / "settings.json").write_text(json.dumps(self.settings))
+            with patch.dict(os.environ, {variable: str(alias / harness)}):
+                self.assertEqual(installer.home_path(variable, self.home), home)
+                for _ in range(2):
+                    self.assertEqual(installer.install(harness), 0)
+                    self.assertEqual(len(list((home / "agents").glob("*.md"))), 35)
+            leaf = physical / (harness + "-redirect")
+            leaf.symlink_to(home, target_is_directory=True)
+            with patch.dict(os.environ, {variable: str(leaf) + os.sep}):
+                with self.assertRaisesRegex(ValueError, "Redirected installation root"):
+                    installer.home_path(variable, self.home)
+            redirected = home / "redirected-agents"
+            redirected.symlink_to(home / "agents", target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, "Redirected installation path"):
+                installer.safe_path(redirected / "ams_sol_low.md")
+
+    def test_native_alias_parent_traversal_uses_physical_destination(self) -> None:
+        caller = self.home / "caller"
+        caller.mkdir()
+        work = self.home / "work"
+        (work / "project").mkdir(parents=True)
+        try:
+            (caller / "current").symlink_to(work / "project", target_is_directory=True)
+        except OSError:
+            self.skipTest("Runner cannot create directory symlinks")
+        for mode in ("absolute", "relative"):
+            for harness, variable, provider in (("opencode", "OPENCODE_CONFIG_DIR", "openai"),
+                                                ("pi", "PI_CODING_AGENT_DIR", "openai-codex")):
+                with self.subTest(mode=mode, harness=harness):
+                    name = harness + "-" + mode
+                    selected = Path("current") / ".." / name
+                    if mode == "absolute":
+                        selected = caller / selected
+                    with chdir(caller):
+                        home = selected.resolve()  # Host oracle, before invoking the helper.
+                    if os.name != "nt":
+                        self.assertEqual(home, work / name)
+                    home.mkdir()
+                    if harness == "pi":
+                        (home / "settings.json").write_text(json.dumps(self.settings))
+                    with chdir(caller), patch.dict(os.environ, {variable: str(selected)}), \
+                            patch.object(installer, "install_core"):
+                        self.assertEqual(installer.home_path(variable, self.home), home)
+                        self.assertEqual(installer.install(harness), 0)
+                    profiles = installer.package_profiles()
+                    self.assertEqual({p.name: p.read_bytes() for p in (home / "agents").glob("*.md")},
+                                     {p["name"] + ".md": installer.render(p, harness, provider) for p in profiles})
+                    if os.name != "nt":
+                        self.assertFalse((caller / name).exists())
+
+    def test_unselected_redirected_homes_do_not_block_selected_targets(self) -> None:
+        redirect = self.home / "unused-root"
+        try:
+            redirect.symlink_to(self.home, target_is_directory=True)
+        except OSError:
+            self.skipTest("Runner cannot create directory symlinks")
+        with patch.dict(os.environ, {"PI_CODING_AGENT_DIR": str(redirect),
+                                     "OPENCODE_CONFIG_DIR": str(redirect)}), \
+                patch.object(installer, "install_core"):
+            self.assertEqual(installer.install("codex"), 0)
+        env = os.environ.copy() | {"CODEX_HOME": str(redirect)}
+        with patch.object(installer.subprocess, "run") as run:
+            installer.install_core({"opencode"}, env, local=True)
+        self.assertEqual(run.call_args.kwargs["env"]["AMS_INSTALL_SKILL_ONLY"], "1")
+        with patch.object(installer.subprocess, "run") as run:
+            installer.install_core({"opencode"}, env | {"AMS_SKILL_HOME": str(redirect),
+                                                       "AMS_INSTALL_PROFILES_ONLY": "1"}, local=True)
+        run.assert_not_called()
 
     def test_remote_codex_skips_harness_catalog(self) -> None:
         with patch.object(installer, "package_profiles") as profiles, \

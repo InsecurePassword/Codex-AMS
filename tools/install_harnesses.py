@@ -104,8 +104,21 @@ def safe_path(path: Path) -> None:
             raise ValueError(f"Installation parent is not a directory: {part}")
 
 
+def anchored_home(value: str | Path) -> Path:
+    """Pin selected-root ancestor aliases without accepting a redirected root leaf."""
+    path = Path(value).expanduser().absolute()
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        pass
+    else:
+        if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+            raise ValueError(f"Redirected installation root: {path}")
+    return path.resolve()
+
+
 def home_path(variable: str, default: Path) -> Path:
-    return Path(os.path.abspath(Path(os.environ.get(variable) or default).expanduser()))
+    return anchored_home(os.environ.get(variable) or default)
 
 
 @lru_cache(maxsize=1)
@@ -720,16 +733,16 @@ def stage_remote_package(root: Path) -> Path:
 
 
 def install_core(targets: set[str], env: dict[str, str], local: bool) -> None:
+    if "codex" not in targets and env.get("AMS_INSTALL_PROFILES_ONLY") == "1":
+        return
     native_env = env.copy()
     # The native installer runs from the package/staging directory, but custom
     # homes belong to the caller's cwd, including for a streamed bootstrap.
-    for variable in ("AMS_SKILL_HOME", "CODEX_HOME"):
+    for variable in (("AMS_SKILL_HOME", "CODEX_HOME") if "codex" in targets else ("AMS_SKILL_HOME",)):
         if native_env.get(variable):
-            native_env[variable] = os.path.abspath(Path(native_env[variable]).expanduser())
+            native_env[variable] = str(anchored_home(native_env[variable]))
     native_env.pop("AMS_INSTALL_SKILL_ONLY", None)
     if "codex" not in targets:
-        if native_env.get("AMS_INSTALL_PROFILES_ONLY") == "1":
-            return
         native_env["AMS_INSTALL_SKILL_ONLY"] = "1"
     with tempfile.TemporaryDirectory(prefix="ams-bootstrap-") as temporary:
         package_root = ROOT if local else Path(temporary)
@@ -759,13 +772,16 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
     providers = {"opencode": opencode_provider, "pi": pi_provider}
     if any(not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", p) for p in providers.values()):
         raise ValueError("Invalid provider name.")
-    homes = {
-        "pi": home_path("PI_CODING_AGENT_DIR", Path.home() / ".pi/agent"),
-        "opencode": home_path("OPENCODE_CONFIG_DIR", home_path("XDG_CONFIG_HOME", Path.home() / ".config") / "opencode"),
-    }
+    homes = {}
+    if "pi" in targets:
+        homes["pi"] = home_path("PI_CODING_AGENT_DIR", Path.home() / ".pi/agent")
+        env["PI_CODING_AGENT_DIR"] = str(homes["pi"])
+    if "opencode" in targets:
+        config = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config").expanduser()
+        homes["opencode"] = home_path("OPENCODE_CONFIG_DIR", config / "opencode")
+        env["OPENCODE_CONFIG_DIR"] = str(homes["opencode"])
     if {"pi", "opencode"} <= targets and homes["pi"] == homes["opencode"]:
         raise ValueError("OpenCode and Pi must have separate agent directories.")
-    env["PI_CODING_AGENT_DIR"] = str(homes["pi"])
     if "opencode" in targets:
         wait_for_opencode_desktop_exit(env)
     profiles = package_profiles(local) if targets - {"codex"} else []
