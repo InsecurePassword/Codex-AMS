@@ -10,7 +10,7 @@ Allow only: initial start; one same-lane retry correcting an evidenced invocatio
 
 Failed probe or no-start confirmation terminalizes the episode. No replacement, route/profile/transport change, cleanup diagnosis, fallback, root execution, mode, hierarchy, Rush, or Ultra adds another process start. The probe is diagnostic and cannot chain.
 
-Proven no-start owns nothing. Active, uncertain, or potentially live workers/managers/descendants/app tasks/writers retain ownership/allocation until closure is proven; late results are evidence only and restore no custody or acceptance. Report unresolved state `live` or `unverified`, do not claim workspace verification, and continue runner-free authorized work. After probe success plus failed Spark/local confirmation, mark that route `inactive-after-failure`; Daybreak keeps its fixed budget.
+Proven no-start owns nothing. Active, uncertain, or potentially live workers/managers/descendants/app tasks/writers retain ownership/allocation until closure is proven; late results are evidence only and restore no custody or acceptance. Report unresolved state `live` or `unverified`, do not claim workspace verification, and continue runner-free authorized work. After probe success plus failed local confirmation, mark that route `inactive-after-failure`; Daybreak keeps its fixed budget.
 
 ## Non-runner diagnosis
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 from functools import lru_cache
 import hashlib
 import json
@@ -32,6 +33,62 @@ REPOSITORY = "InsecurePassword/Codex-AMS"
 REF = "main"
 SKILL = "adaptive-master-subagent-orchestration"
 MARKER = "<!-- managed-by: adaptive-master-subagent-orchestration -->"
+
+
+# Exact native renders of frozen official d4819892cfd823b8b1d63c797edbb872279ee3da.
+# Only the provider segment is normalized; all other bytes must match.
+PRIOR_NATIVE_HASHES = {'opencode': {'ams_astra_high': '9edbfb9722a3e3e198c0409f8f02f9117c3134eb0fa4cb64f4929e38d08c0fcc',
+              'ams_astra_low': 'f2b719706448127824561cef3297191128636f3254c455cb0494719b74f60a7a',
+              'ams_astra_max': '3acc67701c704e37e0c5042f34e7afc5adcfa20c58a823f691889075ac21c534',
+              'ams_astra_medium': '97e1caa10f6d5fbaefbd28d7e4b2dceb37ce37123d70b8c8977d31a24fe6b4f9',
+              'ams_astra_xhigh': '8674ee9a8564058926e167c50f921571898aee5419092c0f1e5475dcff1ad43a',
+              'ams_luna_high': '171dfcccf32bc7c5210985a26c75d877c8dbdfdd77dfd72021993b60cc8e7c46',
+              'ams_luna_low': 'ea021af53a5941aeb023ae9abd84f830787430241c0b0249222ae90fb8019acd',
+              'ams_luna_max': '6125951b278c1869fba367e1779eb143cd59e84968ba9795f3eef7ecbfe6e2f2',
+              'ams_luna_medium': '27b77dc7c205e501d1ab29066487045473730b456a73500cc6b8f16ccb2c48b3',
+              'ams_luna_xhigh': '93d959d2aa9a9c34b362d7cc87f2489136d568545f680b2672f85d9123480c7d',
+              'ams_sol_high': 'cf23bbbd15c94c09c7724cf30d3cb2bea6837860ec283bece931891f7100a71d',
+              'ams_sol_low': '1eca429b31be8d602977869f394cbae385ca081c14080292e746f13a6e7924e7',
+              'ams_sol_max': '500a4badf50b82010cfac41204531d11f1ab5c35ae85412c7b84e58acaf44526',
+              'ams_sol_medium': '24215051fd1b697cf73ace2804d67cb6db50cfe7a19c553c49bb393af747a8e2',
+              'ams_sol_xhigh': 'f8343559fa8e9e1d122e4dacb7a352709e01906af6c678c515c34bca1ffab5db',
+              'ams_spark_high': 'c216d22692173871ee36a53bf561118029d963848862e8f3ff846c4f3c65029a',
+              'ams_spark_low': 'b0741648886399a87eff5cfc291c5d919e3a21159bf9a03b5c5e7c614b153437',
+              'ams_spark_medium': '52eba50f07eff1ddb5f4b6de5a6737c7da1cd4adfa112a78f3910b5ee9e4be55',
+              'ams_terra_high': '3b7b7d343922facc482b86e5aa1c2d66f7ea5d5fd0fb5f425b6b38129dba2b55',
+              'ams_terra_low': 'ba575ec49cb0e439b61a912bca2a3d22e1a4baa72fae2282a80393468e71af02',
+              'ams_terra_max': 'c5ce126d493e28c9f8bdffc4bbd94b9a45a91aef4f4c4b00c68877a21e9e67e7',
+              'ams_terra_medium': '364ec0bf3774e280929a6a8858cbf3890094c4f990d8ca0d55b8ccdab1f45cc3',
+              'ams_terra_xhigh': '0722173412fff075c8c26087844422d44b2635202063d3ba65e57edc5400bb24'},
+ 'pi': {'ams_astra_high': 'bd306fa168c95413dab110984ea81c057f58fe9905b551673372cd8fa9d1466b',
+        'ams_astra_low': '54d875f2cfbe9be2dfd49919ccf2d06a15554dd3daaa8ae64176e2aaa6b2bdaf',
+        'ams_astra_max': 'da4ce25ab797a3dd925d44f3956ccc41082140173c6a1bd5c2016473c38f15da',
+        'ams_astra_medium': 'de9c115a187e6d9db37e16346eaa95d33916543cc184509c8c38f264744cd305',
+        'ams_astra_xhigh': '77293397671d9817fb57aa583fb106ff95c2ed34a5fd0d58c85568f2c850babb',
+        'ams_luna_high': '8ee9d4fa42a3a6cea40b66331328d98ab5424be713b3aba2cc2acb6fe972aafe',
+        'ams_luna_low': '0015df6e8318232ba7328a93e35ac3c502d44f21f689492e17bf8be2f72b8aeb',
+        'ams_luna_max': '671c35d1808975e1c463ac60363c902cf193e97ca88c500d9a407168a883e91c',
+        'ams_luna_medium': 'f1fdaca294cf52fc8f65f330e0e703a2a9c632cf90678ffe5ee3e78ec3973f2c',
+        'ams_luna_xhigh': '32d6dd3605e00f69e16c9686f2c28690b29a69eef582a1c0922f779ac8bcf455',
+        'ams_sol_high': 'abfcc64ee78d646cca0b831ee95d29ddd283e2ae4f938bf2d76192f844f46984',
+        'ams_sol_low': '1599f6dd4af1dc67f2e9434e2cdbe54dede2f68de4cff3d4561903161298ba64',
+        'ams_sol_max': 'c5c2e95c2ad9900dfb498d15beba3d1cbc4bce556233d27e5a65d47d579026a6',
+        'ams_sol_medium': '1ca8f2f617f80a0ff4d23be8ba721323303ba1e7ad7d4acd808e2144a6e17c43',
+        'ams_sol_xhigh': '174cb541331bdf28655d96406717342f41cf97a0cc2f03fbf2b2c32d6aa9cd56',
+        'ams_spark_high': '423c5b0d924996d7a8fc26fcff40da228b4dcf16fcaced060a2b648307387c56',
+        'ams_spark_low': 'bbb06620a7080a394d4c8fc2cd0390ca2ac4a3bae60134f1dc0e6d11f9224cf4',
+        'ams_spark_medium': 'ed3b86cff864594cea01fd6cff2c9524d7964484345d9453e1a003d109c7ef53',
+        'ams_terra_high': '6a8c61ee6bca7ffa5673f7e575b440837c9417f460fc8261cd28a61186af785a',
+        'ams_terra_low': '300ce909b2e8afd360d7a2a0506ab0808900dcbd880b65e799c5f6c88dad4e71',
+        'ams_terra_max': '8cc2e32f0c8efce72b123123200db013dcc578de2fe1cc9589cc20ba47de6a38',
+        'ams_terra_medium': '1c37e8e6aee876678833a801c9d33377b3feb6ee444e03bd80b9427b9cfaac0a',
+        'ams_terra_xhigh': '8b21e9a30e8442af8f0c95e8dbfbee281f8ff3169d5599bc5518abf9ea9c9c0f'}}
+RETIRED_NATIVE_NAMES = ("ams_spark_low", "ams_spark_medium", "ams_spark_high")
+EXPECTED_PROFILE_NAMES = {
+    f"ams_{family}_{effort}" for family in
+    ("sol", "luna", "astra", "sol_6_0", "sol_5_6", "terra", "luna_5_6")
+    for effort in ("low", "medium", "high", "xhigh", "max")
+} | {"ams_daybreak_blue_max"}
 
 
 def safe_path(path: Path) -> None:
@@ -125,8 +182,8 @@ def manifest_entries(data: bytes) -> dict[str, tuple[str, int]]:
 def package_profiles(local: bool = True) -> list[dict[str, str]]:
     entries = manifest_entries(source_bytes("install-manifest.txt", local))
     names = sorted(name for name in entries if "/assets/agent-profiles/" in name and name.endswith(".toml"))
-    if len(names) != 24:
-        raise ValueError(f"Expected 24 manifest-listed model profiles, found {len(names)}.")
+    if {Path(name).stem for name in names} != EXPECTED_PROFILE_NAMES or len(names) != 36:
+        raise ValueError("Expected the exact 36 manifest-listed AMS model profiles.")
     profiles = []
     for name in names:
         data = source_bytes(name, local)
@@ -418,14 +475,24 @@ def select_profiles(profiles: list[dict[str, str]], models: dict[str, set[str]],
         candidates = models.get(profile["model"], set())
         if provider != "auto":
             candidates = candidates & {provider}
-        if not candidates:
-            continue
         target = agent_home / (profile["name"] + ".md")
         safe_path(target)
-        if len(candidates) > 1:
-            # Reinstall keeps an exact previously generated route; never guess a paid provider.
-            prior = target.read_bytes() if target.is_file() else None
-            previous = [p for p in candidates if prior == render(profile, harness, p)]
+        if not candidates:
+            if target.is_file() and predecessor_provider(profile["name"], target.read_bytes(), harness) is not None:
+                raise ValueError(f"Installed predecessor {profile['name']} needs exact model {profile['model']}, "
+                                 "which is not listed by the selected provider. Existing files were preserved.")
+            continue
+        # Auto preserves an exact generated route, including an official prompt/model
+        # predecessor. A marker or a plausible frontmatter field is never ownership proof.
+        prior = target.read_bytes() if target.is_file() else None
+        previous = [p for p in candidates if prior == render(profile, harness, p)]
+        old_provider = predecessor_provider(profile["name"], prior, harness) if prior is not None else None
+        if provider == "auto" and old_provider is not None:
+            if old_provider not in candidates:
+                raise ValueError(f"Previous provider {old_provider!r} does not list {profile['model']}. "
+                                 f"Select --{harness}-provider NAME explicitly to change this route.")
+            candidates = {old_provider}
+        elif len(candidates) > 1:
             if len(previous) != 1:
                 raise ValueError(f"{profile['model']} is listed by multiple providers: "
                                  f"{', '.join(sorted(candidates))}. Select --{harness}-provider NAME.")
@@ -470,42 +537,167 @@ def render(profile: dict[str, str], harness: str, provider: str) -> bytes:
     return (f"---\n{frontmatter}\n---\n{MARKER}\n\n{profile['developer_instructions'].strip()}\n").encode("utf-8")
 
 
-def preflight(files: dict[Path, bytes]) -> None:
-    for path, data in files.items():
-        safe_path(path)
-        if path.exists() and (not path.is_file() or path.read_bytes() != data):
-            raise ValueError(f"Preserving differing agent file: {path}. Reconcile it before reinstalling.")
+def predecessor_provider(name: str, data: bytes, harness: str) -> str | None:
+    expected = PRIOR_NATIVE_HASHES[harness].get(name)
+    if expected is None:
+        return None
+    match = re.search(rb'^model: "([A-Za-z0-9][A-Za-z0-9._-]*)/([^"\r\n]+)"$', data, re.MULTILINE)
+    if not match:
+        return None
+    normalized = data[:match.start(1)] + b"ams-predecessor" + data[match.end(1):]
+    if hashlib.sha256(normalized).hexdigest() != expected:
+        return None
+    return match.group(1).decode("ascii")
 
 
-def create_files(files: dict[Path, bytes], created: list[tuple[Path, tuple[int, int], bytes]]) -> None:
+@contextmanager
+def native_lock(home: Path):
+    """Serialize native writers; an existing lock fails closed without stale guesses."""
+    safe_path(home)
+    home.mkdir(parents=True, exist_ok=True)
+    path = home / ".adaptive-master-subagent-orchestration.native.lock"
+    safe_path(path)
+    try:
+        path.mkdir()
+    except FileExistsError as error:
+        raise ValueError(f"Another native AMS transaction may be active: {path}") from error
+    identity = path.stat()
+    try:
+        yield
+    finally:
+        info = path.lstat()
+        if stat.S_ISDIR(info.st_mode) and (info.st_dev, info.st_ino) == (identity.st_dev, identity.st_ino):
+            path.rmdir()
+
+
+def regular_snapshot(path: Path) -> tuple[tuple[int, int], bytes]:
+    safe_path(path)
+    before = path.lstat()
+    if not stat.S_ISREG(before.st_mode):
+        raise ValueError(f"Agent target is not regular: {path}")
+    data = path.read_bytes()
+    after = path.lstat()
+    if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+            after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns):
+        raise ValueError(f"Agent changed during inspection: {path}")
+    return (after.st_dev, after.st_ino), data
+
+
+def preflight(files: dict[Path, bytes]) -> dict[Path, tuple[tuple[int, int], bytes]]:
+    previous = {}
     for path, data in files.items():
         safe_path(path)
         if path.exists():
-            if path.read_bytes() != data:
+            identity, prior = regular_snapshot(path)
+            harness = "pi" if b'\nsystemPromptMode: "append"\n' in data else "opencode"
+            if prior != data:
+                if predecessor_provider(path.stem, prior, harness) is None:
+                    raise ValueError(f"Preserving differing agent file: {path}. Reconcile it before reinstalling.")
+                previous[path] = (identity, prior)
+    return previous
+
+
+# Replacement journal: target, published identity/data (None for removal),
+# actual displaced entry, expected predecessor snapshot.
+Replacement = tuple[Path, tuple[int, int] | None, bytes | None, Path, tuple[tuple[int, int], bytes]]
+
+
+def create_files(files: dict[Path, bytes], created: list[tuple[Path, tuple[int, int], bytes]],
+                 replaced: list[Replacement], backups: Path,
+                 previous: dict[Path, tuple[tuple[int, int], bytes]]) -> None:
+    for path, data in files.items():
+        safe_path(path)
+        prior = previous.get(path)
+        if path.exists() and prior is None:
+            if regular_snapshot(path)[1] != data:
                 raise ValueError(f"Agent changed after preflight: {path}")
             continue
+        if prior is not None and regular_snapshot(path) != prior:
+            raise ValueError(f"Agent changed after preflight: {path}")
         path.parent.mkdir(parents=True, exist_ok=True)
         fd, temporary = tempfile.mkstemp(prefix=".ams-install-", dir=path.parent)
         try:
             with os.fdopen(fd, "wb") as stream:
                 stream.write(data)
-            identity = Path(temporary).stat()
-            # Link is create-only on Windows and Unix; it never overwrites another actor's file.
-            os.link(temporary, path)
-            created.append((path, (identity.st_dev, identity.st_ino), data))
+            info = Path(temporary).stat()
+            identity = (info.st_dev, info.st_ino)
+            if prior is None:
+                # Create-only publication never overwrites another actor's file.
+                os.link(temporary, path)
+                created.append((path, identity, data))
+            else:
+                backup = backups / path.name
+                # Take custody of the actual directory entry before trusting its
+                # bytes. A copy followed by replacement can destroy a late edit.
+                os.rename(path, backup)
+                replaced.append((path, None, None, backup, prior))
+                if regular_snapshot(backup) != prior:
+                    raise ValueError(f"Agent changed during displacement: {path}")
+                os.link(temporary, path)  # Never overwrite a newly appeared file.
+                replaced[-1] = (path, identity, data, backup, prior)
         finally:
             Path(temporary).unlink(missing_ok=True)
 
 
-def rollback(created: list[tuple[Path, tuple[int, int], bytes]]) -> None:
-    for path, identity, data in reversed(created):
+def retire_native_files(agent_home: Path, harness: str, replaced: list[Replacement], backups: Path) -> None:
+    for name in RETIRED_NATIVE_NAMES:
+        path = agent_home / (name + ".md")
+        # Unknown, custom, nonregular and redirected retired routes are untouched.
         try:
-            info = path.lstat()
-            if (stat.S_ISREG(info.st_mode) and (info.st_dev, info.st_ino) == identity
-                    and path.read_bytes() == data):
-                path.unlink()
-        except OSError:
-            pass
+            safe_path(path)
+            if not path.exists() or not path.is_file():
+                continue
+            prior = regular_snapshot(path)
+        except ValueError:
+            continue
+        if predecessor_provider(name, prior[1], harness) is None:
+            continue
+        backup = backups / path.name
+        os.rename(path, backup)
+        replaced.append((path, None, None, backup, prior))
+        if regular_snapshot(backup) != prior:
+            raise ValueError(f"Retired agent changed during displacement: {path}")
+        if path.exists() or path.is_symlink():
+            raise ValueError(f"Retired agent removal failed: {path}")
+
+
+def rollback(created: list[tuple[Path, tuple[int, int], bytes]], replaced: list[Replacement],
+             backups: Path | None = None) -> bool:
+    """Move before verifying; preserve actual displaced entries on every conflict.
+
+    Restore is create-only. Private custody paths are retained if recovery is
+    incomplete, including when a second actor recreates the live name.
+    """
+    complete = True
+    for path, identity, data, backup, prior in (
+            [(p, i, d, None, None) for p, i, d in reversed(created)] + list(reversed(replaced))):
+        custody = None
+        try:
+            safe_path(path)
+            if identity is not None and path.exists():
+                if regular_snapshot(path) != (identity, data):
+                    complete = False
+                    continue
+                directory = Path(tempfile.mkdtemp(prefix=".ams-rollback-", dir=backups or path.parent))
+                custody = directory / path.name
+                os.rename(path, custody)
+                if regular_snapshot(custody) != (identity, data):
+                    # A completed edit in the check/move window belongs to the
+                    # user. Keep it at the live name if free, otherwise in custody.
+                    os.link(custody, path)
+                    complete = False
+                    continue
+            if backup is not None:
+                safe_path(backup)
+                os.link(backup, path)
+            elif path.exists() or path.is_symlink():
+                complete = False
+            if custody is not None:
+                custody.unlink()
+                custody.parent.rmdir()
+        except (OSError, ValueError):
+            complete = False
+    return complete
 
 
 def stage_remote_package(root: Path) -> Path:
@@ -529,6 +721,11 @@ def stage_remote_package(root: Path) -> Path:
 
 def install_core(targets: set[str], env: dict[str, str], local: bool) -> None:
     native_env = env.copy()
+    # The native installer runs from the package/staging directory, but custom
+    # homes belong to the caller's cwd, including for a streamed bootstrap.
+    for variable in ("AMS_SKILL_HOME", "CODEX_HOME"):
+        if native_env.get(variable):
+            native_env[variable] = os.path.abspath(Path(native_env[variable]).expanduser())
     native_env.pop("AMS_INSTALL_SKILL_ONLY", None)
     if "codex" not in targets:
         if native_env.get("AMS_INSTALL_PROFILES_ONLY") == "1":
@@ -582,7 +779,11 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
     incomplete: list[str] = []
     for target in sorted(targets - {"codex"}):
         created: list[tuple[Path, tuple[int, int], bytes]] = []
+        replaced: list[Replacement] = []
         cli_directory = None
+        lock = None
+        backups = None
+        preserve_backups = False
         try:
             target_env = env.copy()
             if target == "opencode":
@@ -590,8 +791,12 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
                 target_env["AMS_OPENCODE_CLI"] = opencode_cli(target_env, Path(cli_directory.name))
                 print(f"opencode: using CLI {target_env['AMS_OPENCODE_CLI']}", flush=True)
             models = catalog(target, target_env)
+            pending_lock = native_lock(homes[target])
+            pending_lock.__enter__()
+            lock = pending_lock
             files = select_profiles(profiles, models, target, providers[target], homes[target] / "agents")
-            preflight(files)
+            previous = preflight(files)
+            backups = Path(tempfile.mkdtemp(prefix=".ams-install-", dir=homes[target]))
             if target == "pi" and not pi_package(homes["pi"]):
                 if not install_pi:
                     raise ValueError("Pi requires pi-subagents. Add --install-pi-subagents to permit its installation.")
@@ -599,7 +804,8 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
                 cli("pi", ["install", "npm:pi-subagents"], env=package_env)
                 if not pi_package(homes["pi"]):
                     raise RuntimeError("Pi did not register pi-subagents.")
-            create_files(files, created)
+            create_files(files, created, replaced, backups, previous)
+            retire_native_files(homes[target] / "agents", target, replaced, backups)
             if target == "opencode":
                 verify_opencode_agents(files, target_env)
                 if running_opencode_desktops(target_env):
@@ -607,6 +813,9 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
             preflight(files)
             if any(not p.is_file() or p.read_bytes() != data for p, data in files.items()):
                 raise ValueError("Final native agent verification failed.")
+            for path, _, _, backup, prior in replaced:
+                if regular_snapshot(backup) != prior:
+                    raise ValueError(f"Displaced agent changed before completion: {path}")
             print(f"{target}: {len(files)} native agent presets installed in {homes[target] / 'agents'}")
             if target == "opencode":
                 print(f"opencode: all {len(files)} installed agents confirmed by the CLI registry.")
@@ -615,13 +824,20 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
             if omitted:
                 print(f"{target}: {omitted} presets omitted because their exact model IDs are not listed.")
         except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
-            rollback(created)
+            preserve_backups = not rollback(created, replaced, backups)
             incomplete.append(target)
             print(f"{target}: NOT CONFIGURED: {error}", file=sys.stderr)
         except BaseException:
-            rollback(created)
+            preserve_backups = not rollback(created, replaced, backups)
             raise
         finally:
+            if backups is not None:
+                if preserve_backups:
+                    print(f"{target}: incomplete recovery; displaced files and agent backups retained at {backups}", file=sys.stderr)
+                else:
+                    shutil.rmtree(backups)
+            if lock is not None:
+                lock.__exit__(None, None, None)
             if cli_directory is not None:
                 cli_directory.cleanup()
     print("Restart the selected apps to reload skills and agents. In Codex type $ and select AMS.")

@@ -1,6 +1,6 @@
 {
   "name": "Codex-AMS",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "Adaptive Master–Subagent Orchestration for Codex.",
   "author": {
     "name": "InsecurePassword",
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Codex AMS",
     "shortDescription": "Adaptive multi-agent orchestration for Codex.",
-    "longDescription": "Delegates scoped work with autonomous recovery and optional model policies.",
+    "longDescription": "Updated for Astra and Sol 6.1. Delegates scoped work with autonomous recovery and optional model policies.",
     "developerName": "InsecurePassword",
     "category": "Productivity",
     "capabilities": [

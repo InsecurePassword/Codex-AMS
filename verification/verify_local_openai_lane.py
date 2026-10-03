@@ -3,6 +3,11 @@
 from __future__ import annotations
 
 import json
+import http.client
+import importlib.util
+import io
+from contextlib import redirect_stdout, redirect_stderr
+from unittest.mock import patch
 import os
 import subprocess
 import sys
@@ -128,6 +133,134 @@ class LocalLane(unittest.TestCase):
         Handler.posts = 0
         Handler.response_model = "qwen38"
         Handler.omit_model = False
+
+    def test_protocol_failures_after_start_cleanup_once_without_response_leaks(self) -> None:
+        spec = importlib.util.spec_from_file_location("cleanup_lane", HELPER)
+        assert spec and spec.loader
+        lane = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(lane)
+        sentinel = "PRIVATE_RESPONSE_SENTINEL"
+
+        class MemorySocket:
+            def __init__(self, raw):
+                self.raw = raw
+
+            def makefile(self, *args, **kwargs):
+                return io.BytesIO(self.raw)
+
+        def response(raw):
+            result = http.client.HTTPResponse(MemorySocket(raw))
+            result.begin()  # Exercise the real parser, not a fabricated exception.
+            return result
+
+        good = b'HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\n{"data": []}'
+        truncated = (b'HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n40\r\n'
+                     + sentinel.encode())
+        for phase in ("readiness", "inference"):
+            for failure in ("open", "read", "error-body"):
+                with self.subTest(phase=phase, failure=failure), tempfile.TemporaryDirectory() as td:
+                    project, request = make_project(
+                        Path(td), profile_text("http://127.0.0.1:1/v1", start_command=["fixture-start"],
+                                               stop_command=["fixture-stop"]),
+                        {"user": "fixture only", "estimated_input_tokens": 32, "max_output_tokens": 16},
+                    )
+                    calls = []
+                    commands = []
+                    def open_fixture(req, timeout):
+                        calls.append(req.method)
+                        if len(calls) == 1:
+                            raise lane.urllib.error.URLError("fixture unavailable before start")
+                        if phase == "inference" and len(calls) == 2:
+                            return response(good)
+                        if failure == "open":
+                            return response((sentinel + "\r\n").encode())
+                        parsed = response(truncated)
+                        if failure == "error-body":
+                            raise lane.urllib.error.HTTPError(req.full_url, 500, "fixture", {}, parsed)
+                        return parsed
+                    def command_fixture(command, timeout, label):
+                        commands.append((command, label))
+                    out, err = io.StringIO(), io.StringIO()
+                    argv = [str(HELPER), "--project-root", str(project), "--profile", "qwen38-32k",
+                            "--request-file", str(request), "--lifecycle", "keep"]
+                    with patch.object(sys, "argv", argv), patch.object(lane.HTTP_OPENER, "open", side_effect=open_fixture), \
+                            patch.object(lane, "run_command", side_effect=command_fixture), \
+                            redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as raised:
+                        lane.main()
+                    self.assertEqual(raised.exception.code, 20)
+                    payload = json.loads(out.getvalue())
+                    self.assertEqual(payload["status"], "malformed-response")
+                    self.assertEqual(payload["cleanup"], "stopped")
+                    self.assertNotIn("detail", payload)
+                    self.assertEqual(commands, [(["fixture-start"], "start"), (["fixture-stop"], "cleanup-stop")])
+                    self.assertEqual(calls, ["GET", "GET"] if phase == "readiness" else ["GET", "GET", "POST"])
+                    self.assertNotIn(sentinel, out.getvalue() + err.getvalue())
+                    self.assertEqual(err.getvalue(), "")
+
+    def test_remote_disconnect_preserves_one_start_and_cleanup_contract(self) -> None:
+        spec = importlib.util.spec_from_file_location("disconnect_lane", HELPER)
+        assert spec and spec.loader
+        lane = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(lane)
+
+        class MemorySocket:
+            def __init__(self, raw):
+                self.raw = raw
+
+            def makefile(self, *args, **kwargs):
+                return io.BytesIO(self.raw)
+
+        def response(payload):
+            if payload is None:
+                raw = b""  # Real HTTP parser raises RemoteDisconnected at EOF.
+            else:
+                body = json.dumps(payload).encode()
+                raw = b"HTTP/1.1 200 OK\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body
+            result = http.client.HTTPResponse(MemorySocket(raw))
+            result.begin()
+            return result
+
+        for outcome in ("recovered", "readiness-disconnect", "inference-disconnect"):
+            with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as td:
+                project, request = make_project(
+                    Path(td), profile_text("http://127.0.0.1:1/v1", start_command=["fixture-start"],
+                                           stop_command=["fixture-stop"]),
+                    {"user": "fixture only", "estimated_input_tokens": 32, "max_output_tokens": 16},
+                )
+                calls, commands = [], []
+                def open_fixture(req, timeout):
+                    calls.append(req.method)
+                    if len(calls) == 1 or (len(calls) == 2 and outcome == "readiness-disconnect"):
+                        return response(None)
+                    if len(calls) == 2:
+                        return response({"data": []})
+                    if outcome == "inference-disconnect":
+                        return response(None)
+                    return response({"model": "qwen38", "choices": [{"message": {"content": "fixture success"}}]})
+                def command_fixture(command, timeout, label):
+                    commands.append((command, label))
+                out, err = io.StringIO(), io.StringIO()
+                argv = [str(HELPER), "--project-root", str(project), "--profile", "qwen38-32k",
+                        "--request-file", str(request), "--lifecycle", "keep"]
+                with patch.object(sys, "argv", argv), patch.object(lane.HTTP_OPENER, "open", side_effect=open_fixture), \
+                        patch.object(lane, "run_command", side_effect=command_fixture), \
+                        redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as raised:
+                    lane.main()
+                payload = json.loads(out.getvalue())
+                self.assertEqual(err.getvalue(), "")
+                self.assertEqual(calls, ["GET", "GET"] if outcome == "readiness-disconnect" else ["GET", "GET", "POST"])
+                expected = [(["fixture-start"], "start")]
+                if outcome == "recovered":
+                    self.assertEqual(raised.exception.code, 0)
+                    self.assertEqual(payload["status"], "complete")
+                    self.assertEqual(payload["load_ownership"], "companion-started")
+                    self.assertTrue(payload["started_model"])
+                else:
+                    self.assertEqual(raised.exception.code, 20)
+                    self.assertEqual(payload["status"], "unavailable")
+                    self.assertEqual(payload["cleanup"], "stopped")
+                    expected.append((["fixture-stop"], "cleanup-stop"))
+                self.assertEqual(commands, expected)
 
     def test_online_single_readiness_and_single_inference(self) -> None:
         server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)

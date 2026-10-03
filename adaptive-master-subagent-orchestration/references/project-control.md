@@ -21,8 +21,6 @@ model_governance = true
 model_guidance = true
 automatic_model_switching = true
 root_execution_fallback = false
-spark_enabled = true
-spark_efforts = ["low", "medium", "high"]
 profile_management = "auto"
 ```
 
@@ -32,7 +30,7 @@ Project default adds one project-only field:
 local_llm_lane = false
 ```
 
-Missing fields use defaults until write. Intensity is `auto|minimal|moderate|heavy|extreme|zergling-rush` (`balanced` stores `moderate`); Spark efforts are a unique ordered subset of `low,medium,high`; profiles are `auto|installer`. Stored Rush is not consent. Local LLM is invalid globally and false without project settings.
+Missing fields use defaults until write. Intensity is `auto|minimal|moderate|heavy|extreme|zergling-rush` (`balanced` stores `moderate`); profiles are `auto|installer`. Stored Rush is not consent. Local LLM is invalid globally and false without project settings.
 
 The defaults above are the complete current schema. If another field appears, load `configuration-maintenance.md`: it alone defines retired compatibility input; reject anything else. Retired fields never affect behavior and are removed on the next authorized write.
 
@@ -49,8 +47,6 @@ AMS MODEL GUIDANCE on|off
 AMS MODEL SWITCHING on|off
 AMS ROOT FALLBACK on|off
 AMS CONFIGURATION UPDATE [PROJECT|GLOBAL]
-AMS SPARK on|off
-AMS SPARK EFFORTS low,medium,high
 AMS PROFILES auto|installer
 AMS LOCAL LLM on|off
 ```
@@ -59,12 +55,12 @@ AMS LOCAL LLM on|off
 
 Apply policy changes to subsequent assignments, not active agents or installed profiles. For a clean off-policy test use a fresh root and new children; previously read instructions remain in context.
 
-Status probes nothing and reports source/validity, activation/intensity, project governance/fallback, all three model-policy switches, profile policy, Spark/local preference and session availability, boundary, and blockers. Other commands change only the named project field while preserving current values, adding defaults, and dropping retired fields; mode also enables AMS. Only explicit global update writes global. New project settings copy effective base, add local false, then apply the requested change. Configuration update loads `configuration-maintenance.md`.
+Status probes nothing and reports source/validity, activation/intensity, project governance/fallback, all three model-policy switches, profile policy, local preference and session availability, boundary, and blockers. Other commands change only the named project field while preserving current values, adding defaults, and dropping retired fields; mode also enables AMS. Only explicit global update writes global. New project settings copy effective base, add local false, then apply the requested change. Configuration update loads `configuration-maintenance.md`.
 
 Apply at a safe wave boundary unless explicitly immediate. Disable stops new dispatch, lets atomic work finish, collects evidence, closes incompatible sessions, writes false, and creates no terminal record. Local on clears its session latch but selects no model. Local off or AMS disable makes one no-retry/probe `--stop-only` call only for a known companion-started kept model; never stop a preexisting model, and cleanup failure cannot veto the setting.
 
 ## Availability and continuity
 
-Spark/local state is session-only `unknown|available|inactive-after-failure`. Companion/profile, registration, capability, identity, helper, or start failure suppresses only that route; normal task-quality failure does not suppress Spark. No-start follows `runtime-core.md`; another no-start after a successful probe suppresses the route. The corresponding on-command clears the latch. Local context-too-small permits one tested same-`model_key` promotion, then reroutes only that work to Codex. Saved preference remains unchanged. Daybreak has no setting or proactive probe.
+Local state is session-only `unknown|available|inactive-after-failure`. Companion/profile, registration, capability, identity, helper, or start failure suppresses only that route. No-start follows `runtime-core.md`; another no-start after a successful probe suppresses the route. The corresponding on-command clears the latch. Local context-too-small permits one tested same-`model_key` promotion, then reroutes only that work to Codex. Saved preference remains unchanged. Daybreak has no setting or proactive probe.
 
 Keep graph, scope/dependencies, lineage, ownership, routing, and availability in session or authorized project-native continuity; create no AMS task/history/cache/memory file. Recovery inspects live state, preserves lineage, reclaims only proven-clear ownership, and resumes the earliest unfinished/unverified dependency. File-only changes require trusted provenance or direct user intent.

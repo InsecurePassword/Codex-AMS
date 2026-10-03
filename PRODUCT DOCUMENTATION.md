@@ -75,7 +75,7 @@ AMS has three separate model-policy switches. Each starts **on** unless you have
 | Policy | When on | When off |
 |---|---|---|
 | Model governance | Gives rules for organizing the helpers. | Leaves team organization more open. |
-| Model guidance | Gives advice about which model and thinking level suit each job. | Gives no AMS model-purpose advice. |
+| Model guidance | Gives advice about which model and thinking level suit each job. | Gives no AMS model-selection advice. |
 | Model switching | Gives rules for choosing or changing a helper's model. | Lets the main agent decide without AMS's switching rules. Switching is still allowed. |
 
 To turn all three off, send:
@@ -107,6 +107,16 @@ AMS MODEL SWITCHING on
 ```
 
 `AMS GOVERNANCE on` and `AMS GOVERNANCE off` are different: they control extra **project-level** coordination and review, not these three model policies. Basic scope, delegation, blocker review, and result checks still apply.
+
+## Model and effort choices
+
+With model guidance on, ordinary implementation uses Sol 6.1 High. Routine commands use Luna Low when another agent analyzes the output, or Luna Medium/High when interpretation is assigned. Commands integral to troubleshooting may stay with their owner. Documentation and general writing use Luna High for source-grounded drafts, Xhigh for multi-section reconciliation and completeness, or Max for whole-manual consistency. These are task-fit choices, not a required ladder. The writing profiles prioritize useful reader workflows, settings meanings and effects, expected results, and recovery over technical inventories. Sol Xhigh supports audit discovery and exploration; Sol Max supports deeper analysis of findings and difficult synthesis.
+
+For an assigned security audit, local/LAN-only software not intended for Internet exposure uses Sol 6.1 Xhigh; Internet-exposed software uses Astra Xhigh. This does not create permission for an audit or change ordinary development routing. Targeted post-solution verification may use Astra High. Other automatic Astra use needs a concrete reason beyond "might be better".
+
+Profiles still guide execution after selection when model guidance is off. Your explicit model and effort choices take precedence. If a requested route is unavailable, AMS reports it rather than silently substituting. Sol 6.0 and Sol/Terra/Luna 5.6 remain available only when you explicitly select them, never as automatic fallbacks, even with model policies off. Spark is retired.
+
+Each profile has conditional task guidance: it still performs another task you assign, rather than refusing or adding an audit because of its usual purpose. Only ordinary Sol/Astra Xhigh/Max profiles encourage novel approaches and extrapolation by default. Luna/Terra retain honest reporting and can still perform explicitly assigned tasks. All agents distinguish findings, proposals, implementation, and validation; changes beyond their authority go back to the assigning agent.
 
 ## Change how much work happens at once
 

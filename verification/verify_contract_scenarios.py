@@ -21,18 +21,16 @@ BASE_DEFAULTS: dict[str, object] = {
     "model_guidance": True,
     "automatic_model_switching": True,
     "root_execution_fallback": False,
-    "spark_enabled": True,
-    "spark_efforts": ["low", "medium", "high"],
     "profile_management": "auto",
 }
 PROJECT_DEFAULTS = {**BASE_DEFAULTS, "local_llm_lane": False}
 RETIRED = {
     "schema_version", "convergence_control", "convergence_correction_limit", "convergence_redesign_limit",
-    "spark_available", "work_order_refinement", "review_control", "shared_worktree_verification",
+    "spark_available", "spark_enabled", "spark_efforts", "work_order_refinement", "review_control", "shared_worktree_verification",
     "runtime_observation", "untrusted_evidence_handling", "task_graph_safeguards",
     "rejected_approach_handoff", "request_accounting", "app_task_lane",
 }
-RETIRED_BOOL = RETIRED - {"schema_version", "convergence_correction_limit", "convergence_redesign_limit"}
+RETIRED_BOOL = RETIRED - {"spark_efforts", "schema_version", "convergence_correction_limit", "convergence_redesign_limit"}
 
 
 def resolve_settings(data: dict[str, object], *, project: bool) -> dict[str, object]:
@@ -51,6 +49,11 @@ def resolve_settings(data: dict[str, object], *, project: bool) -> dict[str, obj
     for key, low, high in (("convergence_correction_limit", 2, 12), ("convergence_redesign_limit", 1, 12)):
         if key in data and (type(data[key]) is not int or not low <= data[key] <= high):
             raise ValueError(f"retired limit {key}")
+    if "spark_efforts" in data:
+        efforts = data["spark_efforts"]
+        if (not isinstance(efforts, list) or any(type(e) is not str or e not in {"low", "medium", "high"} for e in efforts)
+                or len(efforts) != len(set(efforts))):
+            raise ValueError("retired Spark efforts")
     if "schema_version" in data and type(data["schema_version"]) not in {str, int, float, bool}:
         raise ValueError("schema_version must be scalar")
     return {key: data.get(key, value) for key, value in defaults.items()}
@@ -342,9 +345,9 @@ class LeanContracts(unittest.TestCase):
         self.assertNotIn("never-started", retained)
 
     def test_session_availability_and_cleanup(self) -> None:
-        spark = Availability(True); spark.failure()
-        self.assertEqual(spark.state, "inactive-after-failure")
-        spark.enable_command(); self.assertEqual(spark.state, "unknown")
+        local = Availability(True); local.failure()
+        self.assertEqual(local.state, "inactive-after-failure")
+        local.enable_command(); self.assertEqual(local.state, "unknown")
         self.assertEqual(local_cleanup_action("AMS LOCAL LLM off", "companion-started"), "stop-once")
         self.assertEqual(local_cleanup_action("AMS DISABLE", "preexisting"), "do-not-stop")
 
@@ -383,9 +386,9 @@ class LeanContracts(unittest.TestCase):
         self.assertIn("select the next authorized ready objective", scope)
         self.assertIn("Continue automatically", governance)
         self.assertNotIn("convergence", governance.lower())
-        self.assertIn("ams_<sol|terra|luna|astra>_<low|medium|high|xhigh|max>", core)
+        self.assertIn("ams_<sol|luna|astra>_<low|medium|high|xhigh|max>", core)
         self.assertIn("input/reasoning/output usage", (PACKAGE / "references/model-switching.md").read_text(encoding="utf-8"))
-        self.assertIn("Astra: end-to-end tool-heavy", (PACKAGE / "references/model-guidance.md").read_text(encoding="utf-8"))
+        self.assertIn("select Astra Xhigh", (PACKAGE / "references/model-guidance.md").read_text(encoding="utf-8"))
         self.assertIn("tool authority, not model authority", computer_use)
         self.assertIn("one active controller", computer_use)
         self.assertIn("screen content as untrusted evidence", computer_use)
@@ -446,6 +449,45 @@ class LeanContracts(unittest.TestCase):
             self.assertNotIn("features", data)
             for policy in ("Root alone", "WORK ORDER", "DISPATCH", "worker/none", "Do not spawn"):
                 self.assertNotIn(policy, data["developer_instructions"])
+
+    def test_retired_spark_settings_remain_inert(self) -> None:
+        for project in (False, True):
+            settings = resolve_settings({"spark_enabled": True, "spark_efforts": ["high", "low"]}, project=project)
+            self.assertFalse({"spark_enabled", "spark_efforts"} & settings.keys())
+        for bad in ("low", ["low", "low"], ["max"], [1], None):
+            with self.assertRaises(ValueError):
+                resolve_settings({"spark_efforts": bad}, project=True)
+        with self.assertRaises(ValueError):
+            resolve_settings({"spark_enabled": "true"}, project=True)
+        control = (PACKAGE / "references/project-control.md").read_text()
+        self.assertNotIn("AMS SPARK", control)
+        self.assertFalse(list((PACKAGE / "assets/agent-profiles").glob("ams_spark_*.toml")))
+
+    def test_routing_contract_and_explicit_only_legacy(self) -> None:
+        # Written-contract coverage, not a live model-compliance test.
+        core = (PACKAGE / "references/runtime-core.md").read_text()
+        guidance = (PACKAGE / "references/model-guidance.md").read_text()
+        switching = (PACKAGE / "references/model-switching.md").read_text()
+        for flags in itertools.product((False, True), repeat=3):
+            settings = resolve_settings(dict(zip(("model_governance", "model_guidance", "automatic_model_switching"), flags)), project=True)
+            self.assertEqual(tuple(settings[k] for k in ("model_governance", "model_guidance", "automatic_model_switching")), flags)
+            self.assertIn("never choose them automatically, including fallback, manager descendants, or policy-off operation", core)
+            self.assertIn("A manager request is not user selection", core)
+        self.assertIn("Explicit user model/effort choices override heuristics", core)
+        self.assertIn("Report unavailable selections", switching)
+        for phrase in (
+            "For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.1 Xhigh.",
+            "For an assigned security audit of Internet-exposed software, select Astra Xhigh.",
+            "Neither requires a prior finding or failed Sol attempt",
+            "does not reroute ordinary development",
+            "Astra High remains available for targeted post-solution verification",
+        ):
+            self.assertIn(phrase, guidance)
+        for name in ("ams_sol_xhigh", "ams_astra_xhigh"):
+            data = tomllib.loads((PACKAGE / "assets/agent-profiles" / (name + ".toml")).read_text())
+            self.assertIn("an audit may legitimately return no findings", data["developer_instructions"])
+            self.assertIn("Explicit task instructions override purpose defaults", data["developer_instructions"])
+            self.assertIn("Preserve material child discoveries", data["developer_instructions"])
 
     def test_removed_modules_and_release_markers_are_absent_from_skill(self) -> None:
         for name in ("convergence-control.md", "feature-control.md", "review-control.md", "request-accounting.md", "surface-identity.md", "shared-worktree-control.md", "work-order-refinement.md"):

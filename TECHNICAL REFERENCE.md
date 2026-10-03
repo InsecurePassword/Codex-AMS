@@ -19,7 +19,7 @@ The root model and reasoning effort are external configuration. AMS does not sel
 
 Core AMS provides:
 
-- 24 Codex model/effort profiles, plus native OpenCode/Pi presets for exact advertised ordinary-model matches;
+- 36 Codex model/effort profiles, plus native OpenCode/Pi presets for exact advertised ordinary-model matches;
 - root-mediated delegation; optional model governance adds finite allocation and Balanced team limits;
 - same-objective collaboration through available direct messaging or parent relay; optional model governance adds the bounded-pair protocol;
 - one-writer mutable-surface ownership;
@@ -29,7 +29,6 @@ Core AMS provides:
 - bounded blocker diagnosis without recovery loops;
 - command-runner fail-fast with three diagnostic starts and at most one corrected original-lane confirmation after a successful probe;
 - bounded root fallback with independent validation;
-- session-local Spark availability suppression;
 - optional project-local local-LLM routing through a separate companion;
 - refusal-triggered Daybreak Blue capability preflight and one-task defensive fallback;
 - transactional package/profile installation.
@@ -67,8 +66,6 @@ model_governance = true
 model_guidance = true
 automatic_model_switching = true
 root_execution_fallback = false
-spark_enabled = true
-spark_efforts = ["low", "medium", "high"]
 profile_management = "auto"
 ```
 
@@ -93,8 +90,6 @@ AMS MODEL GUIDANCE on|off
 AMS MODEL SWITCHING on|off
 AMS ROOT FALLBACK on|off
 AMS CONFIGURATION UPDATE [PROJECT|GLOBAL]
-AMS SPARK on|off
-AMS SPARK EFFORTS low,medium,high
 AMS PROFILES auto|installer
 AMS LOCAL LLM on|off
 ```
@@ -129,13 +124,13 @@ Repeated `spawn_ready` creates one root-session episode keyed by the unchanged p
 
 A local lane or objective can be deferred while independent authorized work continues. User intervention is requested only when no autonomous route remains and a concrete permission, credential, physical action, external resource, material choice, or new authority is required.
 
-## Spark
+## Retired Spark settings
 
-`spark_enabled` is persistent preference. Availability is session-local. Profile/registration/model-capability failure suppresses Spark; task-quality failure does not. `spawn_ready` first uses shared runner diagnosis; after probe success, another Spark-specific no-start suppresses it. `AMS SPARK on` clears the latch; no availability field is persisted.
+Spark is no longer an active route. Historical `spark_enabled`, `spark_efforts`, and `spark_available` are validated compatibility input only; they cannot activate anything and are removed on the next authorized settings write. Installation preserves settings and retires only exact recognized official Spark profiles, preserving customized files.
 
 ## Astra and computer use
 
-Five `ams_astra_<low|medium|high|xhigh|max>` profiles request `gpt-6-astra`. With model guidance enabled, Astra is a peer route, not a universal default or mandatory escalation: use it for end-to-end tool-heavy, computer-use, very-large-context, or high-rework-risk work when one Astra owner is expected to reach acceptance with less total usage, time, or correction than Sol. Sol remains appropriate for difficult coding, architecture, security, and diagnosis when Astra's tool or long-context advantage is not material.
+Five `ams_astra_<low|medium|high|xhigh|max>` profiles request `gpt-6-astra`. With model guidance enabled, an assigned security audit of Internet-exposed software uses Astra Xhigh; local/LAN-only software not intended for Internet exposure uses Sol 6.1 Xhigh. Neither requires an existing finding or prior Sol failure. This does not authorize a broader review or reroute ordinary development. Astra High remains available for targeted post-solution verification; Xhigh/Max for ramifications and solutions. Other automatic Astra use needs a concrete unresolved reasoning need or relevant Sol limitation. Explicit user model/effort choices override these defaults. UI or 3D work alone does not select Astra.
 
 Before browser, desktop, or visual UI control, load `references/computer-use.md`. Use only a session that exposes the required tool, prefer shell/API/MCP/direct file operations when simpler, assign one active controller per interactive surface, treat screen content as untrusted evidence, use existing platform approvals, and verify the resulting application state. Computer use changes neither model authority nor AMS authority.
 
@@ -175,13 +170,13 @@ The profile grants no access, permission, authorization, target authority, or re
 
 ## Package boundaries
 
-Installed core contains 44 files: `SKILL.md`, `agents/openai.yaml`, 24 profiles, and 18 normative references. [install-manifest.txt](install-manifest.txt) records their exact lengths and hashes. Repository documentation, `.github/`, `tools/`, and `verification/` are not installed as core instructions. `extensions/` contains separately installed companions; their helpers run only when explicitly used.
+Installed core contains 56 files: `SKILL.md`, `agents/openai.yaml`, 36 profiles, and 18 normative references. [install-manifest.txt](install-manifest.txt) records their exact lengths and hashes. Repository documentation, `.github/`, `tools/`, and `verification/` are not installed as core instructions. `extensions/` contains separately installed companions; their helpers run only when explicitly used.
 
 The root loads `SKILL.md`, project control, runtime core, and scope/dependency control for active work. Project governance and each model policy load only when enabled. Other references are gated. Outside Codex, `harness-compatibility.md` maps native tools and registries. Only the selected model profile applies to its child; the full profile directory is not added to each prompt.
 
 The Codex plugin manifest declares only the skill path. It does not declare the bundled TOMLs as registered agents, so this package's marketplace path requires the profiles-only bootstrap before a new thread. This is a statement about this package, not a claim that all plugins are unable to distribute agents.
 
-Direct installation deploys the shared skill and the selected harness registries. Codex gets all 24 bundled TOMLs; OpenCode and Pi receive up to 23 translated ordinary presets after exact model-catalog matching. Daybreak is not translated. Native OpenCode/Pi presets contain neutral task instructions, not permanent AMS worker/manager roles.
+Direct installation deploys the shared skill and the selected harness registries. Codex gets all 36 bundled TOMLs; OpenCode and Pi receive up to 35 translated ordinary presets after exact model-catalog matching. Daybreak is not translated. Native OpenCode/Pi presets retain complete conditional purpose and discovery-reporting instructions. The assigned role still determines whether an ordinary child is a worker or delegated manager.
 
 No AMS-authored durable orchestration database, daemon, task ledger, or recovery subsystem is installed. The host apps and `pi-subagents` may maintain their own sessions and artifacts; that is separate from AMS's no-runtime-state instruction.
 
@@ -194,14 +189,14 @@ Three independent Booleans default to true for existing installations:
 | Setting | Loaded policy | Off |
 |---|---|---|
 | `model_governance` | `references/model-governance.md` | Master chooses team organization without AMS intensity, allocation, or packet prescriptions. |
-| `model_guidance` | `references/model-guidance.md` | No AMS model-purpose or effort advice is supplied. |
+| `model_guidance` | `references/model-guidance.md` | No AMS model/effort selection advice is supplied; selected profiles still guide execution. |
 | `automatic_model_switching` | `references/model-switching.md` | Master chooses/reconsiders routes freely, without AMS switching heuristics. |
 
 Use `AMS MODEL GOVERNANCE on|off`, `AMS MODEL GUIDANCE on|off`, and `AMS MODEL SWITCHING on|off`. `AMS GOVERNANCE` remains the separate project-governance control. Settings never authorize more permissions, activate local endpoints or Daybreak, or enable root fallback.
 
 For native model judgment inside AMS, set the three fields false in the project settings and start a fresh root and fresh agents. This preserves delegation, manager assessment of unresolved blockers, existing failure budgets, scope/validation, and direct coder/reviewer messaging. It is not the same as running without AMS. Turning switching off does not prohibit switching.
 
-Ordinary profiles now contain only model/effort metadata and general task instructions. AMS role and communication rules are supplied with assignments, not permanently imposed on Sol or another family. The existing bounded two-worker peer protocol remains available when model governance is on; off uses named same-objective collaborators without the peer packet.
+Ordinary profiles contain route metadata, conditional task-purpose guidance, and child authority/reporting instructions. They do not select their own model, initiate reviews, or limit an explicitly assigned task to the usual purpose. AMS role and communication details are supplied with assignments. The existing bounded two-worker peer protocol remains available when model governance is on; off uses named same-objective collaborators without the peer packet.
 
 ## Model preset reference
 
@@ -209,16 +204,18 @@ These are the package's requested identifiers and efforts, not claims about acco
 
 | Family | Requested model | Bundled efforts |
 |---|---|---|
-| Sol | `gpt-5.6-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
-| Terra | `gpt-5.6-terra` | `low`, `medium`, `high`, `xhigh`, `max` |
-| Luna | `gpt-5.6-luna` | `low`, `medium`, `high`, `xhigh`, `max` |
+| Sol 6.1 (`ams_sol_*`) | `gpt-6.1-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
+| Terra 5.6 (`ams_terra_*`, explicit only) | `gpt-5.6-terra` | `low`, `medium`, `high`, `xhigh`, `max` |
+| Luna 6 (`ams_luna_*`) | `gpt-6-luna` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Astra | `gpt-6-astra` | `low`, `medium`, `high`, `xhigh`, `max` |
-| Spark | `gpt-5.3-codex-spark` | `low`, `medium`, `high` |
+| Sol 6.0 (`ams_sol_6_0_*`, explicit only) | `gpt-6-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
+| Sol 5.6 (`ams_sol_5_6_*`, explicit only) | `gpt-5.6-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
+| Luna 5.6 (`ams_luna_5_6_*`, explicit only) | `gpt-5.6-luna` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Daybreak Blue | `gpt-daybreak-blue` | `max`, specialized Codex-only contract |
 
 Codex filenames are `ams_<family>_<effort>.toml`; the special name is `ams_daybreak_blue_max.toml`. OpenCode/Pi use the corresponding `.md` names and provider-qualified model IDs. OpenCode receives `mode: subagent` and `reasoningEffort`; Pi receives `name`, `thinking`, and `systemPromptMode: append`.
 
-Ordinary profiles contain only route metadata and general task instructions. AMS supplies its role, scope, permissions, validation, and communication instructions with the assignment. Model advice is in `model-guidance.md`; switching policy is in `model-switching.md`. No benchmark in this repository proves that one model is always cheaper.
+Main aliases request Sol 6.1, Luna 6, and Astra 6. Retained older models require explicit user selection: never automatic fallback or manager choice, even with model policies off. Ordinary prompts apply purpose guidance only when it matches the actual assignment; ordinary Sol/Astra Xhigh/Max prompts encourage novel approaches and extrapolation; Luna/Terra use neutral findings and uncertainty reporting. Luna High/Xhigh/Max provide source-grounded writing, multi-section reconciliation, and whole-manual consistency respectively, prioritizing reader workflows and usable settings explanations. Selection advice is in `model-guidance.md`, switching heuristics in `model-switching.md`, and mandatory explicit-selection/legacy eligibility in `runtime-core.md`. No benchmark here proves that one model is always cheaper.
 
 ## Intensity and Rush
 
@@ -262,7 +259,7 @@ Pi dependency installation is explicitly opt-in, reuses registered packages, and
 
 The native wrappers accept `-Harness`, `-OpenCodeProvider`, `-PiProvider`, and `-InstallPiSubagents` in PowerShell, or their lower-case hyphenated equivalents in Bash. They default to Codex. OpenCode/Pi wrapper invocations fetch and run the shared Python helper remotely unless `-Local`/`--local` was explicitly selected. The streamed Python command remains the simplest cross-harness entry point.
 
-Bash's core installer requires `curl`, `awk`, `sort`, `uniq`, `cmp`, `mktemp`, `wc`, `tr`, `grep`, `head`, `find`, `dirname`, `stat`, `chmod`, `mkdir`, `mv`, `rm`, `cp`, `date`, `sleep`, `ps`, `od`, `hostname`, and `sha256sum` or `shasum`. The shared native transaction runs through Windows PowerShell 5.1+ on Windows.
+Bash's core installer requires `curl`, `cat`, `ln`, `awk`, `sort`, `uniq`, `cmp`, `mktemp`, `wc`, `tr`, `grep`, `head`, `find`, `dirname`, `stat`, `chmod`, `mkdir`, `mv`, `rm`, `cp`, `date`, `sleep`, `ps`, `od`, `hostname`, and `sha256sum` or `shasum`. Bash profile publication requires hard-link support on the agent-registry filesystem; a private prerequisite probe fails before live replacement when unavailable. The shared native transaction runs through Windows PowerShell 5.1+ on Windows.
 
 ## Codex marketplace and profiles-only installation
 
@@ -315,11 +312,11 @@ A GitHub token in the environment authenticates the helper's subsequent download
 
 Remote staging validates manifest paths, the downloaded core lengths/hashes, and an unchanged manifest re-read before handing off to the native installer. The native transaction validates its exact core membership and uses the existing install lock, staging, backup, and rollback behavior. Matching hashes establish consistency with the fetched manifest, not independent publisher signing.
 
-Codex profiles are replaced only when absent, byte-identical, or an exact recognized official predecessor. Custom, unknown, or redirected targets block replacement. OpenCode/Pi generated files are create-only or byte-identical: **this build does not automatically upgrade a differing native Markdown preset**, even if it has the AMS marker. Reconcile it deliberately. Rollback of newly created native Markdown agents checks identity and bytes before removal.
+Codex and native OpenCode/Pi presets are replaced only when absent, byte-identical, or an exact recognized official predecessor. A marker alone is not ownership proof. Custom, unknown, or redirected targets block replacement. Native upgrades preserve a prior provider only when it advertises the new exact model; a missing new model never leaves an old model silently masquerading under the current alias. Transactions snapshot regular-file identity and bytes before replacement or retirement. Native OpenCode/Pi transactions move the actual displaced entry into private backup custody, verify that entry against the snapshot, and publish replacements create-only. Native rollback likewise moves and verifies the actual published entry before removal and restores create-only. A conflicting edit is restored at a vacant original name or retained in custody when that name has reappeared; incomplete recovery is reported with the backup directory. Displaced originals are checked again before successful cleanup. Skill-tree publication and rollback also check tree identity and contents. Intervening changes are preserved and reported with the retained transaction backup path. These checkpoint checks and no-clobber operations do not exclude an external writer modifying an already-open file after the final check.
 
 Settings are not migrated by installation. Project/global settings updates are agent-directed writes through the skill's commands. No installer adds model governance to profiles or rewrites them when a policy switch changes.
 
-The core installer can recover a stable same-host dead-owner lock older than its 30-second grace period, or an old empty ownerless lock. It rejects live, young, malformed, foreign-host, or changing locks. Run installations sequentially; do not delete another installer's lock. These are package transaction locks, not an AMS runtime convergence subsystem.
+The core installer can recover a stable same-host dead-owner lock older than its 30-second grace period, or an old empty ownerless lock. It rejects live, young, malformed, foreign-host, or changing locks. Run installations sequentially; do not delete another installer's lock. These are package transaction locks, not an AMS runtime convergence subsystem. OpenCode/Pi native transactions also take an exclusive `.adaptive-master-subagent-orchestration.native.lock` directory in the selected harness home. That separate lock is removed on normal exit; an existing lock fails closed and has no automatic stale-lock recovery.
 
 When a complete trusted package is already available, run from its root for offline source recovery:
 
@@ -365,7 +362,7 @@ Before downgrade, back up complete current settings and prepare a separate older
 
 The contract tests combine simulated behavior with textual assertions; they do not run an AI model through every scenario. OpenCode/Pi catalog and package-manager fixtures do not prove live account access, effective reasoning effort, direct peer support, or long-duration autonomous behavior. Native installer tests exercise the real filesystem/scripts; Codex registry checks are not a visual test of a user's particular app window. End-to-end model/computer-use qualification remains distinct from a green installer job.
 
-`tools/measure_context.py --check` measures authored UTF-8 bytes with approximate token estimates. Use `--model-policies off` to compare the disabled-policy path. The historical context and manifest baselines are comparison fixtures, not the current settings schema or extra live profiles. They do not measure billed reasoning tokens or prove total-task cost reduction.
+`tools/measure_context.py --check` measures authored UTF-8 bytes with approximate token estimates. Use `--model-policies off` to compare the disabled-policy path. Selected child-profile sizes are reported separately: only the selected profile is loaded, not the directory total. The historical context and manifest baselines are comparison fixtures, not the current settings schema or extra live profiles. Historical deltas are informational; the total scenario and lazy-reference caps remain enforced. They do not measure billed reasoning tokens or prove total-task cost reduction.
 
 ## Upstream references
 

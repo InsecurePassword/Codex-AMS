@@ -11,4 +11,4 @@ Root retains scheduling, supervision, and spawning. Send the existing AMS assign
 
 The three model-policy switches still apply. In Pi start fresh child context, not a parent fork; OpenCode uses native task context. Do not change the user-selected master. Daybreak, Codex app tasks, and Codex runtime observation are not ported by this installer. Keep optional local endpoints separately authorized and uninstalled unless requested.
 
-Update presets through the repository installer with the selected harness. Differing generated files are preserved for reconciliation. The shared `~/.agents/skills` location is discoverable by both harnesses unless the user's resource settings disable it; custom skill locations need explicit harness configuration.
+Update presets through the repository installer with the selected harness. Exact recognized official predecessors may be upgraded; customized or unrecognized differing files are preserved for reconciliation. The shared `~/.agents/skills` location is discoverable by both harnesses unless the user's resource settings disable it; custom skill locations need explicit harness configuration.

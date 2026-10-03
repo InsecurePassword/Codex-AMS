@@ -106,15 +106,17 @@ If the check reports a problem, fix that problem before asking AMS to delegate w
 
 The installer puts one shared AMS skill in your user account, plus model presets for the apps you selected. A preset tells the app which model and thinking level to request.
 
-Codex gets 24 presets. OpenCode and Pi get only the ordinary presets whose exact model names appear in their model lists, up to 23 each. The provider is chosen automatically when the match is unique. The specialized Daybreak preset is not installed into OpenCode or Pi.
+Codex gets 36 presets. OpenCode and Pi get only the ordinary presets whose exact model names appear in their model lists, up to 35 each. The provider is chosen automatically when the match is unique. The specialized Daybreak preset is not installed into OpenCode or Pi.
 
 The installer does not change your main model, existing provider settings, passwords, permissions, automatic conversation compaction, or saved AMS project settings. Optional AMS companions are not included in this install. The explicit Pi option may add `pi-subagents` through Pi's package manager. A temporary OpenCode CLI is not a new permanent app or background service.
 
 ## Update AMS
 
+**Updated for Astra and Sol 6.1.** The main lineup is Sol 6.1, Luna 6, and Astra 6. Retained older versions require explicit user selection; they are never automatic fallbacks. Spark is retired.
+
 Run the same installation command you used before. For OpenCode Desktop, finish or pause work and quit the app first; the Windows installer waits if it is still open. After installation, reopen the app and start a new chat. Do not run two AMS installers at the same time.
 
-Supported older Codex presets are upgraded. Edited or unrecognized Codex presets are preserved. OpenCode/Pi presets that differ from the generated files also stop replacement for that app; the installer does not guess which edits to keep. An exact existing provider choice is retained when the model is listed under several providers.
+Exact recognized official predecessors are upgraded in Codex, OpenCode, and Pi. Edited or unrecognized presets are preserved; the installer does not guess which edits to keep. An existing provider choice is retained when it still advertises the requested exact model. Owned official Spark presets are retired; customized Spark files are preserved. Project/global settings remain untouched until an authorized configuration update. If a target changes during installation, the installer reports the conflict and preserves the changed target and any needed transaction backups. Read the reported backup path before retrying; reconcile the conflicting changes first. OpenCode/Pi retain the actual displaced file, including a completed edit detected at the move boundary; recovery never overwrites a newly appeared file. If recovery is incomplete, both displaced changes and original backups remain in the reported directory. These checks cannot exclude a writer modifying an already-open inode after the final check.
 
 Updating does not turn AMS on or change your saved policy switches. To update an older project's settings, load AMS in that project and send this **in the AI chat**:
 

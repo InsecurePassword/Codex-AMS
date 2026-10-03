@@ -1,7 +1,13 @@
 # AMS model guidance
 
-Load only when `model_guidance = true`. These are recommendations, not prerequisites or a mandatory ladder.
+Load only when `model_guidance = true`. Recommendations, not capabilities or a mandatory ladder; runtime explicit-selection and legacy rules still apply.
 
-Spark: exact mechanics. Luna: explicit low-risk repetition. Terra: normal implementation/review/investigation/management. Sol: difficult coding, architecture, security, or diagnosis when Astra's end-to-end, tool, or long-context advantage is not material. Astra: end-to-end tool-heavy, computer-use, very-large-context, or high-rework-risk work when one Astra owner is expected to finish with less total usage, time, or correction than Sol. Do not choose Astra for routine work merely because it is stronger.
+Luna 6: Low for supplied procedural commands without analysis, including when another agent reads logs; Medium for straightforward interpretation; High for contextual results or focused implementation. For documentation/general writing, prefer High for source-grounded drafting, Xhigh for multi-section reconciliation and completeness, Max for whole-manual consistency. Keep integral troubleshooting commands with their owner when splitting wastes context; do not relabel routine runs to retain an expensive owner.
 
-Use only the effort needed for the assignment; reserve xhigh/max for work that benefits from it. A higher per-token price need not mean higher completed-task cost. Prefer Astra for UI-centered work only when the session exposes the tool and its expected value justifies the choice.
+Sol 6.1: High for normal coding, diagnosis, integration, architecture, and review. Xhigh for audit discovery, hypotheses, and alternatives; Max for deep finding analysis or difficult synthesis. Exploration need not follow failure.
+
+For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.1 Xhigh. For an assigned security audit of Internet-exposed software, select Astra Xhigh. Neither requires a prior finding or failed Sol attempt. Audit authorized surfaces and relevant reachable callees/controls; exposure does not reroute ordinary development or authorize unrelated review.
+
+Astra High remains available for targeted post-solution verification; Xhigh/Max for ramifications and solutions. Other automatic Astra use needs evidence of an unresolved reasoning need or relevant Sol limitation, not importance or "might be better". Use only needed effort and available tools; UI/3D alone does not select Astra.
+
+Only ordinary Sol/Astra Xhigh/Max profiles encourage novel approaches and extrapolation by default. Luna/Terra preserve honest reporting and explicit task flexibility.

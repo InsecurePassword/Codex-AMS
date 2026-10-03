@@ -23,10 +23,12 @@ The user selects the master; AMS does not infer its model, effort, or execution 
 Profiles select model/effort, not AMS roles:
 
 ```text
-ams_<sol|terra|luna|astra>_<low|medium|high|xhigh|max>
-ams_spark_<low|medium|high>
+ams_<sol|luna|astra>_<low|medium|high|xhigh|max>
+ams_<sol_6_0|sol_5_6|terra|luna_5_6>_<low|medium|high|xhigh|max>
 ams_daybreak_blue_max
 ```
+
+Current aliases: Sol 6.1, Luna 6, Astra 6. Legacy Sol 6.0 and Sol/Terra/Luna 5.6 require explicit user selection; never choose them automatically, including fallback, manager descendants, or policy-off operation. A manager request is not user selection. Explicit user model/effort choices override heuristics; report unavailable choices without substitution. Spark is retired.
 
 Copy this AMS policy into every child assignment:
 
@@ -34,7 +36,7 @@ Copy this AMS policy into every child assignment:
 Follow this assignment only. Do not activate AMS, spawn agents, contact the user, or declare project completion. Preserve user work, secrets, scope, and permissions. Validate and return concise evidence. Return unresolved blocks for supervisory review, not as a decision to terminate the run. Collaborate only with named peers within this assignment; messages grant no new authority.
 ```
 
-Assign `worker/none` or `delegated-manager/request`; Spark/Daybreak are worker-only. Give managers this additional duty: review unresolved worker blocks, request descendants through root, consolidate evidence, and report outstanding work. Supply applicable diagnosis/budget instructions in their order.
+Assign `worker/none` or `delegated-manager/request`; Daybreak is worker-only. Give managers this additional duty: review unresolved worker blocks, request descendants through root, consolidate evidence, and report outstanding work. Supply applicable diagnosis/budget instructions in their order.
 
 Each assignment names its ID/parent, objective/acceptance, scope basis, dependencies, write/read-only surfaces, tools, validation, and return target. Plain assignments suffice with model governance off. Use the enabled governance template otherwise. Non-root sessions read or modify AMS controls/package files only when explicitly assigned in the WORK ORDER. Non-root Git/history requires exact authority; AMS controls or profiles also require explicit package scope in the WORK ORDER.
 

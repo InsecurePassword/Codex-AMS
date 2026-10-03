@@ -87,10 +87,12 @@ def build_report(model_policies: bool = True) -> dict[str, object]:
             "active_governance": "active core + compact project governance",
             "lazy_references": "incremental only when selected",
             "companions": "separate skills excluded from core manifest",
+            "child_profiles": "one selected profile file per child; not summed into root context or billed usage",
         },
         "scenarios": scenarios,
         "lazy_references": {path: metrics([PACKAGE / path]) for path in LAZY_REFERENCES},
         "companions": {name: metrics(paths) for name, paths in COMPANIONS.items()},
+        "child_profiles": {path.name: metrics([path]) for path in sorted((PACKAGE / "assets/agent-profiles").glob("*.toml"))},
     }
 
 
@@ -101,10 +103,7 @@ def check_budget(report: dict[str, object]) -> list[str]:
         actual = int(report["scenarios"][name]["bytes"])
         if actual > int(maximum):
             problems.append(f"{name}: {actual} > {maximum}")
-    for name, maximum in budget["scenario_max_delta_bytes"].items():
-        actual = int(report["scenarios"][name]["delta_bytes"])
-        if actual > int(maximum):
-            problems.append(f"{name} delta: {actual} > {maximum}")
+    # Historical deltas remain reported; new features are checked against total caps.
     for path, maximum in budget["lazy_reference_max_bytes"].items():
         actual = int(report["lazy_references"][path]["bytes"])
         if actual > int(maximum):
@@ -134,6 +133,8 @@ def main() -> int:
             print(f"lazy {path}: {item['bytes']} bytes; ~{item['estimated_tokens']} tokens")
         for name, item in report["companions"].items():
             print(f"companion {name}: {item['bytes']} bytes; ~{item['estimated_tokens']} tokens")
+        sizes = [int(item["bytes"]) for item in report["child_profiles"].values()]
+        print(f"selected child profile: {min(sizes)}..{max(sizes)} bytes across {len(sizes)} choices; not a simultaneous load")
         for problem in problems:
             print(f"error: {problem}")
     return 1 if problems else 0

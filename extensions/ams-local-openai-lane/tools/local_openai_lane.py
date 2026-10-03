@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import os
 import re
@@ -333,14 +334,24 @@ def auth_headers(profile: dict[str, Any]) -> dict[str, str]:
 
 def urlopen_json(request: urllib.request.Request, timeout: int) -> tuple[int, dict[str, Any]]:
     try:
-        with HTTP_OPENER.open(request, timeout=timeout) as response:
-            raw = response.read(MAX_RESPONSE_BYTES + 1)
-            status = response.status
-    except urllib.error.HTTPError as exc:
-        raw = exc.read(MAX_ERROR_BYTES + 1)
-        text = raw.decode("utf-8", errors="replace")
-        status = "context-too-small" if CONTEXT_ERROR_RE.search(text) else "request-failed"
-        raise LaneError(status, f"endpoint returned HTTP {exc.code}") from exc
+        try:
+            with HTTP_OPENER.open(request, timeout=timeout) as response:
+                raw = response.read(MAX_RESPONSE_BYTES + 1)
+                status = response.status
+        except urllib.error.HTTPError as exc:
+            with exc:
+                raw = exc.read(MAX_ERROR_BYTES + 1)
+            text = raw.decode("utf-8", errors="replace")
+            status = "context-too-small" if CONTEXT_ERROR_RE.search(text) else "request-failed"
+            raise LaneError(status, f"endpoint returned HTTP {exc.code}") from exc
+    except http.client.RemoteDisconnected as exc:
+        # An empty connection close is also an OSError: retain availability
+        # semantics so initial readiness can use its single configured start.
+        raise LaneError("unavailable", "endpoint connection closed without a response") from exc
+    except http.client.HTTPException as exc:
+        # Protocol exceptions may contain raw status lines or partial bodies.
+        # Normalize all open/read paths without exposing that response content.
+        raise LaneError("malformed-response", "endpoint HTTP response is malformed or incomplete") from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise LaneError("unavailable", "endpoint request failed", detail=str(exc)) from exc
     if len(raw) > MAX_RESPONSE_BYTES:

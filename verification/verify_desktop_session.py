@@ -199,7 +199,7 @@ def main(desktop: Path) -> None:
                         raise AssertionError("Installer did not resume after normal Desktop exit")
                     browser, page, get = launch()
                     names = {item["name"] for item in get("/agent")}
-                    tools = get("/experimental/tool?provider=ams-test&model=gpt-5.6-sol")
+                    tools = get("/experimental/tool?provider=ams-test&model=gpt-6.1-sol")
                     task = next(item for item in tools if item.get("id") == "task")
                     missing = {name for name in wanted if name not in task.get("description", "")}
                     print(f"Actual reopened Desktop: {len(wanted & names)} AMS agents; Task description: {len(wanted - missing)}.", flush=True)
@@ -207,7 +207,7 @@ def main(desktop: Path) -> None:
                         raise AssertionError("Reopened Desktop did not expose all AMS agents")
                     if settings.read_bytes() != before:
                         raise AssertionError("Provider settings changed")
-                print("PASS actual packaged Desktop: open-app guard, no early writes, normal close, automatic install, reopened server and Task tool expose 23 agents, reinstall; no model calls.", flush=True)
+                print("PASS actual packaged Desktop: open-app guard, no early writes, normal close, automatic install, reopened server and Task tool expose 35 agents, reinstall; no model calls.", flush=True)
                 browser.close()
             finally:
                 for child in (installing, process):
