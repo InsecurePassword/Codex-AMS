@@ -151,7 +151,7 @@ class DesktopBootstrap(unittest.TestCase):
                 installer.opencode_cli({"PATH": str(lower.parent)}, self.home)
 
     def test_temporary_cli_removed_on_success_and_failure(self) -> None:
-        profile = {"name": "ams_sol_high", "model": "gpt-5.6-sol", "description": "Sol", "model_reasoning_effort": "high", "developer_instructions": "Assigned task only."}
+        profile = {"name": "ams_sol_high", "model": "gpt-6.1-sol", "description": "Sol", "model_reasoning_effort": "high", "developer_instructions": "Assigned task only."}
         for fail in (False, True):
             paths = []
             config = self.home / str(fail)
@@ -160,7 +160,7 @@ class DesktopBootstrap(unittest.TestCase):
                 executable.write_bytes(b"fixture")
                 paths.append(executable)
                 return str(executable)
-            with patch.dict(os.environ, {"OPENCODE_CONFIG_DIR": str(config)}), \
+            with patch.dict(os.environ, {"OPENCODE_CONFIG_DIR": str(config), "AMS_SKILL_HOME": str(self.home / "skills")}), \
                     patch.object(installer, "package_profiles", return_value=[profile]), \
                     patch.object(installer, "install_core"), patch.object(installer, "opencode_cli", side_effect=select), \
                     patch.object(installer, "catalog", return_value={profile["model"]: {"test"}}), \
@@ -183,7 +183,7 @@ def native(desktop: Path) -> None:
         home = Path(temporary).resolve()
         config = home / ".config/opencode"
         config.mkdir(parents=True)
-        models = ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra", "gpt-5.3-codex-spark")
+        models = ("gpt-6.1-sol", "gpt-6-luna", "gpt-6-astra", "gpt-6-sol", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
         settings = config / "opencode.json"
         settings.write_text(json.dumps({"$schema": "https://opencode.ai/config.json", "enabled_providers": ["ams-test"], "provider": {
             "ams-test": {"npm": "@ai-sdk/openai-compatible", "name": "No inference fixture", "options": {"baseURL": "http://127.0.0.1:9/v1", "apiKey": "fixture-not-a-secret"},
@@ -205,12 +205,12 @@ def native(desktop: Path) -> None:
             print(result.stdout, flush=True)
             if result.returncode:
                 raise AssertionError(result.stderr)
-            if "downloading temporary official CLI " + VERSION not in result.stdout or "all 23 installed agents confirmed" not in result.stdout:
+            if "downloading temporary official CLI " + VERSION not in result.stdout or "all 35 installed agents confirmed" not in result.stdout:
                 raise AssertionError("The Desktop-only bootstrap and native registry check did not execute.")
             files = list((config / "agents").glob("ams_*.md"))
-            if len(files) != 23 or settings.read_bytes() != before:
+            if len(files) != 35 or settings.read_bytes() != before:
                 raise AssertionError("Missing presets or changed provider settings.")
-        print("PASS official production Desktop without bundled CLI: temporary matching release, 23 registered agents, default agent directory, reinstall; no model calls.", flush=True)
+        print("PASS official production Desktop without bundled CLI: temporary matching release, 35 registered agents, default agent directory, reinstall; no model calls.", flush=True)
 
 
 if __name__ == "__main__":

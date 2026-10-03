@@ -14,19 +14,15 @@ PACKAGE = ROOT / "adaptive-master-subagent-orchestration"
 MANIFEST = ROOT / "install-manifest.txt"
 BASELINE = ROOT / "verification/fixtures/baseline-install-manifest-working-current.txt"
 
-PROFILE_EFFORTS = {
-    "sol": ("low", "medium", "high", "xhigh", "max"),
-    "terra": ("low", "medium", "high", "xhigh", "max"),
-    "luna": ("low", "medium", "high", "xhigh", "max"),
-    "astra": ("low", "medium", "high", "xhigh", "max"),
-    "spark": ("low", "medium", "high"),
-}
 MODELS = {
-    "sol": "gpt-5.6-sol",
-    "terra": "gpt-5.6-terra",
-    "luna": "gpt-5.6-luna",
-    "astra": "gpt-6-astra",
-    "spark": "gpt-5.3-codex-spark",
+    "sol": "gpt-6.1-sol", "luna": "gpt-6-luna", "astra": "gpt-6-astra",
+    "sol_6_0": "gpt-6-sol", "sol_5_6": "gpt-5.6-sol",
+    "terra": "gpt-5.6-terra", "luna_5_6": "gpt-5.6-luna",
+}
+PROFILE_EFFORTS = {family: ("low", "medium", "high", "xhigh", "max") for family in MODELS}
+PROFILE_LABELS = {
+    "sol": "Sol 6.1", "luna": "Luna 6", "astra": "Astra 6",
+    "sol_6_0": "Sol 6.0", "sol_5_6": "Sol 5.6", "terra": "Terra 5.6", "luna_5_6": "Luna 5.6",
 }
 CORE_REFERENCES = {
     "blocker-diagnosis.md",
@@ -67,6 +63,8 @@ RETIRED_FIELDS = {
     "convergence_correction_limit",
     "convergence_redesign_limit",
     "spark_available",
+    "spark_enabled",
+    "spark_efforts",
     "work_order_refinement",
     "review_control",
     "shared_worktree_verification",
@@ -279,8 +277,8 @@ def main() -> int:
         path for path in PACKAGE.rglob("*") if path.is_file() and not path.is_symlink()
     )
     actual_paths = {path.relative_to(ROOT).as_posix() for path in actual_files}
-    if len(actual_files) != 44:
-        fail(f"expected 44 installed-core files, got {len(actual_files)}")
+    if len(actual_files) != 56:
+        fail(f"expected 56 installed-core files, got {len(actual_files)}")
     if set(entries) != actual_paths:
         fail(
             "manifest membership mismatch: "
@@ -297,6 +295,7 @@ def main() -> int:
     profile_root = PACKAGE / "assets/agent-profiles"
     expected_profiles: set[str] = set()
     prior_ordinary_profile_hashes: dict[str, str] = {}
+    ordinary_prompts: set[str] = set()
     for family, efforts in PROFILE_EFFORTS.items():
         for effort in efforts:
             filename = f"ams_{family}_{effort}.toml"
@@ -314,22 +313,44 @@ def main() -> int:
                 if forbidden in data:
                     fail(f"profile grants permission/credential: {filename}: {forbidden}")
             repo_path = path.relative_to(ROOT).as_posix()
-            if family != "astra":
-                if repo_path not in baseline:
-                    fail(f"ordinary profile missing from baseline: {filename}")
+            if repo_path in baseline:
                 prior_ordinary_profile_hashes[filename] = baseline[repo_path][0]
             instructions = str(data.get("developer_instructions", ""))
+            if set(data) != {"name", "description", "model", "model_reasoning_effort", "developer_instructions"}:
+                fail(f"unexpected ordinary profile fields: {filename}")
+            if instructions in ordinary_prompts:
+                fail(f"duplicate ordinary purpose prompt: {filename}")
+            ordinary_prompts.add(instructions)
             if "features" in data:
                 fail(f"ordinary profile still imposes collaboration policy: {filename}")
-            if data.get("description") != f"{family.capitalize()} with {effort} reasoning effort.":
+            if data.get("description") != f"{PROFILE_LABELS[family]} with {effort} reasoning effort.":
                 fail(f"ordinary description must identify the route without purpose advice: {filename}")
-            expected_instructions = (
-                "Follow the assigned task and its role, scope, and permissions. "
-                "Preserve existing work and secrets. Return concise results, validation, "
-                "and unresolved blockers to the assigning agent."
-            )
-            if instructions != expected_instructions:
-                fail(f"ordinary profile must remain role-neutral: {filename}")
+            for phrase in (
+                "Explicit task instructions override purpose defaults",
+                "In an AMS child session, do not activate AMS",
+                "If explicitly assigned delegated management",
+                "request descendants through root; never spawn them",
+                "Preserve existing work, secrets, read/write ownership",
+                "unresolved blockers", "When assigned",
+            ):
+                require(instructions, phrase, filename)
+            if effort in {"xhigh", "max"} and family in {"sol", "sol_6_0", "sol_5_6", "astra"}:
+                for phrase in (
+                    "Make material new ideas", "observed, inferred, proposed, attempted, implemented, and validated",
+                    "before expanding implementation", "continue unaffected authorized work",
+                    "Preserve material child discoveries", "not private reasoning traces",
+                ):
+                    require(instructions, phrase, filename)
+            if effort in {"xhigh", "max"} and family in {"luna", "luna_5_6", "terra"}:
+                for phrase in ("Report material findings", "Preserve important child findings", "continue unaffected authorized work", "not private reasoning traces"):
+                    require(instructions, phrase, filename)
+                for phrase in ("Make material new ideas", "When assigned exploratory", "When assigned alternative designs", "When asked to synthesize a new design", "When asked to develop ideas", "When assigned solution development"):
+                    if phrase in instructions:
+                        fail(f"unintended exploration default: {filename}: {phrase}")
+            if family in {"luna", "luna_5_6"} and effort in {"high", "xhigh", "max"}:
+                for phrase in ("When assigned", "intended reader", "plain language", "what relevant settings change, their defaults, choices, interactions", "when changes take effect", "worked examples", "expected results", "recovery steps", "exact commands, paths", "Flag unknowns"):
+                    require(instructions, phrase, filename)
+                require(instructions, {"high": "verified source material", "xhigh": "multi-section documentation", "max": "complete manual or documentation set"}[effort], filename)
 
     daybreak_filename = "ams_daybreak_blue_max.toml"
     expected_profiles.add(daybreak_filename)
@@ -391,9 +412,15 @@ def main() -> int:
     require(core, "AMS controls or profiles also require explicit package scope in the WORK ORDER", "delegated AMS Git scope")
     require(package_maintenance, "Package maintenance is root-controlled", "package-maintenance root authority")
     require(package_maintenance, "may delegate bounded inspection or edits through explicit work orders", "delegated package maintenance")
-    require(core, "ams_<sol|terra|luna|astra>_<low|medium|high|xhigh|max>", "Astra route inventory")
+    require(core, "ams_<sol|luna|astra>_<low|medium|high|xhigh|max>", "Astra route inventory")
     require(model_switching, "input/reasoning/output usage", "completed-task cost basis")
-    require(model_guidance, "Astra: end-to-end tool-heavy", "Astra route purpose")
+    for phrase in ("High for source-grounded drafting", "Xhigh for multi-section reconciliation and completeness", "Max for whole-manual consistency", "Only ordinary Sol/Astra Xhigh/Max profiles"):
+        require(model_guidance, phrase, "writing and exploration selection")
+    if "Medium for technical writing" in model_guidance:
+        fail("superseded writing default remains")
+    require(model_guidance, "For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.1 Xhigh.", "local security route")
+    require(model_guidance, "For an assigned security audit of Internet-exposed software, select Astra Xhigh.", "Internet security route")
+    require(core, "never choose them automatically, including fallback, manager descendants, or policy-off operation", "explicit-only legacy eligibility")
 
     global_default = toml_block_after(control, "Global/base default:")
     project_default = toml_block_after(control, "Project default adds one project-only field:")
@@ -410,8 +437,6 @@ def main() -> int:
         "model_guidance",
         "automatic_model_switching",
         "root_execution_fallback",
-        "spark_enabled",
-        "spark_efforts",
         "profile_management",
     }:
         fail("global/base settings inventory mismatch")
@@ -420,6 +445,8 @@ def main() -> int:
     for forbidden_current in (
         "convergence_control =",
         "spark_available =",
+        "spark_enabled =",
+        "spark_efforts =",
         "review_control =",
         "request_accounting =",
         "app_task_lane =",
@@ -579,7 +606,7 @@ def main() -> int:
     plugin = json.loads(read_text(ROOT / ".codex-plugin/plugin.json"))
     if marketplace.get("name") != "Codex-AMS" or plugin.get("name") != "Codex-AMS":
         fail("marketplace/plugin identity mismatch")
-    if plugin.get("version") != "4.1.1":
+    if plugin.get("version") != "4.1.2":
         fail("plugin version mismatch")
     if plugin.get("skills") != "./adaptive-master-subagent-orchestration/":
         fail("plugin skill path mismatch")

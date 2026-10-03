@@ -6,6 +6,10 @@ AMS stands for Adaptive Master-Subagent Orchestration. It is a set of instructio
 
 If a helper gets stuck, the main agent asks for a closer look instead of treating every problem as the end of the job. Your existing permissions and project rules still apply.
 
+## Latest update
+
+**Updated for Astra and Sol 6.1.** The current lineup adds Luna 6, conditional model/effort prompts, and clearer security-audit routing. Older models remain explicitly selectable; Spark is retired. The plugin metadata is now 4.1.2; this does not create a runtime version setting. See [Update AMS](INSTALLATION.md#update-ams).
+
 ## Start here
 
 1. **[Install AMS](INSTALLATION.md)** for the coding app you use. The installer downloads the files directly; you do not need a ZIP or a copy of this repository.

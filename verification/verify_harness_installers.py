@@ -2,7 +2,7 @@
 """Exercise native-profile translation and selected-target installs without model calls."""
 from __future__ import annotations
 
-from contextlib import ExitStack
+from contextlib import ExitStack, chdir
 import importlib.util
 import io
 import json
@@ -12,6 +12,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
+
+from verify_installers import frozen_profiles
 import queue
 import threading
 import time
@@ -23,7 +26,7 @@ spec = importlib.util.spec_from_file_location("install_harnesses", ROOT / "tools
 assert spec and spec.loader
 installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
-MODELS = ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra", "gpt-5.3-codex-spark")
+MODELS = ("gpt-6.1-sol", "gpt-6-luna", "gpt-6-astra", "gpt-6-sol", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
 
 
 class HarnessInstall(unittest.TestCase):
@@ -102,12 +105,12 @@ else:
         (self.oc / "opencode.jsonc").write_text('// keep comments\n{"permission":{"bash":"ask"}}\n', encoding="utf-8")
         before = {p: p.read_bytes() for p in (self.pi / "settings.json", self.codex / "config.toml", self.oc / "opencode.jsonc")}
         self.assert_ok(self.wrapper("all"))
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
         for target in (self.pi, self.oc):
             agents = sorted((target / "agents").glob("*.md"))
-            self.assertEqual(len(agents), 23)
+            self.assertEqual(len(agents), 35)
             self.assertFalse(any("daybreak" in p.name for p in agents))
-        self.assertEqual(len([p for p in (self.skill / installer.SKILL).rglob("*") if p.is_file()]), 44)
+        self.assertEqual(len([p for p in (self.skill / installer.SKILL).rglob("*") if p.is_file()]), 56)
         snapshots = {p: p.read_bytes() for folder in (self.pi, self.oc, self.codex) for p in folder.rglob("*") if p.is_file()}
         self.assert_ok(self.wrapper("all"))
         self.assertTrue(all(p.read_bytes() == data for p, data in snapshots.items()))
@@ -124,7 +127,7 @@ else:
 
     def test_pi_only_honors_selected_profile(self) -> None:
         self.assert_ok(self.wrapper("pi"))
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
         self.assertFalse(self.oc.exists())
         self.assertFalse(self.codex.exists())
         self.assertFalse((self.home / ".pi/agent").exists())
@@ -161,8 +164,8 @@ else:
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(target.read_text(encoding="utf-8"), "custom agent\n")
         self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
 
     def test_render_uses_native_fields_and_no_authority_overrides(self) -> None:
         for p in installer.package_profiles():
@@ -174,17 +177,17 @@ else:
                 self.assertEqual(fields["thinking" if harness == "pi" else "reasoningEffort"], p["model_reasoning_effort"])
                 self.assertNotIn("permission", fields)
                 self.assertNotIn("tools", fields)
-                self.assertNotIn("spawn", text)
-                self.assertIn(p["developer_instructions"], text)
+                self.assertIn("never spawn", text)
+                self.assertIn(p["developer_instructions"].strip(), text)
 
     def test_unavailable_provider_never_substitutes_model(self) -> None:
         status = installer.install("opencode", "not-configured", "auto", False)
         self.assertEqual(status, 2)
         self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
-        self.assertFalse(self.oc.exists())
+        self.assertFalse((self.oc / "agents").exists())
 
     def test_only_matching_catalog_models_are_exported(self) -> None:
-        with patch.object(installer, "catalog", return_value={"gpt-5.6-sol": {"openai"}}), patch.object(installer, "install_core"):
+        with patch.object(installer, "catalog", return_value={"gpt-6.1-sol": {"openai"}}), patch.object(installer, "install_core"):
             installer.install("opencode", "openai", "openai-codex", False)
         self.assertEqual(len(list((self.oc / "agents").glob("*.md"))), 5)
 
@@ -198,7 +201,7 @@ else:
             if count == 2:
                 replacement.unlink()
                 replacement.write_text("replacement from another actor\n", encoding="utf-8")
-            original(files)
+            return original(files)
         with patch.object(installer, "preflight", side_effect=drift):
             self.assertEqual(installer.install("opencode"), 2)
         self.assertEqual(replacement.read_text(encoding="utf-8"), "replacement from another actor\n")
@@ -209,7 +212,7 @@ else:
         def remote(path: str) -> bytes:
             return (ROOT / path).read_bytes()
         with patch.object(installer, "remote_bytes", side_effect=remote), \
-                patch.object(installer, "catalog", return_value={"gpt-5.6-sol": {"openai"}}), \
+                patch.object(installer, "catalog", return_value={"gpt-6.1-sol": {"openai"}}), \
                 patch.object(installer, "install_core") as core:
             self.assertEqual(installer.install("opencode", local=False), 0)
         self.assertEqual(len(list((self.oc / "agents").glob("*.md"))), 5)
@@ -230,6 +233,167 @@ else:
         self.assertEqual(len(calls), 1)
         self.assertIn("-Local" if os.name == "nt" else "--local", calls[0])
 
+    def test_streamed_remote_custom_homes_survive_bootstrap_cleanup(self) -> None:
+        # Execute the wrapper as streamed source, while supplying all remote
+        # package bytes from this checkout. No network or live homes are used.
+        stream = """
+import types
+from pathlib import Path
+source_root = Path(SOURCE_ROOT)
+module = types.ModuleType("streamed_fixture")
+module.__file__ = "<stdin>"
+exec(compile((source_root / "tools/install_harnesses.py").read_bytes(), "<stdin>", "exec"), module.__dict__)
+module.remote_bytes = lambda path: (source_root / path).read_bytes()
+module._remote_bytes = module.remote_bytes
+stage = module.stage_remote_package
+staged = []
+def capture_stage(root):
+    staged.append(root)
+    return stage(root)
+module.stage_remote_package = capture_stage
+assert module.install("codex", local=False) == 0
+assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not cleaned"
+""".replace("SOURCE_ROOT", repr(str(ROOT)))
+        for mode in ("relative", "absolute", "default", "alias-relative", "alias-absolute"):
+            with self.subTest(mode=mode):
+                base = self.home / mode
+                caller = base / "caller"
+                caller.mkdir(parents=True)
+                home = base / "home"
+                home.mkdir()
+                env = os.environ.copy()
+                env.update(HOME=str(home), USERPROFILE=str(home))
+                if mode.startswith("alias-"):
+                    work = base / "work"
+                    (work / "project").mkdir(parents=True)
+                    try:
+                        (caller / "current").symlink_to(work / "project", target_is_directory=True)
+                    except OSError:
+                        continue  # Other path fixtures still run without symlink privileges.
+                    selected = Path("current") / ".."
+                    if mode == "alias-absolute":
+                        selected = caller / selected
+                    env.update(AMS_SKILL_HOME=str(selected / "skills"), CODEX_HOME=str(selected / "codex"))
+                    # Derive the oracle from the original path using host semantics,
+                    # independently of the installer (Windows normalizes parent parts).
+                    with chdir(caller):
+                        skill_home = Path(env["AMS_SKILL_HOME"]).resolve()
+                        codex_home = Path(env["CODEX_HOME"]).resolve()
+                    if os.name != "nt":
+                        self.assertEqual((skill_home, codex_home), (work / "skills", work / "codex"))
+                elif mode == "relative":
+                    env.update(AMS_SKILL_HOME="relative skills", CODEX_HOME="relative codex")
+                    skill_home, codex_home = caller / "relative skills", caller / "relative codex"
+                elif mode == "absolute":
+                    skill_home, codex_home = base / "absolute skills", base / "absolute codex"
+                    env.update(AMS_SKILL_HOME=str(skill_home), CODEX_HOME=str(codex_home))
+                else:
+                    env.pop("AMS_SKILL_HOME", None)
+                    env.pop("CODEX_HOME", None)
+                    skill_home, codex_home = home / ".agents/skills", home / ".codex"
+                if mode == "default" and os.name == "nt":
+                    # PowerShell's automatic $HOME may ignore fixture env homes.
+                    # Inspect the unchanged handoff instead of touching that home.
+                    with patch.object(installer, "remote_bytes", side_effect=lambda p: (ROOT / p).read_bytes()), \
+                            patch.object(installer, "_remote_bytes", side_effect=lambda p: (ROOT / p).read_bytes()), \
+                            patch.object(installer.subprocess, "run") as run:
+                        installer.install_core({"codex"}, env, local=False)
+                    self.assertNotIn("AMS_SKILL_HOME", run.call_args.kwargs["env"])
+                    self.assertNotIn("CODEX_HOME", run.call_args.kwargs["env"])
+                    continue
+                result = subprocess.run([sys.executable, "-"], input=stream, cwd=caller, env=env,
+                                        capture_output=True, text=True, timeout=180)
+                self.assert_ok(result)
+                self.assertEqual((skill_home / installer.SKILL / "SKILL.md").read_bytes(),
+                                 (ROOT / installer.SKILL / "SKILL.md").read_bytes())
+                profiles = ROOT / installer.SKILL / "assets/agent-profiles"
+                self.assertEqual({p.name: p.read_bytes() for p in (codex_home / "agents").glob("ams_*.toml")},
+                                 {p.name: p.read_bytes() for p in profiles.glob("ams_*.toml")})
+                if mode.startswith("alias-") and os.name != "nt":
+                    self.assertFalse((caller / "skills").exists())
+                    self.assertFalse((caller / "codex").exists())
+
+    def test_native_selected_root_ancestor_aliases_preserve_descendant_guards(self) -> None:
+        physical = self.home / "physical"
+        physical.mkdir()
+        alias = self.home / "alias"
+        try:
+            alias.symlink_to(physical, target_is_directory=True)
+        except OSError:
+            self.skipTest("Runner cannot create directory symlinks")
+        for harness, variable in (("opencode", "OPENCODE_CONFIG_DIR"), ("pi", "PI_CODING_AGENT_DIR")):
+            home = physical / harness
+            home.mkdir()
+            if harness == "pi":
+                (home / "settings.json").write_text(json.dumps(self.settings))
+            with patch.dict(os.environ, {variable: str(alias / harness)}):
+                self.assertEqual(installer.home_path(variable, self.home), home)
+                for _ in range(2):
+                    self.assertEqual(installer.install(harness), 0)
+                    self.assertEqual(len(list((home / "agents").glob("*.md"))), 35)
+            leaf = physical / (harness + "-redirect")
+            leaf.symlink_to(home, target_is_directory=True)
+            with patch.dict(os.environ, {variable: str(leaf) + os.sep}):
+                with self.assertRaisesRegex(ValueError, "Redirected installation root"):
+                    installer.home_path(variable, self.home)
+            redirected = home / "redirected-agents"
+            redirected.symlink_to(home / "agents", target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, "Redirected installation path"):
+                installer.safe_path(redirected / "ams_sol_low.md")
+
+    def test_native_alias_parent_traversal_uses_physical_destination(self) -> None:
+        caller = self.home / "caller"
+        caller.mkdir()
+        work = self.home / "work"
+        (work / "project").mkdir(parents=True)
+        try:
+            (caller / "current").symlink_to(work / "project", target_is_directory=True)
+        except OSError:
+            self.skipTest("Runner cannot create directory symlinks")
+        for mode in ("absolute", "relative"):
+            for harness, variable, provider in (("opencode", "OPENCODE_CONFIG_DIR", "openai"),
+                                                ("pi", "PI_CODING_AGENT_DIR", "openai-codex")):
+                with self.subTest(mode=mode, harness=harness):
+                    name = harness + "-" + mode
+                    selected = Path("current") / ".." / name
+                    if mode == "absolute":
+                        selected = caller / selected
+                    with chdir(caller):
+                        home = selected.resolve()  # Host oracle, before invoking the helper.
+                    if os.name != "nt":
+                        self.assertEqual(home, work / name)
+                    home.mkdir()
+                    if harness == "pi":
+                        (home / "settings.json").write_text(json.dumps(self.settings))
+                    with chdir(caller), patch.dict(os.environ, {variable: str(selected)}), \
+                            patch.object(installer, "install_core"):
+                        self.assertEqual(installer.home_path(variable, self.home), home)
+                        self.assertEqual(installer.install(harness), 0)
+                    profiles = installer.package_profiles()
+                    self.assertEqual({p.name: p.read_bytes() for p in (home / "agents").glob("*.md")},
+                                     {p["name"] + ".md": installer.render(p, harness, provider) for p in profiles})
+                    if os.name != "nt":
+                        self.assertFalse((caller / name).exists())
+
+    def test_unselected_redirected_homes_do_not_block_selected_targets(self) -> None:
+        redirect = self.home / "unused-root"
+        try:
+            redirect.symlink_to(self.home, target_is_directory=True)
+        except OSError:
+            self.skipTest("Runner cannot create directory symlinks")
+        with patch.dict(os.environ, {"PI_CODING_AGENT_DIR": str(redirect),
+                                     "OPENCODE_CONFIG_DIR": str(redirect)}), \
+                patch.object(installer, "install_core"):
+            self.assertEqual(installer.install("codex"), 0)
+        env = os.environ.copy() | {"CODEX_HOME": str(redirect)}
+        with patch.object(installer.subprocess, "run") as run:
+            installer.install_core({"opencode"}, env, local=True)
+        self.assertEqual(run.call_args.kwargs["env"]["AMS_INSTALL_SKILL_ONLY"], "1")
+        with patch.object(installer.subprocess, "run") as run:
+            installer.install_core({"opencode"}, env | {"AMS_SKILL_HOME": str(redirect),
+                                                       "AMS_INSTALL_PROFILES_ONLY": "1"}, local=True)
+        run.assert_not_called()
+
     def test_remote_codex_skips_harness_catalog(self) -> None:
         with patch.object(installer, "package_profiles") as profiles, \
                 patch.object(installer, "install_core") as core:
@@ -243,17 +407,17 @@ else:
             self.assertEqual(installer.install("all"), 0)
         for home in (self.oc, self.pi):
             text = (home / "agents/ams_sol_high.md").read_text()
-            self.assertIn('model: "my-provider/gpt-5.6-sol"', text)
+            self.assertIn('model: "my-provider/gpt-6.1-sol"', text)
 
     def test_auto_can_use_different_unambiguous_providers(self) -> None:
-        models = {"gpt-5.6-sol": {"one"}, "gpt-6-astra": {"two"}}
+        models = {"gpt-6.1-sol": {"one"}, "gpt-6-astra": {"two"}}
         with patch.object(installer, "catalog", return_value=models):
             self.assertEqual(installer.install("opencode"), 0)
-        self.assertIn('"one/gpt-5.6-sol"', (self.oc / "agents/ams_sol_high.md").read_text())
+        self.assertIn('"one/gpt-6.1-sol"', (self.oc / "agents/ams_sol_high.md").read_text())
         self.assertIn('"two/gpt-6-astra"', (self.oc / "agents/ams_astra_high.md").read_text())
 
     def test_ambiguous_provider_requires_choice_and_keeps_previous_route(self) -> None:
-        models = {"gpt-5.6-sol": {"one", "two"}}
+        models = {"gpt-6.1-sol": {"one", "two"}}
         with patch.object(installer, "catalog", return_value=models):
             self.assertEqual(installer.install("opencode"), 2)
             self.assertFalse((self.oc / "agents").exists())
@@ -269,8 +433,8 @@ else:
         with patch.object(installer, "catalog", side_effect=catalog):
             self.assertEqual(installer.install("all"), 2)
         self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
         self.assertFalse((self.oc / "agents").exists())
 
     def test_no_local_inference_from_working_directory(self) -> None:
@@ -280,10 +444,10 @@ else:
         install.assert_called_once_with("codex", "auto", "auto", False, False)
 
     def test_catalog_respects_current_project_directory(self) -> None:
-        result = subprocess.CompletedProcess([], 0, "different/gpt-5.6-sol\n", "")
+        result = subprocess.CompletedProcess([], 0, "different/gpt-6.1-sol\n", "")
         env = dict(os.environ, AMS_OPENCODE_CLI=shutil.which("opencode"))
         with patch.object(installer.subprocess, "run", return_value=result) as run:
-            self.assertEqual(installer.catalog("opencode", env), {"gpt-5.6-sol": {"different"}})
+            self.assertEqual(installer.catalog("opencode", env), {"gpt-6.1-sol": {"different"}})
         self.assertEqual(run.call_args.kwargs["cwd"], Path.cwd())
 
     def test_pi_catalog_does_not_force_offline_or_clear_user_choice(self) -> None:
@@ -292,7 +456,7 @@ else:
                 os.environ.pop("PI_OFFLINE", None)
                 if value:
                     os.environ["PI_OFFLINE"] = value
-                with patch.object(installer, "catalog", return_value={"gpt-5.6-sol": {"custom"}}) as catalog, patch.object(installer, "install_core"):
+                with patch.object(installer, "catalog", return_value={"gpt-6.1-sol": {"custom"}}) as catalog, patch.object(installer, "install_core"):
                     self.assertEqual(installer.install("pi"), 0)
                 self.assertEqual(catalog.call_args.args[1].get("PI_OFFLINE"), value)
 
@@ -341,15 +505,217 @@ else:
             self.assertEqual(installer.install("all"), 2)
         self.assertEqual(list((self.oc / "agents").glob("*.md")), [existing])
         self.assertEqual(existing.read_bytes(), before)
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
 
     def test_all_keeps_codex_and_pi_when_only_gui_is_available(self) -> None:
         with patch.object(installer, "opencode_cli", side_effect=ValueError("desktop launcher, not run")):
             self.assertEqual(installer.install("all"), 2)
         self.assertFalse((self.oc / "agents").exists())
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 23)
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 24)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
+
+    def seed_predecessors(self, harness: str, provider: str) -> dict[Path, bytes]:
+        home = self.oc if harness == "opencode" else self.pi
+        agents = home / "agents"
+        agents.mkdir(parents=True, exist_ok=True)
+        data = {agents / (Path(name).stem + ".md"): installer.render(tomllib.loads(raw.decode()), harness, provider)
+                for name, raw in frozen_profiles().items()}
+        for path, raw in data.items():
+            path.write_bytes(raw)
+        return data
+
+    def test_exact_predecessor_recognition_rejects_marker_only_and_custom_bytes(self) -> None:
+        for harness in ("opencode", "pi"):
+            for name, raw in frozen_profiles().items():
+                profile = tomllib.loads(raw.decode())
+                for provider in ("openai", "openai-codex", "custom.route-2"):
+                    rendered = installer.render(profile, harness, provider)
+                    self.assertEqual(installer.predecessor_provider(Path(name).stem, rendered, harness), provider)
+                    self.assertIsNone(installer.predecessor_provider(Path(name).stem, rendered + b"# custom\n", harness))
+            self.assertIsNone(installer.predecessor_provider("ams_sol_high", installer.MARKER.encode(), harness))
+
+    def test_official_native_upgrade_retires_spark_and_preserves_settings(self) -> None:
+        before = (self.pi / "settings.json").read_bytes()
+        for harness, provider in (("opencode", "openai"), ("pi", "openai-codex")):
+            self.seed_predecessors(harness, provider)
+            self.assertEqual(installer.install(harness), 0)
+            home = self.oc if harness == "opencode" else self.pi
+            files = list((home / "agents").glob("*.md"))
+            self.assertEqual(len(files), 35)
+            self.assertFalse(any("spark" in path.name for path in files))
+            for profile in installer.package_profiles():
+                self.assertEqual((home / "agents" / (profile["name"] + ".md")).read_bytes(), installer.render(profile, harness, provider))
+        self.assertEqual((self.pi / "settings.json").read_bytes(), before)
+
+    def test_native_upgrade_failure_restores_predecessors_and_retired_spark(self) -> None:
+        for harness, provider in (("opencode", "openai"), ("pi", "openai-codex")):
+            old = self.seed_predecessors(harness, provider)
+            original = installer.preflight
+            calls = 0
+            def fail_after_writes(files):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise ValueError("Injected post-retirement verification failure")
+                return original(files)
+            with patch.object(installer, "preflight", side_effect=fail_after_writes):
+                self.assertEqual(installer.install(harness), 2)
+            home = self.oc if harness == "opencode" else self.pi
+            self.assertEqual({p: p.read_bytes() for p in (home / "agents").glob("*.md")}, old)
+            self.assertFalse(list(home.glob(".ams-install-*")))
+            self.assertFalse((home / ".adaptive-master-subagent-orchestration.native.lock").exists())
+
+    def test_native_retirement_preserves_custom_and_redirected_spark(self) -> None:
+        for harness, provider in (("opencode", "openai"), ("pi", "openai-codex")):
+            old = self.seed_predecessors(harness, provider)
+            home = self.oc if harness == "opencode" else self.pi
+            custom = home / "agents/ams_spark_high.md"
+            custom.write_bytes(old[custom] + b"# custom\n")
+            redirected = home / "agents/ams_spark_medium.md"
+            redirected.unlink()
+            redirected.mkdir()
+            (redirected / "keep").write_bytes(b"unrelated")
+            self.assertEqual(installer.install(harness), 0)
+            self.assertEqual(custom.read_bytes(), old[custom] + b"# custom\n")
+            self.assertEqual((redirected / "keep").read_bytes(), b"unrelated")
+            self.assertFalse((home / "agents/ams_spark_low.md").exists())
+
+    def test_auto_upgrade_preserves_official_provider_and_requires_explicit_change(self) -> None:
+        profile = next(p for p in installer.package_profiles() if p["name"] == "ams_sol_high")
+        old = tomllib.loads(frozen_profiles()["ams_sol_high.toml"].decode())
+        target = self.oc / "agents/ams_sol_high.md"
+        target.parent.mkdir(parents=True)
+        target.write_bytes(installer.render(old, "opencode", "chosen"))
+        files = installer.select_profiles([profile], {profile["model"]: {"chosen", "other"}}, "opencode", "auto", target.parent)
+        self.assertEqual(files[target], installer.render(profile, "opencode", "chosen"))
+        for models in ({profile["model"]: {"other"}}, {}):
+            with self.assertRaises(ValueError):
+                installer.select_profiles([profile], models, "opencode", "auto", target.parent)
+        files = installer.select_profiles([profile], {profile["model"]: {"other"}}, "opencode", "other", target.parent)
+        self.assertEqual(files[target], installer.render(profile, "opencode", "other"))
+
+    def test_native_lock_blocks_without_profile_changes(self) -> None:
+        self.oc.mkdir()
+        lock = self.oc / ".adaptive-master-subagent-orchestration.native.lock"
+        lock.mkdir()
+        with patch.object(installer, "install_core"):
+            self.assertEqual(installer.install("opencode"), 2)
+        self.assertTrue(lock.is_dir())
+        self.assertFalse((self.oc / "agents").exists())
+
+
+    def test_upgrade_rollback_preserves_concurrent_replacement_and_original_backup(self) -> None:
+        old = self.seed_predecessors("opencode", "openai")
+        changed = self.oc / "agents/ams_sol_high.md"
+        external = b"Concurrent user replacement\n"
+        original = installer.preflight
+        calls = 0
+        def drift(files):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                changed.unlink()
+                changed.write_bytes(external)
+            return original(files)
+        with patch.object(installer, "preflight", side_effect=drift):
+            self.assertEqual(installer.install("opencode"), 2)
+        self.assertEqual({p: p.read_bytes() for p in (self.oc / "agents").glob("*.md")}, old | {changed: external})
+        backups = list(self.oc.glob(".ams-install-*"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual((backups[0] / changed.name).read_bytes(), old[changed])
+        self.assertFalse((self.oc / ".adaptive-master-subagent-orchestration.native.lock").exists())
+
+    def test_displacement_boundary_preserves_completed_edits(self) -> None:
+        for harness, provider in (("opencode", "openai"), ("pi", "openai-codex")):
+            for retirement in (False, True):
+                with self.subTest(harness=harness, retirement=retirement):
+                    old = self.seed_predecessors(harness, provider)
+                    home = self.oc if harness == "opencode" else self.pi
+                    target = home / "agents" / ("ams_spark_low.md" if retirement else "ams_sol_low.md")
+                    custom = b"Completed user edit before displacement\n"
+                    rename = os.rename
+                    injected = []
+                    def edit_then_move(source, destination):
+                        if Path(source) == target and not injected:
+                            target.write_bytes(custom)
+                            injected.append(True)
+                        return rename(source, destination)
+                    with patch.object(os, "rename", side_effect=edit_then_move):
+                        self.assertEqual(installer.install(harness), 2)
+                    self.assertTrue(injected)
+                    self.assertEqual(target.read_bytes(), custom)
+                    self.assertEqual({p: p.read_bytes() for p in target.parent.glob("*.md")}, old | {target: custom})
+
+    def test_publication_and_restore_are_create_only(self) -> None:
+        for restore in (False, True):
+            with self.subTest(restore=restore):
+                old = self.seed_predecessors("opencode", "openai")
+                target = self.oc / "agents/ams_sol_low.md"
+                custom = b"New pathname from another writer\n"
+                link = os.link
+                injected = []
+                def intervene(source, destination, *args, **kwargs):
+                    if Path(destination) == target and not injected:
+                        # For restore, fail publication first; inject only when
+                        # the predecessor is about to be restored.
+                        if restore and Path(source).name.startswith(".ams-install-"):
+                            raise OSError("Injected publication failure")
+                        target.write_bytes(custom)
+                        injected.append(True)
+                    return link(source, destination, *args, **kwargs)
+                with patch.object(os, "link", side_effect=intervene):
+                    self.assertEqual(installer.install("opencode"), 2)
+                self.assertTrue(injected)
+                self.assertEqual(target.read_bytes(), custom)
+                backups = [p for p in self.oc.glob(".ams-install-*") if (p / target.name).exists()]
+                self.assertTrue(any((p / target.name).read_bytes() == old[target] for p in backups))
+
+    def test_rollback_move_boundary_preserves_edits_and_reports_incomplete(self) -> None:
+        for replacement in (False, True):
+            for reappear in (False, True):
+                with self.subTest(replacement=replacement, reappear=reappear):
+                    with tempfile.TemporaryDirectory(dir=self.home) as directory:
+                        root = Path(directory)
+                        target = root / "agent.md"
+                        target.write_bytes(b"published")
+                        snapshot = installer.regular_snapshot(target)
+                        backups = root / "backups"
+                        backups.mkdir()
+                        backup = backups / target.name
+                        backup.write_bytes(b"predecessor")
+                        prior = installer.regular_snapshot(backup)
+                        created = [] if replacement else [(target, *snapshot)]
+                        replaced = [(target, *snapshot, backup, prior)] if replacement else []
+                        rename = os.rename
+                        custom = b"Completed edit before rollback displacement"
+                        def intervene(source, destination):
+                            if Path(source) == target:
+                                target.write_bytes(custom)
+                            result = rename(source, destination)
+                            if reappear and Path(source) == target:
+                                target.write_bytes(b"second writer")
+                            return result
+                        with patch.object(os, "rename", side_effect=intervene):
+                            self.assertFalse(installer.rollback(created, replaced, backups))
+                        self.assertEqual(target.read_bytes(), b"second writer" if reappear else custom)
+                        self.assertTrue(any(p.read_bytes() == custom for p in backups.rglob("*.md")))
+                        self.assertEqual(backup.read_bytes(), b"predecessor")
+
+    def test_retired_native_symlink_and_its_official_referent_are_preserved(self) -> None:
+        old = self.seed_predecessors("opencode", "openai")
+        path = self.oc / "agents/ams_spark_high.md"
+        outside = self.home / "official-but-unowned.md"
+        outside.write_bytes(old[path])
+        path.unlink()
+        try:
+            path.symlink_to(outside)
+        except OSError:
+            self.skipTest("Symlink creation unavailable on this runner")
+        self.assertEqual(installer.install("opencode"), 0)
+        self.assertTrue(path.is_symlink())
+        self.assertEqual(outside.read_bytes(), old[path])
+
 
 
 class OpenCodeExecutable(unittest.TestCase):
@@ -642,10 +1008,10 @@ def verify_native_opencode() -> None:
             if result.returncode:
                 raise AssertionError(result.stderr)
             files = {p: p.read_bytes() for p in (config / "agents").glob("ams_*.md")}
-            if len(files) != 23 or settings.read_bytes() != before:
+            if len(files) != 35 or settings.read_bytes() != before:
                 raise AssertionError("Native OpenCode install changed settings or omitted profiles")
             installer.verify_opencode_agents(files, env)
-        print("PASS real OpenCode CLI install, 23 registered subagents, reinstall, and settings preservation; no model call.", flush=True)
+        print("PASS real OpenCode CLI install, 35 registered subagents, reinstall, and settings preservation; no model call.", flush=True)
 
 
 if __name__ == "__main__":

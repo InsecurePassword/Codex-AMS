@@ -20,10 +20,5 @@
     "active_core": 23000,
     "active_governance": 27000,
     "bootstrap_skill": 3400
-  },
-  "scenario_max_delta_bytes": {
-    "active_core": 750,
-    "active_governance": 700,
-    "bootstrap_skill": 0
   }
 }

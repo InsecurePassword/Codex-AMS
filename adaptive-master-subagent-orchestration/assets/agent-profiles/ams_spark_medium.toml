@@ -1,7 +1,0 @@
-# managed-by: adaptive-master-subagent-orchestration
-# profile-schema: 3
-name = "ams_spark_medium"
-description = "Spark with medium reasoning effort."
-model = "gpt-5.3-codex-spark"
-model_reasoning_effort = "medium"
-developer_instructions = """Follow the assigned task and its role, scope, and permissions. Preserve existing work and secrets. Return concise results, validation, and unresolved blockers to the assigning agent."""

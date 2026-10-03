@@ -48,8 +48,6 @@ managed_marker="# managed-by: adaptive-master-subagent-orchestration"
 user_agent="AMS-Tree-Installer"
 skill_home="${AMS_SKILL_HOME:-${HOME:?HOME is not set}/.agents/skills}"
 codex_home="${CODEX_HOME:-${HOME}/.codex}"
-destination="${skill_home}/${skill_name}"
-agent_home="${codex_home}/agents"
 profiles_only="${AMS_INSTALL_PROFILES_ONLY:-0}"
 skill_only="${AMS_INSTALL_SKILL_ONLY:-0}"
 max_manifest_bytes=262144
@@ -58,12 +56,15 @@ max_total_bytes=104857600
 
 profile_files=(
   ams_sol_low.toml ams_sol_medium.toml ams_sol_high.toml ams_sol_xhigh.toml ams_sol_max.toml
-  ams_astra_low.toml ams_astra_medium.toml ams_astra_high.toml ams_astra_xhigh.toml ams_astra_max.toml
-  ams_daybreak_blue_max.toml
-  ams_terra_low.toml ams_terra_medium.toml ams_terra_high.toml ams_terra_xhigh.toml ams_terra_max.toml
   ams_luna_low.toml ams_luna_medium.toml ams_luna_high.toml ams_luna_xhigh.toml ams_luna_max.toml
-  ams_spark_low.toml ams_spark_medium.toml ams_spark_high.toml
+  ams_astra_low.toml ams_astra_medium.toml ams_astra_high.toml ams_astra_xhigh.toml ams_astra_max.toml
+  ams_sol_6_0_low.toml ams_sol_6_0_medium.toml ams_sol_6_0_high.toml ams_sol_6_0_xhigh.toml ams_sol_6_0_max.toml
+  ams_sol_5_6_low.toml ams_sol_5_6_medium.toml ams_sol_5_6_high.toml ams_sol_5_6_xhigh.toml ams_sol_5_6_max.toml
+  ams_terra_low.toml ams_terra_medium.toml ams_terra_high.toml ams_terra_xhigh.toml ams_terra_max.toml
+  ams_luna_5_6_low.toml ams_luna_5_6_medium.toml ams_luna_5_6_high.toml ams_luna_5_6_xhigh.toml ams_luna_5_6_max.toml
+  ams_daybreak_blue_max.toml
 )
+retired_profile_files=(ams_spark_low.toml ams_spark_medium.toml ams_spark_high.toml)
 
 required_files=(
   SKILL.md
@@ -104,7 +105,7 @@ esac
 case "$skill_only" in 0|1) ;; *) fail "AMS_INSTALL_SKILL_ONLY must be unset or exactly 1." ;; esac
 (( skill_only == 0 || profiles_only == 0 )) || fail "Skill-only and profiles-only installation cannot be combined."
 
-for command_name in curl awk sort uniq cmp mktemp wc tr grep head find dirname stat chmod mkdir mv rm cp date sleep ps od hostname; do
+for command_name in curl cat awk sort uniq cmp mktemp wc tr grep head find dirname stat chmod mkdir mv rm cp ln date sleep ps od hostname; do
   command -v "$command_name" >/dev/null 2>&1 || fail "Required command not found: ${command_name}"
 done
 
@@ -120,6 +121,30 @@ sha256_file() {
 
 is_authorized_prior_profile() {
   case "$1:$2" in
+    "ams_astra_high.toml:73dd10c6f260685456ba717b7fb3ef1937b161caf9ac1a552855fb8d39019a6d"|\
+    "ams_astra_low.toml:04efbc31f48cfcc1d715a8dbfcff9283a8f8b3b48e6f76b9cc23cca5830b7748"|\
+    "ams_astra_max.toml:a802a05585a446e562cce321518b459b284e5f30fd0bd11560bf51ed9cf19de5"|\
+    "ams_astra_medium.toml:6a0bb0406bd180098603e81e623fe73740bdb77ee43efba8848286206e2e1abe"|\
+    "ams_astra_xhigh.toml:9ee3fae9efac98fa653bbf9042a3ae56dcd371096ecdf92d32e878937e376122"|\
+    "ams_daybreak_blue_max.toml:d82a3f01f3b36d11b0ae7be52a55e03d0415f504a08f692de98e69cd0218476b"|\
+    "ams_luna_high.toml:474d38aa8803805b54bceb3a1c0d13fb264c539f1552b042c75aad8dc993bb4a"|\
+    "ams_luna_low.toml:9c9c3619814ed77104d7a327ef2851d39a3ba0a8ddcd2ef5b0aab142af5352f6"|\
+    "ams_luna_max.toml:833d85a3de244ea853a8834204cb92dfca83ba6e46240707938452d3cee9b98b"|\
+    "ams_luna_medium.toml:4a4afbad57d6bae6741cd9d222ce69cee52583050fce9ebb8985f1521e268205"|\
+    "ams_luna_xhigh.toml:dfba834ed5ffbe851f11edb2fc8d74349d210ace4887088a166b186ba8b8dc31"|\
+    "ams_sol_high.toml:a8f4bd2eb9965e0a6f0230f0c1ee0b176cf2aa3763dc9c07a5b45ebb1802d8cd"|\
+    "ams_sol_low.toml:500c7588b556e2328cee881b10ce1eaee96d4a988c04b373b2553b6c629dbb91"|\
+    "ams_sol_max.toml:ee061c2e6accddce8aa9ae657a51f69022acdebdfcec816c35f7acfa7f9e29a7"|\
+    "ams_sol_medium.toml:e9affdbe96fc62b0bf9967c74423dbffbd74dc222ffe768a46ba2cf264f9f990"|\
+    "ams_sol_xhigh.toml:e978b06f59f90778aae2d8638209a51daf8b1ff1cbf048edff5823859fe677ff"|\
+    "ams_spark_high.toml:4763f26eac951ce5e7c216edbc062da62296e789837ebaadd883ee1ecb0047e7"|\
+    "ams_spark_low.toml:9c4c3be3500c350764d0223917f5aeee20ca4cd283ccbef4078b56fb9d05c5ef"|\
+    "ams_spark_medium.toml:115281368f8fd034f4ec90163aed593799a154d8e1b8a08b352c5a09bc884b21"|\
+    "ams_terra_high.toml:066249e1f6cbd1a4d92b6e9d966fd78d5096ab32544ee498b62598f048ba285b"|\
+    "ams_terra_low.toml:23b7d1f34f2b471bc3bc01a144901821c26cbf02347f2d4517087d99b2b033ff"|\
+    "ams_terra_max.toml:96c95fb2a0b944f0a14c82f992f6cab6fc512111bc84c30bfe8fc568ee1446a9"|\
+    "ams_terra_medium.toml:2926b498e62339ae6fb8ddd31511919e7d55417d707c023b05f7429c6e2edf37"|\
+    "ams_terra_xhigh.toml:67bba51053c0cf323fbff51a20bd2cbf2fe89d88ea3db593ad716ea008d25aa9"|\
     "ams_astra_high.toml:d4fb1917f82cb4c428d3606fdc4ccd0a274500327ad4a34fa0bf0846fa97fb77"|\
     "ams_astra_low.toml:5a0d513c3dd22a64a9f516de2492e457fae617a65b70d2e376d97bcba775bd86"|\
     "ams_astra_max.toml:171fc462327ca4eb3f4633664d9410c8f30126f216368e46d603ed62f13cdeb3"|\
@@ -236,6 +261,22 @@ assert_safe_directory() {
   [[ -d "$path" && ! -L "$path" ]] || fail "${label} could not be established safely: ${path}"
 }
 
+canonical_install_root() {
+  local path=$1 label=$2
+  # Strip only trailing separators/dot spelling so a redirected root leaf
+  # cannot hide behind a trailing slash. Ancestor aliases are pinned once.
+  while :; do
+    case "$path" in
+      /) break ;;
+      */.) path=${path%/.}; [[ -n "$path" ]] || path=/ ;;
+      */) path=${path%/} ;;
+      *) break ;;
+    esac
+  done
+  assert_safe_directory "$path" "$label"
+  (cd -P -- "$path" && pwd -P)
+}
+
 safe_manifest_path() {
   local path=$1 prefix="${skill_name}/"
   [[ "$path" == "$prefix"* ]] || return 1
@@ -292,23 +333,132 @@ validate_manifest() {
   cmp -s "$paths_file" "$required_file" || fail "Manifest membership does not match the exact core package."
 }
 
+# Snapshots bind authorization to an unchanged regular file, not just its name.
+path_identity() {
+  stat -c '%d:%i:%a' "$1" 2>/dev/null || stat -f '%d:%i:%Lp' "$1" 2>/dev/null
+}
+
+nonredirected_path() {
+  local path=$1 parent
+  while :; do
+    [[ ! -L "$path" ]] || return 1
+    case "$path" in
+      /|.) break ;;
+      */*) parent=${path%/*}; [[ -n "$parent" ]] || parent=/ ;;
+      *) parent=. ;;
+    esac
+    path=$parent
+  done
+}
+
+file_snapshot() {
+  local path=$1 before after digest
+  nonredirected_path "$path" && [[ -f "$path" ]] || return 1
+  before=$(path_identity "$path") || return 1
+  digest=$(sha256_file "$path") || return 1
+  after=$(path_identity "$path") || return 1
+  [[ "$before" == "$after" && ! -L "$path" && -f "$path" ]] || return 1
+  printf '%s %s\n' "$after" "$digest"
+}
+
+tree_snapshot() {
+  local root=$1
+  nonredirected_path "$root" && [[ -d "$root" ]] || return 1
+  find "$root" -print0 | while IFS= read -r -d '' entry; do
+    [[ ! -L "$entry" ]] || return 1
+    relative=${entry#"$root"}
+    if [[ -d "$entry" ]]; then
+      printf '%q\tdirectory\t%s\n' "$relative" "$(path_identity "$entry")" || return 1
+    elif [[ -f "$entry" ]]; then
+      snapshot=$(file_snapshot "$entry") || return 1
+      printf '%q\tfile\t%s\n' "$relative" "$snapshot"
+    else
+      return 1
+    fi
+  done | LC_ALL=C sort
+}
+
+profile_state() {
+  local path=$1
+  nonredirected_path "$path" || return 1
+  if [[ ! -e "$path" ]]; then printf 'absent\n'; else file_snapshot "$path"; fi
+}
+
+assert_registry_unchanged() {
+  nonredirected_path "$agent_home" && [[ -d "$agent_home" && $(path_identity "$agent_home") == "$agent_home_identity" ]] || return 1
+  if [[ -n "$profile_transaction_root" ]]; then
+    nonredirected_path "$profile_transaction_root" && [[ -d "$profile_transaction_root" && $(path_identity "$profile_transaction_root") == "$profile_transaction_identity" ]] || return 1
+  fi
+}
+
+assert_skill_home_unchanged() {
+  nonredirected_path "$skill_home" && [[ -d "$skill_home" && $(path_identity "$skill_home") == "$skill_home_identity" ]] || return 1
+}
+
 assert_profile_preflight() {
-  local source_root=$1 profile_file source_profile target_profile source_hash target_hash first_line
+  local source_root=$1 profile_file source_profile target_profile source_hash snapshot first_line
   for profile_file in "${profile_files[@]}"; do
     source_profile="${source_root}/assets/agent-profiles/${profile_file}"
     target_profile="${agent_home}/${profile_file}"
     [[ -f "$source_profile" && ! -L "$source_profile" ]] || fail "Bundled profile is missing or redirected: ${profile_file}"
     IFS= read -r first_line < "$source_profile" || true
     [[ "$first_line" == "$managed_marker" ]] || fail "Bundled profile lacks the managed marker: ${profile_file}"
-    [[ ! -L "$target_profile" ]] || fail "Refusing a redirected profile target: ${target_profile}"
-    [[ ! -e "$target_profile" || -f "$target_profile" ]] || fail "Profile target is not a regular file: ${target_profile}"
-    if [[ -e "$target_profile" ]]; then
-      source_hash=$(sha256_file "$source_profile")
-      target_hash=$(sha256_file "$target_profile")
-      [[ "$source_hash" == "$target_hash" ]] || is_authorized_prior_profile "$profile_file" "$target_hash" || \
+    source_hash=$(sha256_file "$source_profile")
+    snapshot=$(profile_state "$target_profile") || fail "Profile target is redirected or not regular: ${target_profile}"
+    if [[ "$snapshot" != absent ]]; then
+      [[ "${snapshot##* }" == "$source_hash" ]] || is_authorized_prior_profile "$profile_file" "${snapshot##* }" || \
         fail "Existing profile differs from current and recognized official predecessor bytes: ${target_profile}"
     fi
+    printf '%s\n' "$snapshot" > "$profile_preflight_root/$profile_file"
+    printf '%s\n' "$source_hash" > "$profile_source_hashes/$profile_file"
   done
+  for profile_file in "${retired_profile_files[@]}"; do
+    target_profile="${agent_home}/${profile_file}"
+    snapshot=$(file_snapshot "$target_profile") || continue
+    if is_authorized_prior_profile "$profile_file" "${snapshot##* }"; then
+      printf '%s\n' "$snapshot" > "$profile_preflight_root/$profile_file"
+    fi
+  done
+}
+
+# Source and destination basenames are equal; moving into the parent with -n
+# refuses an occupied final path instead of nesting inside a competing directory.
+move_tree_absent() {
+  local source=$1 parent=$2 target="$2/$skill_name"
+  nonredirected_path "$parent" && [[ -d "$parent" && ! -e "$target" && ! -L "$target" ]] || return 1
+  mv -n -- "$source" "$parent/" || return 1
+  [[ ! -e "$source" && ! -L "$source" && -d "$target" && ! -L "$target" ]]
+}
+
+rollback_profiles() {
+  local profile_file target expected observed backup displaced
+  [[ -n "$profile_journal" && -s "$profile_journal" ]] || return 0
+  assert_registry_unchanged || { preserve_backups=1; return; }
+  while IFS= read -r profile_file; do
+    target="$agent_home/$profile_file"
+    backup="$profile_backup_root/$profile_file"
+    displaced="$profile_transaction_root/displaced/$profile_file"
+    expected=$(cat "$profile_publications/$profile_file")
+    observed=$(profile_state "$target") || observed=conflict
+    if [[ "$expected" != absent && "$observed" == "$expected" ]]; then
+      mv -n -- "$target" "$profile_transaction_root/displaced/" || { preserve_backups=1; continue; }
+      if [[ $(file_snapshot "$displaced") != "$expected" ]]; then
+        preserve_backups=1
+        [[ -e "$target" || -L "$target" ]] || ln -- "$displaced" "$target" || true
+        continue
+      fi
+      observed=$(profile_state "$target") || observed=conflict
+    fi
+    if [[ -f "$backup" && ! -L "$backup" ]]; then
+      if [[ "$observed" == absent ]]; then
+        ln -- "$backup" "$target" || preserve_backups=1
+      elif [[ "$observed" != "$(file_snapshot "$backup")" ]]; then
+        preserve_backups=1
+      fi
+    elif [[ "$observed" != absent ]]; then
+      preserve_backups=1
+    fi
+  done < "$profile_journal"
 }
 
 
@@ -375,9 +525,13 @@ new_owner_token() {
   od -An -N16 -tx1 /dev/urandom | tr -d ' \n'
 }
 
-assert_safe_directory "$skill_home" "Skill parent"
+skill_home=$(canonical_install_root "$skill_home" "Skill parent")
 if (( skill_only == 0 )); then
-  assert_safe_directory "$codex_home" "CODEX_HOME"
+  codex_home=$(canonical_install_root "$codex_home" "CODEX_HOME")
+fi
+destination="${skill_home}/${skill_name}"
+agent_home="${codex_home}/agents"
+if (( skill_only == 0 )); then
   assert_safe_directory "$agent_home" "Agent registry"
 fi
 
@@ -392,10 +546,20 @@ stage_root=""
 candidate=""
 manifest_before=""
 manifest_after=""
-backup_path="${skill_home}/.${skill_name}.backup.$$"
+backup_path=""
+skill_before=absent
+skill_publication=""
+profile_transaction_root=""
+profile_preflight_root=""
+profile_source_hashes=""
+profile_publications=""
+profile_journal=""
+agent_home_identity=""
+profile_transaction_identity=""
+stage_identity=""
+skill_home_identity=$(path_identity "$skill_home")
+preserve_backups=0
 profile_backup_root=""
-created_profiles=""
-replaced_profiles=""
 existing_moved=0
 candidate_installed=0
 committed=0
@@ -407,25 +571,41 @@ release_install_lock() {
 }
 
 cleanup() {
-  local exit_code=$?
+  local exit_code=$? observed
   set +e
-  if (( committed == 0 )); then
-    if [[ -n "$created_profiles" && -f "$created_profiles" ]]; then
-      while IFS= read -r profile_file; do
-        [[ -n "$profile_file" ]] && rm -f -- "${agent_home}/${profile_file}"
-      done < "$created_profiles"
+  if [[ -n "$stage_root" ]] && { ! nonredirected_path "$stage_root" || [[ $(path_identity "$stage_root") != "$stage_identity" ]]; }; then
+    preserve_backups=1
+  elif ! assert_skill_home_unchanged; then
+    preserve_backups=1
+  elif (( committed == 0 )); then
+    rollback_profiles
+    if (( candidate_installed == 1 )); then
+      observed=$(tree_snapshot "$destination") || observed=conflict
+      if [[ "$observed" == "$skill_publication" ]]; then
+        if ! move_tree_absent "$destination" "$stage_root/displaced-skill" || \
+            [[ $(tree_snapshot "$stage_root/displaced-skill/$skill_name") != "$skill_publication" ]]; then
+          preserve_backups=1
+        fi
+      elif [[ -e "$destination" || -L "$destination" ]]; then
+        preserve_backups=1
+      fi
     fi
-    if [[ -n "$replaced_profiles" && -f "$replaced_profiles" ]]; then
-      while IFS= read -r profile_file; do
-        [[ -n "$profile_file" ]] && cp -f -- "${profile_backup_root}/${profile_file}" "${agent_home}/${profile_file}"
-      done < "$replaced_profiles"
+    if (( existing_moved == 1 )) && [[ -d "$backup_path" && ! -L "$backup_path" ]]; then
+      if [[ ! -e "$destination" && ! -L "$destination" ]]; then
+        move_tree_absent "$backup_path" "$skill_home" || preserve_backups=1
+      else
+        preserve_backups=1
+      fi
     fi
-    if (( candidate_installed == 1 )); then rm -rf -- "$destination"; fi
-    if (( existing_moved == 1 )) && [[ -d "$backup_path" ]]; then mv -- "$backup_path" "$destination"; fi
   fi
-  if (( skill_only == 0 )); then rm -f -- "${agent_home}"/.*.ams-new."$$" 2>/dev/null || true; fi
-  [[ -z "$stage_root" ]] || rm -rf -- "$stage_root"
-  if (( committed == 1 )) && [[ -d "$backup_path" ]]; then rm -rf -- "$backup_path"; fi
+  if [[ -n "$profile_transaction_root" ]] && ! assert_registry_unchanged; then preserve_backups=1; fi
+  if (( preserve_backups == 1 )); then
+    printf 'Conflict preserved. Transaction backups retained at: %s %s\n' "$stage_root" "$profile_transaction_root" >&2
+    (( exit_code != 0 )) || exit_code=1
+  else
+    [[ -z "$profile_transaction_root" ]] || rm -rf -- "$profile_transaction_root"
+    [[ -z "$stage_root" ]] || rm -rf -- "$stage_root"
+  fi
   release_install_lock
   exit "$exit_code"
 }
@@ -484,15 +664,30 @@ acquire_install_lock() {
 acquire_install_lock
 
 stage_root=$(mktemp -d "${skill_home}/.ams-install.XXXXXX")
+stage_identity=$(path_identity "$stage_root")
 candidate="${stage_root}/${skill_name}"
 manifest_before="${stage_root}/install-manifest.before.txt"
 manifest_after="${stage_root}/install-manifest.after.txt"
-profile_backup_root="${stage_root}/profile-backups"
-created_profiles="${stage_root}/created-profiles.txt"
-replaced_profiles="${stage_root}/replaced-profiles.txt"
-: > "$created_profiles"
-: > "$replaced_profiles"
-mkdir -p "$candidate" "$profile_backup_root"
+profile_preflight_root="$stage_root/profile-preflight"
+profile_source_hashes="$stage_root/profile-source-hashes"
+profile_journal="$stage_root/profile-journal.txt"
+backup_path="$stage_root/skill-backup/$skill_name"
+: > "$profile_journal"
+mkdir -p "$candidate" "$profile_preflight_root" "$profile_source_hashes" "$stage_root/skill-backup" "$stage_root/displaced-skill"
+if (( skill_only == 0 )); then
+  agent_home_identity=$(path_identity "$agent_home")
+  profile_transaction_root=$(mktemp -d "$agent_home/.ams-profiles.XXXXXX")
+  profile_transaction_identity=$(path_identity "$profile_transaction_root")
+  profile_backup_root="$profile_transaction_root/originals"
+  profile_publications="$profile_transaction_root/publications"
+  mkdir "$profile_backup_root" "$profile_publications" "$profile_transaction_root/temps" "$profile_transaction_root/displaced"
+  # Establish filesystem support before moving any installed skill or profile.
+  link_probe="$profile_transaction_root/temps/.hardlink-probe"
+  printf 'AMS hard-link capability probe\n' > "$link_probe"
+  ln -- "$link_probe" "$link_probe.link" || fail "Agent registry filesystem requires hard links for safe create-only publication; no installed skill or profile was changed."
+  [[ $(path_identity "$link_probe") == "$(path_identity "$link_probe.link")" ]] || fail "Agent registry hard-link identity check failed; no installed skill or profile was changed."
+  rm -- "$link_probe" "$link_probe.link"
+fi
 
 download_file "$manifest_url" "$manifest_before"
 validate_manifest "$manifest_before"
@@ -510,46 +705,107 @@ done < "$manifest_before"
 download_file "$manifest_url" "$manifest_after"
 cmp -s "$manifest_before" "$manifest_after" || fail "Manifest changed during installation."
 if (( skill_only == 0 )); then assert_profile_preflight "$candidate"; fi
+if (( profiles_only == 0 )); then
+  if [[ -e "$destination" || -L "$destination" ]]; then
+    skill_before=$(tree_snapshot "$destination") || fail "Existing skill tree is redirected, nonregular, or changing."
+  fi
+  skill_publication=$(tree_snapshot "$candidate") || fail "Candidate skill tree is invalid."
+fi
+# AMS_TRANSACTION_PREFLIGHT_COMPLETE
 
 profile_source_root="$candidate"
 if (( profiles_only == 0 )); then
-  [[ ! -L "$destination" ]] || fail "Refusing to replace a redirected skill path: ${destination}"
-  [[ ! -e "$destination" || -d "$destination" ]] || fail "Existing skill path is not a directory: ${destination}"
-  [[ ! -e "$backup_path" ]] || fail "Unexpected backup collision: ${backup_path}"
-  if [[ -d "$destination" ]]; then
-    mv -- "$destination" "$backup_path"
+  assert_skill_home_unchanged || fail "Skill parent changed after preflight."
+  if [[ "$skill_before" != absent ]]; then
+    [[ $(tree_snapshot "$destination") == "$skill_before" ]] || fail "Skill changed after preflight."
+    move_tree_absent "$destination" "$stage_root/skill-backup" || fail "Skill backup encountered a conflicting path."
     existing_moved=1
+    [[ $(tree_snapshot "$backup_path") == "$skill_before" ]] || { preserve_backups=1; fail "Skill changed during backup."; }
+  else
+    [[ ! -e "$destination" && ! -L "$destination" ]] || fail "Skill appeared after preflight."
   fi
-  mv -- "$candidate" "$destination"
+  # AMS_SKILL_BEFORE_PUBLICATION
+  assert_skill_home_unchanged || fail "Skill parent changed before publication."
+  move_tree_absent "$candidate" "$skill_home" || fail "Skill publication encountered a conflicting path."
   candidate_installed=1
+  [[ $(tree_snapshot "$destination") == "$skill_publication" ]] || fail "Skill publication verification failed."
   profile_source_root="$destination"
+  # AMS_SKILL_AFTER_PUBLICATION
 fi
 
 profiles_changed=0
 profiles_unchanged=0
+profiles_retired=0
 if (( skill_only == 0 )); then
 for profile_file in "${profile_files[@]}"; do
   source_profile="${profile_source_root}/assets/agent-profiles/${profile_file}"
   target_profile="${agent_home}/${profile_file}"
-  source_hash=$(sha256_file "$source_profile")
-  if [[ -e "$target_profile" ]]; then
-    target_hash=$(sha256_file "$target_profile")
-    if [[ "$source_hash" == "$target_hash" ]]; then
-      profiles_unchanged=$((profiles_unchanged + 1))
-      continue
-    fi
-    cp -p -- "$target_profile" "${profile_backup_root}/${profile_file}"
-    printf '%s\n' "$profile_file" >> "$replaced_profiles"
-  else
-    printf '%s\n' "$profile_file" >> "$created_profiles"
+  source_hash=$(cat "$profile_source_hashes/$profile_file")
+  expected=$(cat "$profile_preflight_root/$profile_file")
+  assert_registry_unchanged || fail "Agent registry changed after preflight."
+  [[ $(profile_state "$target_profile") == "$expected" ]] || fail "Profile changed after preflight: ${profile_file}"
+  if [[ "$expected" != absent && "${expected##* }" == "$source_hash" ]]; then
+    profiles_unchanged=$((profiles_unchanged + 1))
+    continue
   fi
-  temp_profile="${agent_home}/.${profile_file}.ams-new.$$"
+  temp_profile="$profile_transaction_root/temps/$profile_file"
   cp -- "$source_profile" "$temp_profile"
   chmod 600 "$temp_profile" 2>/dev/null || true
-  mv -f -- "$temp_profile" "$target_profile"
-  [[ $(sha256_file "$target_profile") == "$source_hash" ]] || fail "Profile post-write verification failed: ${profile_file}"
+  publication=$(file_snapshot "$temp_profile") || fail "Profile staging failed: ${profile_file}"
+  [[ "${publication##* }" == "$source_hash" ]] || fail "Profile source changed after preflight: ${profile_file}"
+  printf '%s\n' "$publication" > "$profile_publications/$profile_file"
+  printf '%s\n' "$profile_file" >> "$profile_journal"
+  if [[ "$expected" != absent ]]; then
+    [[ $(profile_state "$target_profile") == "$expected" ]] || fail "Profile changed before backup: ${profile_file}"
+    mv -n -- "$target_profile" "$profile_backup_root/"
+    [[ ! -e "$target_profile" && ! -L "$target_profile" && $(file_snapshot "$profile_backup_root/$profile_file") == "$expected" ]] || \
+      { preserve_backups=1; fail "Profile changed during backup: ${profile_file}"; }
+  fi
+  assert_registry_unchanged || fail "Agent registry changed before publication."
+  # AMS_PROFILE_BEFORE_PUBLICATION
+  ln -- "$temp_profile" "$target_profile" || fail "Profile publication encountered a conflicting path: ${profile_file}"
+  [[ $(file_snapshot "$target_profile") == "$publication" ]] || fail "Profile post-write verification failed: ${profile_file}"
   profiles_changed=$((profiles_changed + 1))
 done
+for profile_file in "${retired_profile_files[@]}"; do
+  [[ -f "$profile_preflight_root/$profile_file" ]] || continue
+  target_profile="$agent_home/$profile_file"
+  expected=$(cat "$profile_preflight_root/$profile_file")
+  assert_registry_unchanged || fail "Agent registry changed before retirement."
+  [[ $(profile_state "$target_profile") == "$expected" ]] || fail "Retired profile changed after preflight: ${profile_file}"
+  printf 'absent\n' > "$profile_publications/$profile_file"
+  printf '%s\n' "$profile_file" >> "$profile_journal"
+  mv -n -- "$target_profile" "$profile_backup_root/"
+  # AMS_RETIRED_AFTER_BACKUP
+  [[ ! -e "$target_profile" && ! -L "$target_profile" && $(file_snapshot "$profile_backup_root/$profile_file") == "$expected" ]] || \
+    { preserve_backups=1; fail "Retired profile changed during backup: ${profile_file}"; }
+  profiles_retired=$((profiles_retired + 1))
+done
+fi
+# AMS_TRANSACTION_BEFORE_COMMIT
+if (( skill_only == 0 )); then
+  assert_registry_unchanged || fail "Agent registry changed before commit."
+  for profile_file in "${profile_files[@]}" "${retired_profile_files[@]}"; do
+    if [[ -f "$profile_publications/$profile_file" ]]; then
+      expected=$(cat "$profile_publications/$profile_file")
+    elif [[ -f "$profile_preflight_root/$profile_file" ]]; then
+      expected=$(cat "$profile_preflight_root/$profile_file")
+    else
+      continue
+    fi
+    [[ $(profile_state "$agent_home/$profile_file") == "$expected" ]] || fail "Profile changed before commit: ${profile_file}"
+    if [[ -f "$profile_backup_root/$profile_file" ]]; then
+      [[ $(file_snapshot "$profile_backup_root/$profile_file") == "$(cat "$profile_preflight_root/$profile_file")" ]] || \
+        { preserve_backups=1; fail "Profile backup changed before commit: ${profile_file}"; }
+    fi
+  done
+fi
+if (( profiles_only == 0 )); then
+  assert_skill_home_unchanged || fail "Skill parent changed before commit."
+  [[ $(tree_snapshot "$destination") == "$skill_publication" ]] || fail "Skill changed before commit."
+  if (( existing_moved == 1 )); then
+    [[ $(tree_snapshot "$backup_path") == "$skill_before" ]] || { preserve_backups=1; fail "Skill backup changed before commit."; }
+  fi
 fi
 
 committed=1
@@ -564,6 +820,6 @@ if [[ -n "$local_source" ]]; then printf 'Source: %s\n' "$local_source"; else pr
 if (( skill_only == 1 )); then
   printf 'Shared skill installed; Codex registry unchanged.\n'
 else
-  printf 'Profiles: %s (%s changed, %s unchanged)\n' "$agent_home" "$profiles_changed" "$profiles_unchanged"
+  printf 'Profiles: %s (%s changed, %s unchanged, %s retired)\n' "$agent_home" "$profiles_changed" "$profiles_unchanged" "$profiles_retired"
   printf 'Installation complete. Start a new Codex thread before using newly installed profiles.\n'
 fi
