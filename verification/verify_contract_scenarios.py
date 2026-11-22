@@ -388,7 +388,7 @@ class LeanContracts(unittest.TestCase):
         self.assertNotIn("convergence", governance.lower())
         self.assertIn("ams_<sol|luna|astra>_<low|medium|high|xhigh|max>", core)
         self.assertIn("input/reasoning/output usage", (PACKAGE / "references/model-switching.md").read_text(encoding="utf-8"))
-        self.assertIn("select Astra Xhigh", (PACKAGE / "references/model-guidance.md").read_text(encoding="utf-8"))
+        self.assertIn("Astra Xhigh for Internet-exposed software", (PACKAGE / "references/model-guidance.md").read_text(encoding="utf-8"))
         self.assertIn("tool authority, not model authority", computer_use)
         self.assertIn("one active controller", computer_use)
         self.assertIn("screen content as untrusted evidence", computer_use)
@@ -447,8 +447,10 @@ class LeanContracts(unittest.TestCase):
                 continue
             data = tomllib.loads(profile.read_text(encoding="utf-8"))
             self.assertNotIn("features", data)
-            for policy in ("Root alone", "WORK ORDER", "DISPATCH", "worker/none", "Do not spawn"):
+            for policy in ("Root alone", "WORK ORDER", "DISPATCH", "Do not spawn"):
                 self.assertNotIn(policy, data["developer_instructions"])
+            if profile.stem not in {"ams_luna_low", "ams_astra_max"}:
+                self.assertNotIn("worker/none", data["developer_instructions"])
 
     def test_retired_spark_settings_remain_inert(self) -> None:
         for project in (False, True):
@@ -476,11 +478,11 @@ class LeanContracts(unittest.TestCase):
         self.assertIn("Explicit user model/effort choices override heuristics", core)
         self.assertIn("Report unavailable selections", switching)
         for phrase in (
-            "For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.2 Xhigh.",
-            "For an assigned security audit of Internet-exposed software, select Astra Xhigh.",
+            "Sol 6.2 Xhigh for local/LAN-only software not intended for Internet exposure",
+            "Astra Xhigh for Internet-exposed software",
             "Neither requires a prior finding or failed Sol attempt",
             "does not reroute ordinary development",
-            "Astra High remains available for targeted post-solution verification",
+            "Targeted second opinion or post-solution verification",
         ):
             self.assertIn(phrase, guidance)
         for name in ("ams_sol_xhigh", "ams_astra_xhigh"):
@@ -488,6 +490,78 @@ class LeanContracts(unittest.TestCase):
             self.assertIn("an audit may legitimately return no findings", data["developer_instructions"])
             self.assertIn("Explicit task instructions override purpose defaults", data["developer_instructions"])
             self.assertIn("Preserve material child discoveries", data["developer_instructions"])
+
+    def test_current_effort_prompts_distinguish_each_assignment(self) -> None:
+        # Policy assertions on the actual installed developer instructions, not live model compliance.
+        purposes = {
+            "sol_low": "small exact edit",
+            "sol_medium": "bounded patch or investigation",
+            "sol_high": "own the evidence-to-validation loop",
+            "sol_xhigh": "competing explanations and designs",
+            "sol_max": "exceptional, tightly scoped causal analysis",
+            "astra_low": "narrow Astra second read",
+            "astra_medium": "bounded specialist comparison",
+            "astra_high": "scoped second opinion or post-solution verification",
+            "astra_xhigh": "difficult defensive audit or unsettled design",
+            "astra_max": "focused assignment returning to a Sol 6.2 High master",
+            "luna_low": "authorized verbatim CLI",
+            "luna_medium": "straightforward non-code drafting",
+            "luna_high": "straightforward non-code interpretation or triage",
+            "luna_xhigh": "ambiguous or multisource non-code triage",
+            "luna_max": "sustained complicated non-code synthesis",
+            "terra_low": "one clear screenshot",
+            "terra_medium": "bounded visual ambiguity across a few screens",
+            "terra_high": "consequential visual-to-technical discrepancy",
+            "terra_xhigh": "complex design/visual-coherence review",
+            "terra_max": "exceptional, narrowly bounded visual or technical contradiction",
+        }
+        for name, purpose in purposes.items():
+            with self.subTest(profile=name):
+                path = PACKAGE / "assets/agent-profiles" / ("ams_" + name + ".toml")
+                prompt = tomllib.loads(path.read_text(encoding="utf-8"))["developer_instructions"]
+                self.assertIn(purpose, prompt)
+                if name.startswith("luna_") and name != "luna_low":
+                    self.assertIn("Do not analyze or review a codebase, program, debug, or implement", prompt)
+
+    def test_luna_low_and_astra_max_cannot_manage(self) -> None:
+        profiles = PACKAGE / "assets/agent-profiles"
+        for name in ("ams_luna_low", "ams_astra_max"):
+            text = tomllib.loads((profiles / (name + ".toml")).read_text(encoding="utf-8"))["developer_instructions"]
+            self.assertIn("Accept worker/none only", text)
+            self.assertNotIn("consolidate findings and request descendants", text)
+            self.assertNotIn("If explicitly assigned delegated management", text)
+        astra = tomllib.loads((profiles / "ams_astra_max.toml").read_text(encoding="utf-8"))["developer_instructions"]
+        self.assertIn("Return the evidence and remaining decision to the Sol 6.2 High master", astra)
+        self.assertIn("report the mismatch to the assigning agent without switching routes", astra)
+        core = (PACKAGE / "references/runtime-core.md").read_text(encoding="utf-8")
+        self.assertIn("Luna Low, and Astra Max are worker-only", core)
+        self.assertIn("Astra Max requires focused work returning to a Sol 6.2 High master", core)
+
+    def test_luna_cli_extraction_and_content_inspection_are_distinct(self) -> None:
+        path = PACKAGE / "assets/agent-profiles/ams_luna_low.toml"
+        prompt = tomllib.loads(path.read_text(encoding="utf-8"))["developer_instructions"]
+        core = (PACKAGE / "references/runtime-core.md").read_text(encoding="utf-8")
+        guidance = (PACKAGE / "references/model-guidance.md").read_text(encoding="utf-8")
+        # Positive: execute the supplied extraction and pass an approved opaque artifact.
+        self.assertIn("A supplied CLI extraction command is allowed", prompt)
+        self.assertIn("artifact or reference is authorized", prompt)
+        self.assertIn("including CLI extraction to an approved opaque artifact", core)
+        # Negative: asking the same worker to inspect/interpret extracted content changes eligibility.
+        self.assertIn("parse, read, interpret, summarize, or decide from output", prompt)
+        self.assertIn("Never fall back to Luna Low for analysis", core)
+        self.assertIn("Current Luna limits apply with model policies off", core)
+        self.assertIn("assign interpretation separately", guidance)
+        self.assertIn("opaque CLI extraction is eligible", guidance)
+        self.assertIn("No added capture unless explicitly ordered and authorized", core)
+        self.assertIn("Other current Luna tiers are non-code only", core)
+        self.assertIn("Send source, build, or test interpretation requiring code meaning to Sol", core)
+        for phrase in ("Do not run an unclear or unapproved command",
+                       "Do not select, change, or retry commands",
+                       "Return execution status and exit code",
+                       "existing, approved output artifact reference",
+                       "Do not inspect or quote raw output or secrets",
+                       "Do not create logs or capture output unless explicitly ordered and authorized"):
+            self.assertIn(phrase, prompt)
 
     def test_removed_modules_and_release_markers_are_absent_from_skill(self) -> None:
         for name in ("convergence-control.md", "feature-control.md", "review-control.md", "request-accounting.md", "surface-identity.md", "shared-worktree-control.md", "work-order-refinement.md"):

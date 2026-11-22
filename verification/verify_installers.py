@@ -61,9 +61,22 @@ MODEL_UPDATE_PREDECESSOR_HASHES = {
 }
 
 
+def effort_update_predecessors() -> dict[str, bytes]:
+    """Frozen exact stock bytes before prompt changes; independent of live profile assets."""
+    file = ROOT / "verification/fixtures/prior-profiles/f2462569-stock-profiles.txt"
+    snapshot = file.read_bytes()
+    if hashlib.sha256(snapshot).hexdigest() != "c2908825f6fbda02a3dc01838c8c453729b9ae4207ab0f1b1a0ce4fb3dddb656":
+        raise AssertionError("f2462569 stock snapshot hash mismatch")
+    parts = re.split(rb"^=== (ams_[a-z_]+\.toml) ===\n", snapshot, flags=re.MULTILINE)
+    result = {name.decode(): raw for name, raw in zip(parts[1::2], parts[2::2], strict=True)}
+    if len(result) != 20:
+        raise AssertionError("f2462569 stock snapshot profile inventory mismatch")
+    return result
+
+
 def model_update_predecessors() -> dict[str, bytes]:
     """Reconstruct the immediate stock predecessor and independently pin its exact bytes."""
-    source = ROOT / SKILL / "assets/agent-profiles"
+    source = effort_update_predecessors()
     routes = {
         "astra": (b"gpt-6.2-astra", b"gpt-6-astra", b"Astra 6.2", b"Astra 6"),
         "sol": (b"gpt-6.2-sol", b"gpt-6.1-sol", b"Sol 6.2", b"Sol 6.1"),
@@ -72,7 +85,7 @@ def model_update_predecessors() -> dict[str, bytes]:
     result = {}
     for name, digest in MODEL_UPDATE_PREDECESSOR_HASHES.items():
         new_model, old_model, new_label, old_label = routes[name.split("_")[1]]
-        current = (source / name).read_bytes()
+        current = source[name]
         prior = current.replace(b'model = "' + new_model + b'"', b'model = "' + old_model + b'"', 1)
         prior = prior.replace(b'description = "' + new_label + b" with ", b'description = "' + old_label + b" with ", 1)
         if hashlib.sha256(prior).hexdigest() != digest:
@@ -214,19 +227,19 @@ def invoke(
     return run(command, env, expect_success=expect_success)
 
 
-def check_stock_model_upgrade(local_script: Path, environment: dict[str, str]) -> None:
+def check_stock_model_upgrade(local_script: Path, environment: dict[str, str],
+                              old: dict[str, bytes], commit: str) -> None:
     """Exercise a complete stock upgrade and prove one edited predecessor blocks the transaction."""
     homes = environment.copy()
-    root = Path(homes["CODEX_HOME"]).parent / "stock-model-upgrade"
+    root = Path(homes["CODEX_HOME"]).parent / ("stock-model-upgrade-" + commit)
     agents = root / "codex/agents"
     agents.mkdir(parents=True)
     homes.update(CODEX_HOME=str(agents.parent), AMS_SKILL_HOME=str(root / "skills"))
     invoke(local_script, homes, local=True)
     current = {p.name: p.read_bytes() for p in agents.glob("*.toml")}
-    old = model_update_predecessors()
     for name, data in old.items():
         (agents / name).write_bytes(data)
-    collision = agents / "ams_sol_high.toml"
+    collision = agents / ("ams_luna_low.toml" if "ams_luna_low.toml" in old else "ams_sol_high.toml")
     collision.write_bytes(old[collision.name] + b"# custom predecessor\n")
     before = {p.name: p.read_bytes() for p in agents.glob("*.toml")}
     config = agents.parent / "config.toml"
@@ -657,7 +670,8 @@ def main() -> int:
                 raise AssertionError("local manifest refusal changed installed files")
             (served / "install-manifest.txt").write_bytes(original_manifest)
 
-            check_stock_model_upgrade(local_script, local_env)
+            check_stock_model_upgrade(local_script, local_env, model_update_predecessors(), "ac708b49")
+            check_stock_model_upgrade(local_script, local_env, effort_update_predecessors(), "f2462569")
 
             # Official frozen-baseline upgrade and retired Spark removal share rollback.
             upgrade_codex = base / "upgrade-codex"

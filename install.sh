@@ -120,8 +120,28 @@ sha256_file() {
 }
 
 is_authorized_prior_profile() {
-  # Exact stock model aliases from ac708b49b118c4c4a30b11b38df85bde6d0c5be5.
+  # Exact stock aliases from f2462569cf9223a14d438ea4a0bdd490e9dd3d0a, then ac708b49b118c4c4a30b11b38df85bde6d0c5be5.
   case "$1:$2" in
+    "ams_astra_high.toml:dee66316edc1becfb11dcd439b28e96cab2ed6ccbb9c21d4bd04f0ba18f71030"|\
+    "ams_astra_low.toml:d4ae35f4b5f6a472e96e8a6a9ddb8cb4edf353f25490e2854960f8cef8893ed0"|\
+    "ams_astra_max.toml:23450a288f4ce5d6a8d99c5d6f110f62631ecfb89237570bb35d06e1586aa247"|\
+    "ams_astra_medium.toml:1823206f9c4721079e684bfb69dc7f58ff52909f986198149bb808516982bb05"|\
+    "ams_astra_xhigh.toml:e964f110e362bfccdc9bc34070172e8a3e2ca7460344a0bbae401e2190d18cc2"|\
+    "ams_luna_high.toml:8ddd0b92e79f28a4c41b9bcbe5ff593ac9117bf48db121ae70c5f9efeaf10d9f"|\
+    "ams_luna_low.toml:101a0d2d52c32b5b36379a973b02f8e174b63fbd537108b67f564fc84face254"|\
+    "ams_luna_max.toml:10ad39c1c330e8a1b50365e6005279f177dc0896f11b82aff8c90fa6c2433136"|\
+    "ams_luna_medium.toml:87c64f2f547e3edb8a3f50545953ea4a769e49888c39d23568e070f6c4a5c0af"|\
+    "ams_luna_xhigh.toml:91bfa7218d1484c7d594e46ad85707356bb4757f9046dab92498cb8cec0a2b19"|\
+    "ams_sol_high.toml:a9d2604d0777534fc1b316723473584c44f86e14109015ea32d2c37a3150d7e3"|\
+    "ams_sol_low.toml:e9dacd2ca3cf071d723ba46a1146a9b2489a7fd29601f4f9c65e255785f5431d"|\
+    "ams_sol_max.toml:e09e08eb0b18511c3ae1ed6ea86395a1038bbcb1f9a1e280dc1d2342e6927893"|\
+    "ams_sol_medium.toml:816fc46dcdeb299bee7d5623462c4e73721958f62b52533119672d156152b61e"|\
+    "ams_sol_xhigh.toml:720972b76b49659eb411592bf53a84b6522d03fce52997d98d0414cc7b4d1b3e"|\
+    "ams_terra_high.toml:b07f0ff97d00aff32aa7071eedd3645fdf0c7220a0849bb4c160362e718a39c9"|\
+    "ams_terra_low.toml:022a9819d36dbc9de630c0a73cefa91de711014195831b6154bcd72d6a1f8a21"|\
+    "ams_terra_max.toml:00b0ab48818a1cc73351dc7f7f7dc8d146af85aca052e5f004de1b9b7e55b758"|\
+    "ams_terra_medium.toml:765c5248e16c3308bb8fbefb374eb2065f1b98a5608f4bed024acd2030615b6b"|\
+    "ams_terra_xhigh.toml:99fe3cfee685e9cd49eba31cf3b03aee8bfbf1a1ffc152450c52c43033f21cef"|\
     "ams_astra_high.toml:1a3fc87147b685490f115385cede8508f0955b8faee30769611262fd6a29b329"|\
     "ams_astra_low.toml:b0c0479138221b30959d82f88934c2cd678a1eceb979ce1e5aed0cbba59f09cd"|\
     "ams_astra_max.toml:2c9529a7262f5f7daa68d782ce5a070fca9da61bb1b7ab50c1c77f3bfad057db"|\

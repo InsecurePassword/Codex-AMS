@@ -121,6 +121,53 @@ MODEL_UPDATE_NATIVE_HASHES = {
         "ams_terra_xhigh": "ccc7e823dcad1051c23ea1761bd2e5747301a949b886bab6d59f09b5c13048d7",
     },
 }
+# Exact stock renders of current aliases from f2462569cf9223a14d438ea4a0bdd490e9dd3d0a.
+EFFORT_UPDATE_NATIVE_HASHES = {
+    "opencode": {
+        "ams_astra_high": "45143850e40ea7bb5a0777e743f18ca0203ff8ab42d5d0f8d9feb104557934e2",
+        "ams_astra_low": "518b3805fe5765070ad534b50b0fa5e99f1dbf0101955a1b67b3326858f566e6",
+        "ams_astra_max": "897a048ab681a92edca3f6ec4a1e30b7985b95765bbf306e1383f8d98f1820e6",
+        "ams_astra_medium": "0c2c4f3d29cc07d408d9532ec4e4e67816c4f4f48c5449cd11afba4a113cefa5",
+        "ams_astra_xhigh": "59a2e983a38518e366883000a0b17880ba2ec17d589a62a713eb5e2798c84af6",
+        "ams_luna_high": "949e3c14896054731af5e4f8476bf703ed67ba223770deed31b5dc20e653e130",
+        "ams_luna_low": "257139dfbbbd1c0d0a93d1d90651fe1bf11653769bc62f6296e1cf39b4fb25a8",
+        "ams_luna_max": "11f9be083ebafb15b329b790b5943a09bbc70bc748c4d14f3ad6e719e390b3ad",
+        "ams_luna_medium": "4500dbae462f9870eaac6d871a270376e3db83b9542b84ff2f97c7b0e5dbab80",
+        "ams_luna_xhigh": "7b16d082f1e90ec3f11f32e4292bf1679aa44df911c5fc04310c4620601fdc15",
+        "ams_sol_high": "b182e4b486ba872fe9fe4b993a074f24d1af38feb264cc957dbe110c82224d48",
+        "ams_sol_low": "4bb6b5f8022d6f47d8a53d3aaf25c063835d720b05acf8662d78712b5ae9bfc9",
+        "ams_sol_max": "d70946f24fb75a1cae099af8918355996a11a59f4fe3de957da5142528afaf0f",
+        "ams_sol_medium": "f043e95567079d6a85a3d12ac3e31489df0c45ff2393c40431c36871bf2b0423",
+        "ams_sol_xhigh": "29b05633ac4dbfa7d5f95b48dfe4cbfea500f3d5ee5b18f88f8b07c254500db0",
+        "ams_terra_high": "736a7312b154365c189bfd37221ff7757298bb5fd60d89f2019577cb58fb49f8",
+        "ams_terra_low": "b0ee44150e372d44e29d50c60016167d548875719561ef1f3f2b236662fe6176",
+        "ams_terra_max": "21d52d2a27c0297026403d53a8fee1b5d2d2b5448ee099ee91588d732013d84a",
+        "ams_terra_medium": "8c44ccbc74b2667a78c8931c533945002c70220847dc03cb4980933f0e03bab0",
+        "ams_terra_xhigh": "c38ac31cb3853056636b018e5c343348c21299181e1e394718d791be656bf55b",
+    },
+    "pi": {
+        "ams_astra_high": "626ef5d157382e36e40f1ce80de7db6e896231f6e11c3db1fe44597e45b2a7cb",
+        "ams_astra_low": "bace3849bf38e7c3135a41a092f3f71dc57361ffe033cf61c4dd710267bf7184",
+        "ams_astra_max": "9b734d459124ee82ec5f35899c4e24156c6a075d413929bbc0658365a12648e2",
+        "ams_astra_medium": "53dd2e056a6e87ce43e425869c4a0b2f4e727ce7626ba0bd58018401bb04a250",
+        "ams_astra_xhigh": "5d522689241a70852ff12090babd1de166fec45577f34208b587b0998b46274b",
+        "ams_luna_high": "99a9ebe71eb27ea5aff7b3fef0c46cfacaf64613127865c4f8dac5b1b5b60a9a",
+        "ams_luna_low": "8807883f14aa260f9747cf6a96267e3fe942578fff7e708fdde6c0d37fab4e1c",
+        "ams_luna_max": "78db2395ca70388bebe0274fdb037ba0f5de01a96014370079429a4ce903a05b",
+        "ams_luna_medium": "95f3bdd8eea60502bf0759b8f2c28476e98afafae7d42e3c0c1c33c7cb967ae0",
+        "ams_luna_xhigh": "1b3d8e50b069ea60cfc1954e34e6ccd299bccd7fecd1138444068c7811b68e47",
+        "ams_sol_high": "53f48abb67e5288b7131c72ae516efa71ed73be61aedde353290761aed6e0a7f",
+        "ams_sol_low": "d1b997c9ea87185cd0bdb1293321512963629c431b23858b4b51495823129638",
+        "ams_sol_max": "d8baa1b78c1070868d472f4b6c9641e819a25a100dfc3eda3ee3d7dad19169f5",
+        "ams_sol_medium": "1c17598487327d13a82847d6a9b4fa3e06e8960d74de64f23da0b7d54d8fad54",
+        "ams_sol_xhigh": "7694732dc186e1211ea74faa67414ff136eae69b39a08a9f3800f9303c8691a4",
+        "ams_terra_high": "b1d60c9cbbfaea5e92806c539f96f46679d9d163d2beef09f9795d502b2482ef",
+        "ams_terra_low": "7f109b5a0069f2571b90ac96f6fa88951cb0bb0ecba49a8e2f8c5f42f7bf1cb2",
+        "ams_terra_max": "4ae83c792db111a5d88334580db57981785fc95ed55ac3284859d13531b826f9",
+        "ams_terra_medium": "e73e60c00bf776ec1997549d2dc89e386bfead2feca6524c6a4f9f7c6919406d",
+        "ams_terra_xhigh": "f1c3ce661e275707b6994954b12b5aee58ac19c77d1c9ad5ca13fe1bf178a506",
+    },
+}
 RETIRED_NATIVE_NAMES = ("ams_spark_low", "ams_spark_medium", "ams_spark_high")
 EXPECTED_PROFILE_NAMES = {
     f"ams_{family}_{effort}" for family in
@@ -589,7 +636,8 @@ def render(profile: dict[str, str], harness: str, provider: str) -> bytes:
 
 
 def predecessor_provider(name: str, data: bytes, harness: str) -> str | None:
-    expected = (PRIOR_NATIVE_HASHES[harness].get(name), MODEL_UPDATE_NATIVE_HASHES[harness].get(name))
+    expected = (PRIOR_NATIVE_HASHES[harness].get(name), MODEL_UPDATE_NATIVE_HASHES[harness].get(name),
+                EFFORT_UPDATE_NATIVE_HASHES[harness].get(name))
     if not any(expected):
         return None
     match = re.search(rb'^model: "([A-Za-z0-9][A-Za-z0-9._-]*)/([^"\r\n]+)"$', data, re.MULTILINE)

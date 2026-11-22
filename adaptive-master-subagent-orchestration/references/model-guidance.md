@@ -1,13 +1,16 @@
 # AMS model guidance
 
-Load only when `model_guidance = true`. Recommendations, not capabilities or a mandatory ladder; runtime explicit-selection and legacy rules still apply.
+Load only when `model_guidance = true`. Select by task and evidence, not a fixed ladder. The user selects the root; Sol 6.2 High is recommended for Core leadership and ordinary coding, not required.
 
-Luna 6: Low for supplied procedural commands without analysis, including when another agent reads logs; Medium for straightforward interpretation; High for contextual results or focused implementation. For documentation/general writing, prefer High for source-grounded drafting, Xhigh for multi-section reconciliation and completeness, Max for whole-manual consistency. Keep integral troubleshooting commands with their owner when splitting wastes context; do not relabel routine runs to retain an expensive owner.
+| Profile | Low | Medium | High | Xhigh | Max |
+|---|---|---|---|---|---|
+| Sol 6.2 | Exact edits, transforms, model-mediated extraction | Bounded patches with clear acceptance, diagnosis, technical writing | Coding, debugging, integration, architecture, review | Hard discovery, hypotheses, synthesis | Exceptional focused causal analysis or synthesis |
+| Astra 6.2 | Narrow second read or exact response | Scoped comparison or evidence reconciliation | Targeted second opinion or post-solution verification | Difficult scoped audit, design, alternatives | Rare focused worker; returns to Sol 6.2 High master |
+| Luna 6 | Authorized verbatim CLI only; no content inspection | Straightforward non-code drafting | Straightforward non-code interpretation or triage | Ambiguous or multisource non-code triage and multi-section reconciliation | Sustained complicated non-code synthesis, e.g. whole-manual consistency |
+| Terra 6.1 (explicit only) | Clear screenshot, UI, or structured visual evidence | Bounded multi-screen ambiguity | Significant visual-to-technical discrepancy | Difficult design/visual coherence | Exceptional bounded conflicting visual or technical evidence |
 
-Sol 6.2: High for normal coding, diagnosis, integration, architecture, and review. Xhigh for audit discovery, hypotheses, and alternatives; Max for deep finding analysis or difficult synthesis. Exploration need not follow failure.
+See `runtime-core.md`: opaque CLI extraction is eligible; assign interpretation separately or keep integral analysis with its owner.
 
-For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.2 Xhigh. For an assigned security audit of Internet-exposed software, select Astra Xhigh. Neither requires a prior finding or failed Sol attempt. Audit authorized surfaces and relevant reachable callees/controls; exposure does not reroute ordinary development or authorize unrelated review.
+For assigned security audits, use Sol 6.2 Xhigh for local/LAN-only software not intended for Internet exposure; use Astra Xhigh for Internet-exposed software. Neither requires a prior finding or failed Sol attempt. Stay within authorized surfaces and relevant reachable controls. Exposure does not reroute ordinary development or authorize unrelated review.
 
-Astra High remains available for targeted post-solution verification; Xhigh/Max for ramifications and solutions. Other automatic Astra use needs evidence of an unresolved reasoning need or relevant Sol limitation, not importance or "might be better". Use only needed effort and available tools; UI/3D alone does not select Astra.
-
-Only ordinary Sol/Astra Xhigh/Max profiles encourage novel approaches and extrapolation by default. Luna/Terra preserve honest reporting and explicit task flexibility.
+Other automatic Astra use needs evidence of an unresolved reasoning need or relevant Sol limitation; UI/3D alone does not qualify. Higher effort grants no authority. Computer control still needs its own tools and authorization. No automatic Ultra route. Only ordinary Sol/Astra Xhigh/Max profiles encourage novel approaches and extrapolation by default; Luna/Terra report evidence and uncertainty.

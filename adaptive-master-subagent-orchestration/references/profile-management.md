@@ -20,7 +20,7 @@ A profile requests a route; it does not prove availability, authorization, provi
 
 Exact bundled bytes define the name, model/effort, and conditional task-purpose instructions. Explicit assignments govern; purpose defaults never restrict other tasks or initiate reviews. Ordinary descriptions identify routes only; they contain no model-purpose advice. Profiles are permission-neutral: no sandbox, approval, network, writable-root, credential, authorization, target, or tool override.
 
-Root supplies role, supervision, and communication in each assignment from `runtime-core.md`, adding enabled governance when needed. Profiles reinforce child authority and execution quality, not selection eligibility. Changing policy switches never rewrites installed profiles. Ordinary profiles may be workers or managers; Daybreak is worker-only. Daybreak retains its specialized access contract. Peer communication remains available with model governance off; enabled governance adds the bounded-channel protocol.
+Root supplies role, supervision, and communication in each assignment from `runtime-core.md`, adding enabled governance when needed. Use mandatory role eligibility from `runtime-core.md`: Daybreak, current Luna Low, and Astra Max are worker-only. Profiles never grant authority; switches never rewrite installed profiles. Daybreak retains its specialized access contract. Peer communication remains available with model governance off; enabled governance adds the bounded-channel protocol.
 
 Before spawn, verify the selected effective regular file matches its expected name, model/effort, managed contract, and permission neutrality. Requested identity is not observed identity. Daybreak remains governed only by `daybreak-blue.md`; profile presence proves nothing.
 

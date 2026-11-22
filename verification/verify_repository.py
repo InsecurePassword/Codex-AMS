@@ -328,17 +328,26 @@ def main() -> int:
             for phrase in (
                 "Explicit task instructions override purpose defaults",
                 "In an AMS child session, do not activate AMS",
-                "If explicitly assigned delegated management",
-                "request descendants through root; never spawn them",
                 "Preserve existing work, secrets, read/write ownership",
                 "unresolved blockers", "When assigned",
             ):
                 require(instructions, phrase, filename)
+            worker_only = filename in {"ams_luna_low.toml", "ams_astra_max.toml"}
+            if worker_only:
+                require(instructions, "Accept worker/none only", filename)
+                for phrase in ("If explicitly assigned delegated management", "request descendants through root"):
+                    if phrase in instructions:
+                        fail(f"worker-only profile carries manager authority: {filename}")
+            else:
+                for phrase in ("If explicitly assigned delegated management", "request descendants through root; never spawn them"):
+                    require(instructions, phrase, filename)
             if effort in {"xhigh", "max"} and family in {"sol", "sol_6_0", "sol_5_6", "astra"}:
+                if not worker_only:
+                    require(instructions, "Preserve material child discoveries", filename)
                 for phrase in (
                     "Make material new ideas", "observed, inferred, proposed, attempted, implemented, and validated",
                     "before expanding implementation", "continue unaffected authorized work",
-                    "Preserve material child discoveries", "not private reasoning traces",
+                    "not private reasoning traces",
                 ):
                     require(instructions, phrase, filename)
             if effort in {"xhigh", "max"} and family in {"luna", "luna_5_6", "terra"}:
@@ -414,12 +423,12 @@ def main() -> int:
     require(package_maintenance, "may delegate bounded inspection or edits through explicit work orders", "delegated package maintenance")
     require(core, "ams_<sol|luna|astra>_<low|medium|high|xhigh|max>", "Astra route inventory")
     require(model_switching, "input/reasoning/output usage", "completed-task cost basis")
-    for phrase in ("High for source-grounded drafting", "Xhigh for multi-section reconciliation and completeness", "Max for whole-manual consistency", "Only ordinary Sol/Astra Xhigh/Max profiles"):
+    for phrase in ("Straightforward non-code drafting", "Straightforward non-code interpretation or triage", "multi-section reconciliation", "whole-manual consistency", "Only ordinary Sol/Astra Xhigh/Max profiles"):
         require(model_guidance, phrase, "writing and exploration selection")
     if "Medium for technical writing" in model_guidance:
         fail("superseded writing default remains")
-    require(model_guidance, "For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.2 Xhigh.", "local security route")
-    require(model_guidance, "For an assigned security audit of Internet-exposed software, select Astra Xhigh.", "Internet security route")
+    require(model_guidance, "Sol 6.2 Xhigh for local/LAN-only software not intended for Internet exposure", "local security route")
+    require(model_guidance, "Astra Xhigh for Internet-exposed software", "Internet security route")
     require(core, "never choose them automatically, including fallback, manager descendants, or policy-off operation", "explicit-only legacy eligibility")
     require(core, "Terra and legacy Sol 6.0, Sol 5.6, and Luna 5.6 require explicit user selection", "Terra/legacy explicit-only eligibility")
 
@@ -607,7 +616,7 @@ def main() -> int:
     plugin = json.loads(read_text(ROOT / ".codex-plugin/plugin.json"))
     if marketplace.get("name") != "Codex-AMS" or plugin.get("name") != "Codex-AMS":
         fail("marketplace/plugin identity mismatch")
-    if plugin.get("version") != "4.1.3":
+    if plugin.get("version") != "4.1.4":
         fail("plugin version mismatch")
     if plugin.get("skills") != "./adaptive-master-subagent-orchestration/":
         fail("plugin skill path mismatch")

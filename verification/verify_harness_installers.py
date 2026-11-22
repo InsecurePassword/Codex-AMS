@@ -14,7 +14,7 @@ import sys
 import tempfile
 import tomllib
 
-from verify_installers import frozen_profiles, model_update_predecessors
+from verify_installers import effort_update_predecessors, frozen_profiles, model_update_predecessors
 import queue
 import threading
 import time
@@ -536,6 +536,12 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
             self.assertIsNone(installer.predecessor_provider("ams_sol_high", installer.MARKER.encode(), harness))
 
     def test_stock_model_upgrade_is_exact_and_preserves_provider(self) -> None:
+        self.check_stock_upgrade(model_update_predecessors())
+
+    def test_stock_effort_upgrade_is_exact_and_preserves_provider(self) -> None:
+        self.check_stock_upgrade(effort_update_predecessors())
+
+    def check_stock_upgrade(self, stock: dict[str, bytes]) -> None:
         before_settings = (self.pi / "settings.json").read_bytes()
         profiles = installer.package_profiles()
         for harness, home in (("opencode", self.oc), ("pi", self.pi)):
@@ -544,7 +550,7 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
                 agents = home / "agents"
                 agents.mkdir(parents=True)
                 old = {}
-                for data in model_update_predecessors().values():
+                for data in stock.values():
                     profile = tomllib.loads(data.decode())
                     path = agents / (profile["name"] + ".md")
                     raw = installer.render(profile, harness, provider)
@@ -569,11 +575,12 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
                     del models["gpt-6.1-sol"]
 
                     models["gpt-6.2-sol"] = {provider}
-                    custom = old[sol] + b"# custom predecessor\n"
-                    sol.write_bytes(custom)
+                    custom_target = agents / "ams_luna_low.md" if "ams_luna_low.toml" in stock else sol
+                    custom = old[custom_target] + b"# custom predecessor\n"
+                    custom_target.write_bytes(custom)
                     self.assertEqual(installer.install(harness), 2)
-                    self.assertEqual({p: p.read_bytes() for p in agents.glob("*.md")}, old | {sol: custom})
-                    sol.write_bytes(old[sol])
+                    self.assertEqual({p: p.read_bytes() for p in agents.glob("*.md")}, old | {custom_target: custom})
+                    custom_target.write_bytes(old[custom_target])
                     models["gpt-6.2-sol"].add("alternate")
                     for _ in range(2):
                         self.assertEqual(installer.install(harness), 0)
