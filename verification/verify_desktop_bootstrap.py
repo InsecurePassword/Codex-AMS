@@ -151,7 +151,7 @@ class DesktopBootstrap(unittest.TestCase):
                 installer.opencode_cli({"PATH": str(lower.parent)}, self.home)
 
     def test_temporary_cli_removed_on_success_and_failure(self) -> None:
-        profile = {"name": "ams_sol_high", "model": "gpt-6.1-sol", "description": "Sol", "model_reasoning_effort": "high", "developer_instructions": "Assigned task only."}
+        profile = {"name": "ams_sol_high", "model": "gpt-6.2-sol", "description": "Sol", "model_reasoning_effort": "high", "developer_instructions": "Assigned task only."}
         for fail in (False, True):
             paths = []
             config = self.home / str(fail)
@@ -183,7 +183,7 @@ def native(desktop: Path) -> None:
         home = Path(temporary).resolve()
         config = home / ".config/opencode"
         config.mkdir(parents=True)
-        models = ("gpt-6.1-sol", "gpt-6-luna", "gpt-6-astra", "gpt-6-sol", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+        models = ("gpt-6.2-sol", "gpt-6-luna", "gpt-6.2-astra", "gpt-6-sol", "gpt-5.6-sol", "gpt-6.1-terra", "gpt-5.6-luna")
         settings = config / "opencode.json"
         settings.write_text(json.dumps({"$schema": "https://opencode.ai/config.json", "enabled_providers": ["ams-test"], "provider": {
             "ams-test": {"npm": "@ai-sdk/openai-compatible", "name": "No inference fixture", "options": {"baseURL": "http://127.0.0.1:9/v1", "apiKey": "fixture-not-a-secret"},

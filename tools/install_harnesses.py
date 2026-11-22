@@ -83,6 +83,44 @@ PRIOR_NATIVE_HASHES = {'opencode': {'ams_astra_high': '9edbfb9722a3e3e198c0409f8
         'ams_terra_max': '8cc2e32f0c8efce72b123123200db013dcc578de2fe1cc9589cc20ba47de6a38',
         'ams_terra_medium': '1c37e8e6aee876678833a801c9d33377b3feb6ee444e03bd80b9427b9cfaac0a',
         'ams_terra_xhigh': '8b21e9a30e8442af8f0c95e8dbfbee281f8ff3169d5599bc5518abf9ea9c9c0f'}}
+# Exact stock renders of changed aliases from ac708b49b118c4c4a30b11b38df85bde6d0c5be5.
+# Only the provider segment is normalized, as in the frozen table above.
+MODEL_UPDATE_NATIVE_HASHES = {
+    "opencode": {
+        "ams_astra_high": "ed1de337e8fe74d5188b702ba34941c43ac791409dfe4da52a47c510635f4b40",
+        "ams_astra_low": "7afc9e5083c16e538e445aacffd8875adb5bcadc7d4856d041f6308bbf774616",
+        "ams_astra_max": "2286f6ed4a51ea54aba57ba71b6ebd85b98d39e6a30da5d8f71a64e96dc85e63",
+        "ams_astra_medium": "b37c58eacaa01156dce6d726302d7b0469a11c53d6ff7da1b84e9c069e4c429e",
+        "ams_astra_xhigh": "2713da4661d861a9114f512912508bff5d877a459f7ecb294200d26bc4e62999",
+        "ams_sol_high": "fcd845d95ea79aca30915c19a9a9c2bb7f6146cb2af2d5db728dc0fbeef3fafc",
+        "ams_sol_low": "de386788e75f793fd00709e94184c87db9e753b47ff9819623fb006076aa4132",
+        "ams_sol_max": "8c6ed4011d6d10c6cdbc868cb800f38ba609947c7923a9461cb34e2bc4fff0ff",
+        "ams_sol_medium": "d64983beb54b7031d3650a30ebb99116a5be3a02bc675206cc2dba63aa1912ad",
+        "ams_sol_xhigh": "0d30fd28502494b2c64d56359735767ff445e6dbeaebf1da8cf827f48844309a",
+        "ams_terra_high": "1eba887e33cd08f2da5a277e62d5d6387ec24c8937de676fa7fcc5983f414b42",
+        "ams_terra_low": "ea416aa08d48597327679bd539904ee0ab4aa851c4f816a21d8637b1b31ff394",
+        "ams_terra_max": "dd8254b0f468f72b1628d6296eca261624fa96a721712a5b62924b15912418a9",
+        "ams_terra_medium": "a273c3673945ce87a61ec80fa35e72ee6c7d5637d8b1ba7299440f4a1bf1675f",
+        "ams_terra_xhigh": "d34a2f7e45b57574258e251c916c194b20a9664b38feadd8675751ab1910cec9",
+    },
+    "pi": {
+        "ams_astra_high": "0436df609a44c21a2be8fad805dadae31373cc404f0a84eb002d1b170242a37e",
+        "ams_astra_low": "7c40444d4cb94c881becb296647c2b3bf1740682135bc8001d6799b2dd5845dd",
+        "ams_astra_max": "a1f059732084d60b1136f220592b1f86e1a3b308c30c590b091f60cc2d643391",
+        "ams_astra_medium": "42fac30eda95b01adcea1160e59aee3ce73dfd18d4535d2c553095b08c487719",
+        "ams_astra_xhigh": "31ba8844edd83a0926e5ee097df384b6355415a1dad6d299700e5540060103f9",
+        "ams_sol_high": "ef6e16a46b3dfc35d8385a59934b3a588bbb6f5e0cb2850c1074d04ca8cd9ddc",
+        "ams_sol_low": "89b2b997fe9712bd2189fdc0143fe8bd29e5e1a091c26b4a26301b57d9910be5",
+        "ams_sol_max": "116acf04f1d573ddbd804286cf6538481fddddf8b667d0c1cd88be2842fea088",
+        "ams_sol_medium": "1366441b78612be298146b4fb9127218c2ab3565e8d79c0ae6b2b6b72950c533",
+        "ams_sol_xhigh": "4c782ff3801c16ecc07968a96e2f178b4abc4d7c9a6a3dc366be32c688721dc6",
+        "ams_terra_high": "dea8472fd09e0c3807f5b6c3a6024de5eb7226e8a9820f7b4e22c14ca07a3479",
+        "ams_terra_low": "5b6cb3d6202747991dd15cdb286ad8716feb7f8db52552c6bc2c654913c00cb8",
+        "ams_terra_max": "7b0de99eec0ae22f8f1903ee6343ec227bf8100067f39fe0d1daddc916a24c2e",
+        "ams_terra_medium": "f7a2d6c0b22219925cf0de577135bf2474ca8687a34709c5f0dac7b22192c3bb",
+        "ams_terra_xhigh": "ccc7e823dcad1051c23ea1761bd2e5747301a949b886bab6d59f09b5c13048d7",
+    },
+}
 RETIRED_NATIVE_NAMES = ("ams_spark_low", "ams_spark_medium", "ams_spark_high")
 EXPECTED_PROFILE_NAMES = {
     f"ams_{family}_{effort}" for family in
@@ -551,14 +589,14 @@ def render(profile: dict[str, str], harness: str, provider: str) -> bytes:
 
 
 def predecessor_provider(name: str, data: bytes, harness: str) -> str | None:
-    expected = PRIOR_NATIVE_HASHES[harness].get(name)
-    if expected is None:
+    expected = (PRIOR_NATIVE_HASHES[harness].get(name), MODEL_UPDATE_NATIVE_HASHES[harness].get(name))
+    if not any(expected):
         return None
     match = re.search(rb'^model: "([A-Za-z0-9][A-Za-z0-9._-]*)/([^"\r\n]+)"$', data, re.MULTILINE)
     if not match:
         return None
     normalized = data[:match.start(1)] + b"ams-predecessor" + data[match.end(1):]
-    if hashlib.sha256(normalized).hexdigest() != expected:
+    if hashlib.sha256(normalized).hexdigest() not in expected:
         return None
     return match.group(1).decode("ascii")
 

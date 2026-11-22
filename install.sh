@@ -120,7 +120,23 @@ sha256_file() {
 }
 
 is_authorized_prior_profile() {
+  # Exact stock model aliases from ac708b49b118c4c4a30b11b38df85bde6d0c5be5.
   case "$1:$2" in
+    "ams_astra_high.toml:1a3fc87147b685490f115385cede8508f0955b8faee30769611262fd6a29b329"|\
+    "ams_astra_low.toml:b0c0479138221b30959d82f88934c2cd678a1eceb979ce1e5aed0cbba59f09cd"|\
+    "ams_astra_max.toml:2c9529a7262f5f7daa68d782ce5a070fca9da61bb1b7ab50c1c77f3bfad057db"|\
+    "ams_astra_medium.toml:4b0e94e44d014483046a0b34e85d7957deb6563ba16c827346ed621d64f34e7f"|\
+    "ams_astra_xhigh.toml:2f89d26fe1debf996c107d937cae4c5f5a90e11f7184f99cc0d2095d3442dd44"|\
+    "ams_sol_high.toml:29c19036a75ed4283580f07bb165480f67b8642b5b99320e541d5d88f33fc313"|\
+    "ams_sol_low.toml:e54e5d13db5368f58f5aebfbd80e39e3d501c7bb2b0f0350eb918ac96d3f2b36"|\
+    "ams_sol_max.toml:8dacf20cb12e9f3f4f6cbe7e9a0fa9f7ec7c888dab8c3b8d080945adefa65c23"|\
+    "ams_sol_medium.toml:6b92e9e9f4c715b53dd013bfc72fef27190e0371a280d24b9c4dc71c9f130d05"|\
+    "ams_sol_xhigh.toml:997511f1c0f73861ef60fc10b14c48b7659feb0f6b74e982110068cecbd964bb"|\
+    "ams_terra_high.toml:e2bbde054fdcb9721753e3cfb4103e6ed04f803bc9cff2a7790045f69a94bc22"|\
+    "ams_terra_low.toml:d1b1cff1043154257d559c4e0e90e35a0c4c3d50dbbf2bb61e38d0c3646c2991"|\
+    "ams_terra_max.toml:0c8a36ff63b0e8a6f5d7b2e10ceb33f6238dbc1d8310d364832959f8fcbac024"|\
+    "ams_terra_medium.toml:8ce15e098b84244d4c5f359efb1b2cf68a7436a3c59a97e4ba4ff0fb9626336a"|\
+    "ams_terra_xhigh.toml:c3e7250b0dbd8c0779a28db64ef9cd3615210c31da4cb5dd967080f458cf1748"|\
     "ams_astra_high.toml:73dd10c6f260685456ba717b7fb3ef1937b161caf9ac1a552855fb8d39019a6d"|\
     "ams_astra_low.toml:04efbc31f48cfcc1d715a8dbfcff9283a8f8b3b48e6f76b9cc23cca5830b7748"|\
     "ams_astra_max.toml:a802a05585a446e562cce321518b459b284e5f30fd0bd11560bf51ed9cf19de5"|\

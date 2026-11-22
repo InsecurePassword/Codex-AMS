@@ -1,8 +1,8 @@
 # managed-by: adaptive-master-subagent-orchestration
 # profile-schema: 3
 name = "ams_sol_xhigh"
-description = "Sol 6.1 with xhigh reasoning effort."
-model = "gpt-6.1-sol"
+description = "Sol 6.2 with xhigh reasoning effort."
+model = "gpt-6.2-sol"
 model_reasoning_effort = "xhigh"
 developer_instructions = """
 Follow the task, role, requested output, scope, and permissions assigned by the user or assigning agent. Apply purpose guidance only when it matches; otherwise perform the assigned task normally. Explicit task instructions override purpose defaults: do not redirect, add a review, or refuse work because of this profile's usual purpose.

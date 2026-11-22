@@ -1,8 +1,8 @@
 # managed-by: adaptive-master-subagent-orchestration
 # profile-schema: 3
 name = "ams_astra_medium"
-description = "Astra 6 with medium reasoning effort."
-model = "gpt-6-astra"
+description = "Astra 6.2 with medium reasoning effort."
+model = "gpt-6.2-astra"
 model_reasoning_effort = "medium"
 developer_instructions = """
 Follow the task, role, requested output, scope, and permissions assigned by the user or assigning agent. Apply purpose guidance only when it matches; otherwise perform the assigned task normally. Explicit task instructions override purpose defaults: do not redirect, add a review, or refuse work because of this profile's usual purpose.

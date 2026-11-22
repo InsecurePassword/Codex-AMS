@@ -14,7 +14,7 @@ import sys
 import tempfile
 import tomllib
 
-from verify_installers import frozen_profiles
+from verify_installers import frozen_profiles, model_update_predecessors
 import queue
 import threading
 import time
@@ -26,7 +26,7 @@ spec = importlib.util.spec_from_file_location("install_harnesses", ROOT / "tools
 assert spec and spec.loader
 installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
-MODELS = ("gpt-6.1-sol", "gpt-6-luna", "gpt-6-astra", "gpt-6-sol", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+MODELS = ("gpt-6.2-sol", "gpt-6-luna", "gpt-6.2-astra", "gpt-6-sol", "gpt-5.6-sol", "gpt-6.1-terra", "gpt-5.6-luna")
 
 
 class HarnessInstall(unittest.TestCase):
@@ -187,7 +187,7 @@ else:
         self.assertFalse((self.oc / "agents").exists())
 
     def test_only_matching_catalog_models_are_exported(self) -> None:
-        with patch.object(installer, "catalog", return_value={"gpt-6.1-sol": {"openai"}}), patch.object(installer, "install_core"):
+        with patch.object(installer, "catalog", return_value={"gpt-6.2-sol": {"openai"}}), patch.object(installer, "install_core"):
             installer.install("opencode", "openai", "openai-codex", False)
         self.assertEqual(len(list((self.oc / "agents").glob("*.md"))), 5)
 
@@ -212,7 +212,7 @@ else:
         def remote(path: str) -> bytes:
             return (ROOT / path).read_bytes()
         with patch.object(installer, "remote_bytes", side_effect=remote), \
-                patch.object(installer, "catalog", return_value={"gpt-6.1-sol": {"openai"}}), \
+                patch.object(installer, "catalog", return_value={"gpt-6.2-sol": {"openai"}}), \
                 patch.object(installer, "install_core") as core:
             self.assertEqual(installer.install("opencode", local=False), 0)
         self.assertEqual(len(list((self.oc / "agents").glob("*.md"))), 5)
@@ -407,17 +407,17 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
             self.assertEqual(installer.install("all"), 0)
         for home in (self.oc, self.pi):
             text = (home / "agents/ams_sol_high.md").read_text()
-            self.assertIn('model: "my-provider/gpt-6.1-sol"', text)
+            self.assertIn('model: "my-provider/gpt-6.2-sol"', text)
 
     def test_auto_can_use_different_unambiguous_providers(self) -> None:
-        models = {"gpt-6.1-sol": {"one"}, "gpt-6-astra": {"two"}}
+        models = {"gpt-6.2-sol": {"one"}, "gpt-6.2-astra": {"two"}}
         with patch.object(installer, "catalog", return_value=models):
             self.assertEqual(installer.install("opencode"), 0)
-        self.assertIn('"one/gpt-6.1-sol"', (self.oc / "agents/ams_sol_high.md").read_text())
-        self.assertIn('"two/gpt-6-astra"', (self.oc / "agents/ams_astra_high.md").read_text())
+        self.assertIn('"one/gpt-6.2-sol"', (self.oc / "agents/ams_sol_high.md").read_text())
+        self.assertIn('"two/gpt-6.2-astra"', (self.oc / "agents/ams_astra_high.md").read_text())
 
     def test_ambiguous_provider_requires_choice_and_keeps_previous_route(self) -> None:
-        models = {"gpt-6.1-sol": {"one", "two"}}
+        models = {"gpt-6.2-sol": {"one", "two"}}
         with patch.object(installer, "catalog", return_value=models):
             self.assertEqual(installer.install("opencode"), 2)
             self.assertFalse((self.oc / "agents").exists())
@@ -444,10 +444,10 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
         install.assert_called_once_with("codex", "auto", "auto", False, False)
 
     def test_catalog_respects_current_project_directory(self) -> None:
-        result = subprocess.CompletedProcess([], 0, "different/gpt-6.1-sol\n", "")
+        result = subprocess.CompletedProcess([], 0, "different/gpt-6.2-sol\n", "")
         env = dict(os.environ, AMS_OPENCODE_CLI=shutil.which("opencode"))
         with patch.object(installer.subprocess, "run", return_value=result) as run:
-            self.assertEqual(installer.catalog("opencode", env), {"gpt-6.1-sol": {"different"}})
+            self.assertEqual(installer.catalog("opencode", env), {"gpt-6.2-sol": {"different"}})
         self.assertEqual(run.call_args.kwargs["cwd"], Path.cwd())
 
     def test_pi_catalog_does_not_force_offline_or_clear_user_choice(self) -> None:
@@ -456,7 +456,7 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
                 os.environ.pop("PI_OFFLINE", None)
                 if value:
                     os.environ["PI_OFFLINE"] = value
-                with patch.object(installer, "catalog", return_value={"gpt-6.1-sol": {"custom"}}) as catalog, patch.object(installer, "install_core"):
+                with patch.object(installer, "catalog", return_value={"gpt-6.2-sol": {"custom"}}) as catalog, patch.object(installer, "install_core"):
                     self.assertEqual(installer.install("pi"), 0)
                 self.assertEqual(catalog.call_args.args[1].get("PI_OFFLINE"), value)
 
@@ -534,6 +534,53 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
                     self.assertEqual(installer.predecessor_provider(Path(name).stem, rendered, harness), provider)
                     self.assertIsNone(installer.predecessor_provider(Path(name).stem, rendered + b"# custom\n", harness))
             self.assertIsNone(installer.predecessor_provider("ams_sol_high", installer.MARKER.encode(), harness))
+
+    def test_stock_model_upgrade_is_exact_and_preserves_provider(self) -> None:
+        before_settings = (self.pi / "settings.json").read_bytes()
+        profiles = installer.package_profiles()
+        for harness, home in (("opencode", self.oc), ("pi", self.pi)):
+            with self.subTest(harness=harness):
+                provider = "chosen.provider-2"
+                agents = home / "agents"
+                agents.mkdir(parents=True)
+                old = {}
+                for data in model_update_predecessors().values():
+                    profile = tomllib.loads(data.decode())
+                    path = agents / (profile["name"] + ".md")
+                    raw = installer.render(profile, harness, provider)
+                    self.assertEqual(installer.predecessor_provider(profile["name"], raw, harness), provider)
+                    self.assertIsNone(installer.predecessor_provider(profile["name"], raw + b"# edit\n", harness))
+                    path.write_bytes(raw)
+                    old[path] = raw
+
+                models = {p["model"]: {provider} for p in profiles}
+                sol = agents / "ams_sol_high.md"
+                result = installer.render(next(p for p in profiles if p["name"] == sol.stem), harness, provider)
+                with patch.object(installer, "install_core"), patch.object(installer, "verify_opencode_agents"), \
+                        patch.object(installer, "catalog", return_value=models):
+                    # A current model missing at the chosen provider cannot silently change providers or models.
+                    models["gpt-6.2-sol"] = {"alternate"}
+                    self.assertEqual(installer.install(harness), 2)
+                    self.assertEqual({p: p.read_bytes() for p in agents.glob("*.md")}, old)
+                    del models["gpt-6.2-sol"]
+                    models["gpt-6.1-sol"] = {provider}
+                    self.assertEqual(installer.install(harness), 2)
+                    self.assertEqual({p: p.read_bytes() for p in agents.glob("*.md")}, old)
+                    del models["gpt-6.1-sol"]
+
+                    models["gpt-6.2-sol"] = {provider}
+                    custom = old[sol] + b"# custom predecessor\n"
+                    sol.write_bytes(custom)
+                    self.assertEqual(installer.install(harness), 2)
+                    self.assertEqual({p: p.read_bytes() for p in agents.glob("*.md")}, old | {sol: custom})
+                    sol.write_bytes(old[sol])
+                    models["gpt-6.2-sol"].add("alternate")
+                    for _ in range(2):
+                        self.assertEqual(installer.install(harness), 0)
+                        self.assertEqual(sol.read_bytes(), result)
+                        self.assertEqual({p.name: p.read_bytes() for p in agents.glob("*.md")},
+                                         {p["name"] + ".md": installer.render(p, harness, provider) for p in profiles})
+        self.assertEqual((self.pi / "settings.json").read_bytes(), before_settings)
 
     def test_official_native_upgrade_retires_spark_and_preserves_settings(self) -> None:
         before = (self.pi / "settings.json").read_bytes()

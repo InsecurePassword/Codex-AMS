@@ -476,7 +476,7 @@ class LeanContracts(unittest.TestCase):
         self.assertIn("Explicit user model/effort choices override heuristics", core)
         self.assertIn("Report unavailable selections", switching)
         for phrase in (
-            "For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.1 Xhigh.",
+            "For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.2 Xhigh.",
             "For an assigned security audit of Internet-exposed software, select Astra Xhigh.",
             "Neither requires a prior finding or failed Sol attempt",
             "does not reroute ordinary development",

@@ -41,6 +41,46 @@ def frozen_profiles() -> dict[str, bytes]:
     return result
 
 
+# Exact hashes from the published ac708b49 profile files, not either installer allowlist.
+MODEL_UPDATE_PREDECESSOR_HASHES = {
+    "ams_astra_high.toml": "1a3fc87147b685490f115385cede8508f0955b8faee30769611262fd6a29b329",
+    "ams_astra_low.toml": "b0c0479138221b30959d82f88934c2cd678a1eceb979ce1e5aed0cbba59f09cd",
+    "ams_astra_max.toml": "2c9529a7262f5f7daa68d782ce5a070fca9da61bb1b7ab50c1c77f3bfad057db",
+    "ams_astra_medium.toml": "4b0e94e44d014483046a0b34e85d7957deb6563ba16c827346ed621d64f34e7f",
+    "ams_astra_xhigh.toml": "2f89d26fe1debf996c107d937cae4c5f5a90e11f7184f99cc0d2095d3442dd44",
+    "ams_sol_high.toml": "29c19036a75ed4283580f07bb165480f67b8642b5b99320e541d5d88f33fc313",
+    "ams_sol_low.toml": "e54e5d13db5368f58f5aebfbd80e39e3d501c7bb2b0f0350eb918ac96d3f2b36",
+    "ams_sol_max.toml": "8dacf20cb12e9f3f4f6cbe7e9a0fa9f7ec7c888dab8c3b8d080945adefa65c23",
+    "ams_sol_medium.toml": "6b92e9e9f4c715b53dd013bfc72fef27190e0371a280d24b9c4dc71c9f130d05",
+    "ams_sol_xhigh.toml": "997511f1c0f73861ef60fc10b14c48b7659feb0f6b74e982110068cecbd964bb",
+    "ams_terra_high.toml": "e2bbde054fdcb9721753e3cfb4103e6ed04f803bc9cff2a7790045f69a94bc22",
+    "ams_terra_low.toml": "d1b1cff1043154257d559c4e0e90e35a0c4c3d50dbbf2bb61e38d0c3646c2991",
+    "ams_terra_max.toml": "0c8a36ff63b0e8a6f5d7b2e10ceb33f6238dbc1d8310d364832959f8fcbac024",
+    "ams_terra_medium.toml": "8ce15e098b84244d4c5f359efb1b2cf68a7436a3c59a97e4ba4ff0fb9626336a",
+    "ams_terra_xhigh.toml": "c3e7250b0dbd8c0779a28db64ef9cd3615210c31da4cb5dd967080f458cf1748",
+}
+
+
+def model_update_predecessors() -> dict[str, bytes]:
+    """Reconstruct the immediate stock predecessor and independently pin its exact bytes."""
+    source = ROOT / SKILL / "assets/agent-profiles"
+    routes = {
+        "astra": (b"gpt-6.2-astra", b"gpt-6-astra", b"Astra 6.2", b"Astra 6"),
+        "sol": (b"gpt-6.2-sol", b"gpt-6.1-sol", b"Sol 6.2", b"Sol 6.1"),
+        "terra": (b"gpt-6.1-terra", b"gpt-5.6-terra", b"Terra 6.1", b"Terra 5.6"),
+    }
+    result = {}
+    for name, digest in MODEL_UPDATE_PREDECESSOR_HASHES.items():
+        new_model, old_model, new_label, old_label = routes[name.split("_")[1]]
+        current = (source / name).read_bytes()
+        prior = current.replace(b'model = "' + new_model + b'"', b'model = "' + old_model + b'"', 1)
+        prior = prior.replace(b'description = "' + new_label + b" with ", b'description = "' + old_label + b" with ", 1)
+        if hashlib.sha256(prior).hexdigest() != digest:
+            raise AssertionError(f"immediate stock predecessor bytes differ: {name}")
+        result[name] = prior
+    return result
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -172,6 +212,38 @@ def invoke(
     if local:
         command.append("-Local" if os.name == "nt" else "--local")
     return run(command, env, expect_success=expect_success)
+
+
+def check_stock_model_upgrade(local_script: Path, environment: dict[str, str]) -> None:
+    """Exercise a complete stock upgrade and prove one edited predecessor blocks the transaction."""
+    homes = environment.copy()
+    root = Path(homes["CODEX_HOME"]).parent / "stock-model-upgrade"
+    agents = root / "codex/agents"
+    agents.mkdir(parents=True)
+    homes.update(CODEX_HOME=str(agents.parent), AMS_SKILL_HOME=str(root / "skills"))
+    invoke(local_script, homes, local=True)
+    current = {p.name: p.read_bytes() for p in agents.glob("*.toml")}
+    old = model_update_predecessors()
+    for name, data in old.items():
+        (agents / name).write_bytes(data)
+    collision = agents / "ams_sol_high.toml"
+    collision.write_bytes(old[collision.name] + b"# custom predecessor\n")
+    before = {p.name: p.read_bytes() for p in agents.glob("*.toml")}
+    config = agents.parent / "config.toml"
+    config.write_bytes(b'model = "user-selected"\n')
+    result = invoke(local_script, homes, local=True, expect_success=False)
+    if collision.name not in result.stderr:
+        raise AssertionError(f"stock model upgrade failed for an unrelated reason: {result.stderr}")
+    if before != {p.name: p.read_bytes() for p in agents.glob("*.toml")}:
+        raise AssertionError("edited stock predecessor did not stop all replacements")
+
+    collision.write_bytes(old[collision.name])
+    for _ in range(2):  # Stock migration followed by an idempotent reinstall.
+        invoke(local_script, homes, local=True)
+        if current != {p.name: p.read_bytes() for p in agents.glob("*.toml")}:
+            raise AssertionError("stock model upgrade did not install the exact current profile registry")
+        if config.read_bytes() != b'model = "user-selected"\n':
+            raise AssertionError("stock model upgrade changed user settings")
 
 
 def preservation_races(base: Path, script: Path, environment: dict[str, str], served: Path) -> None:
@@ -585,6 +657,8 @@ def main() -> int:
                 raise AssertionError("local manifest refusal changed installed files")
             (served / "install-manifest.txt").write_bytes(original_manifest)
 
+            check_stock_model_upgrade(local_script, local_env)
+
             # Official frozen-baseline upgrade and retired Spark removal share rollback.
             upgrade_codex = base / "upgrade-codex"
             upgrade_skill = base / "upgrade-skills"
@@ -647,7 +721,7 @@ def main() -> int:
                 "PASS: offline profiles-only/install/reinstall/collision/manifest checks; "
                 "profiles-only, full install, idempotence, collision refusal, "
                 "active/stale/malformed lock handling, manifest refusal, exact baseline upgrade, "
-                "Spark retirement, custom preservation, and transactional rollback"
+                "immediate stock model upgrade, Spark retirement, custom preservation, and transactional rollback"
             )
         finally:
             server.shutdown()

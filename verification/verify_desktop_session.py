@@ -199,7 +199,7 @@ def main(desktop: Path) -> None:
                         raise AssertionError("Installer did not resume after normal Desktop exit")
                     browser, page, get = launch()
                     names = {item["name"] for item in get("/agent")}
-                    tools = get("/experimental/tool?provider=ams-test&model=gpt-6.1-sol")
+                    tools = get("/experimental/tool?provider=ams-test&model=gpt-6.2-sol")
                     task = next(item for item in tools if item.get("id") == "task")
                     missing = {name for name in wanted if name not in task.get("description", "")}
                     print(f"Actual reopened Desktop: {len(wanted & names)} AMS agents; Task description: {len(wanted - missing)}.", flush=True)

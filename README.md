@@ -8,7 +8,7 @@ If a helper gets stuck, the main agent asks for a closer look instead of treatin
 
 ## Latest update
 
-**Updated for Astra and Sol 6.1.** The current lineup adds Luna 6, conditional model/effort prompts, and clearer security-audit routing. Older models remain explicitly selectable; Spark is retired. The plugin metadata is now 4.1.2; this does not create a runtime version setting. See [Update AMS](INSTALLATION.md#update-ams).
+**Updated for Sol 6.2, Astra 6.2, and Terra 6.1.** Luna 6 is unchanged. Sol High remains the baseline, Astra is scoped to specialist work, and Terra remains explicit-only. Retained legacy presets are still explicit-only; Spark remains retired. See [Update AMS](INSTALLATION.md#update-ams).
 
 ## Start here
 

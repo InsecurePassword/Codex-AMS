@@ -15,14 +15,14 @@ MANIFEST = ROOT / "install-manifest.txt"
 BASELINE = ROOT / "verification/fixtures/baseline-install-manifest-working-current.txt"
 
 MODELS = {
-    "sol": "gpt-6.1-sol", "luna": "gpt-6-luna", "astra": "gpt-6-astra",
+    "sol": "gpt-6.2-sol", "luna": "gpt-6-luna", "astra": "gpt-6.2-astra",
     "sol_6_0": "gpt-6-sol", "sol_5_6": "gpt-5.6-sol",
-    "terra": "gpt-5.6-terra", "luna_5_6": "gpt-5.6-luna",
+    "terra": "gpt-6.1-terra", "luna_5_6": "gpt-5.6-luna",
 }
 PROFILE_EFFORTS = {family: ("low", "medium", "high", "xhigh", "max") for family in MODELS}
 PROFILE_LABELS = {
-    "sol": "Sol 6.1", "luna": "Luna 6", "astra": "Astra 6",
-    "sol_6_0": "Sol 6.0", "sol_5_6": "Sol 5.6", "terra": "Terra 5.6", "luna_5_6": "Luna 5.6",
+    "sol": "Sol 6.2", "luna": "Luna 6", "astra": "Astra 6.2",
+    "sol_6_0": "Sol 6.0", "sol_5_6": "Sol 5.6", "terra": "Terra 6.1", "luna_5_6": "Luna 5.6",
 }
 CORE_REFERENCES = {
     "blocker-diagnosis.md",
@@ -418,9 +418,10 @@ def main() -> int:
         require(model_guidance, phrase, "writing and exploration selection")
     if "Medium for technical writing" in model_guidance:
         fail("superseded writing default remains")
-    require(model_guidance, "For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.1 Xhigh.", "local security route")
+    require(model_guidance, "For an assigned security audit of local/LAN-only software not intended for Internet exposure, select Sol 6.2 Xhigh.", "local security route")
     require(model_guidance, "For an assigned security audit of Internet-exposed software, select Astra Xhigh.", "Internet security route")
     require(core, "never choose them automatically, including fallback, manager descendants, or policy-off operation", "explicit-only legacy eligibility")
+    require(core, "Terra and legacy Sol 6.0, Sol 5.6, and Luna 5.6 require explicit user selection", "Terra/legacy explicit-only eligibility")
 
     global_default = toml_block_after(control, "Global/base default:")
     project_default = toml_block_after(control, "Project default adds one project-only field:")
@@ -606,7 +607,7 @@ def main() -> int:
     plugin = json.loads(read_text(ROOT / ".codex-plugin/plugin.json"))
     if marketplace.get("name") != "Codex-AMS" or plugin.get("name") != "Codex-AMS":
         fail("marketplace/plugin identity mismatch")
-    if plugin.get("version") != "4.1.2":
+    if plugin.get("version") != "4.1.3":
         fail("plugin version mismatch")
     if plugin.get("skills") != "./adaptive-master-subagent-orchestration/":
         fail("plugin skill path mismatch")

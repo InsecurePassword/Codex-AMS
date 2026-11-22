@@ -28,7 +28,7 @@ ams_<sol_6_0|sol_5_6|terra|luna_5_6>_<low|medium|high|xhigh|max>
 ams_daybreak_blue_max
 ```
 
-Current aliases: Sol 6.1, Luna 6, Astra 6. Legacy Sol 6.0 and Sol/Terra/Luna 5.6 require explicit user selection; never choose them automatically, including fallback, manager descendants, or policy-off operation. A manager request is not user selection. Explicit user model/effort choices override heuristics; report unavailable choices without substitution. Spark is retired.
+Current aliases: Sol 6.2, Luna 6, Astra 6.2, Terra 6.1. Terra and legacy Sol 6.0, Sol 5.6, and Luna 5.6 require explicit user selection; never choose them automatically, including fallback, manager descendants, or policy-off operation. A manager request is not user selection. Explicit user model/effort choices override heuristics; report unavailable choices without substitution. Spark is retired.
 
 Copy this AMS policy into every child assignment:
 

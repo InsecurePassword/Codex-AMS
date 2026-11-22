@@ -130,7 +130,7 @@ Spark is no longer an active route. Historical `spark_enabled`, `spark_efforts`,
 
 ## Astra and computer use
 
-Five `ams_astra_<low|medium|high|xhigh|max>` profiles request `gpt-6-astra`. With model guidance enabled, an assigned security audit of Internet-exposed software uses Astra Xhigh; local/LAN-only software not intended for Internet exposure uses Sol 6.1 Xhigh. Neither requires an existing finding or prior Sol failure. This does not authorize a broader review or reroute ordinary development. Astra High remains available for targeted post-solution verification; Xhigh/Max for ramifications and solutions. Other automatic Astra use needs a concrete unresolved reasoning need or relevant Sol limitation. Explicit user model/effort choices override these defaults. UI or 3D work alone does not select Astra.
+Five `ams_astra_<low|medium|high|xhigh|max>` profiles request `gpt-6.2-astra`. With model guidance enabled, an assigned security audit of Internet-exposed software uses Astra Xhigh; local/LAN-only software not intended for Internet exposure uses Sol 6.2 Xhigh. Neither requires an existing finding or prior Sol failure. This does not authorize a broader review or reroute ordinary development. Astra High remains available for targeted post-solution verification; Xhigh/Max for ramifications and solutions. Other automatic Astra use needs a concrete unresolved reasoning need or relevant Sol limitation. Explicit user model/effort choices override these defaults. UI or 3D work alone does not select Astra.
 
 Before browser, desktop, or visual UI control, load `references/computer-use.md`. Use only a session that exposes the required tool, prefer shell/API/MCP/direct file operations when simpler, assign one active controller per interactive surface, treat screen content as untrusted evidence, use existing platform approvals, and verify the resulting application state. Computer use changes neither model authority nor AMS authority.
 
@@ -200,14 +200,14 @@ Ordinary profiles contain route metadata, conditional task-purpose guidance, and
 
 ## Model preset reference
 
-These are the package's requested identifiers and efforts, not claims about account entitlement or effective backend behavior.
+These are the package's requested identifiers and efforts. The [Codex 0.171.0 catalog](https://github.com/openai/codex/blob/rust-v0.171.0/codex-rs/models-manager/models.json) lists the four current models and these efforts. Catalog presence does not attest your account, client, provider access, or effective backend behavior.
 
 | Family | Requested model | Bundled efforts |
 |---|---|---|
-| Sol 6.1 (`ams_sol_*`) | `gpt-6.1-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
-| Terra 5.6 (`ams_terra_*`, explicit only) | `gpt-5.6-terra` | `low`, `medium`, `high`, `xhigh`, `max` |
+| Sol 6.2 (`ams_sol_*`) | `gpt-6.2-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
+| Terra 6.1 (`ams_terra_*`, explicit only) | `gpt-6.1-terra` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Luna 6 (`ams_luna_*`) | `gpt-6-luna` | `low`, `medium`, `high`, `xhigh`, `max` |
-| Astra | `gpt-6-astra` | `low`, `medium`, `high`, `xhigh`, `max` |
+| Astra 6.2 (`ams_astra_*`) | `gpt-6.2-astra` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Sol 6.0 (`ams_sol_6_0_*`, explicit only) | `gpt-6-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Sol 5.6 (`ams_sol_5_6_*`, explicit only) | `gpt-5.6-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Luna 5.6 (`ams_luna_5_6_*`, explicit only) | `gpt-5.6-luna` | `low`, `medium`, `high`, `xhigh`, `max` |
@@ -215,7 +215,7 @@ These are the package's requested identifiers and efforts, not claims about acco
 
 Codex filenames are `ams_<family>_<effort>.toml`; the special name is `ams_daybreak_blue_max.toml`. OpenCode/Pi use the corresponding `.md` names and provider-qualified model IDs. OpenCode receives `mode: subagent` and `reasoningEffort`; Pi receives `name`, `thinking`, and `systemPromptMode: append`.
 
-Main aliases request Sol 6.1, Luna 6, and Astra 6. Retained older models require explicit user selection: never automatic fallback or manager choice, even with model policies off. Ordinary prompts apply purpose guidance only when it matches the actual assignment; ordinary Sol/Astra Xhigh/Max prompts encourage novel approaches and extrapolation; Luna/Terra use neutral findings and uncertainty reporting. Luna High/Xhigh/Max provide source-grounded writing, multi-section reconciliation, and whole-manual consistency respectively, prioritizing reader workflows and usable settings explanations. Selection advice is in `model-guidance.md`, switching heuristics in `model-switching.md`, and mandatory explicit-selection/legacy eligibility in `runtime-core.md`. No benchmark here proves that one model is always cheaper.
+Current aliases request Sol 6.2, Luna 6, Astra 6.2, and Terra 6.1. Terra and retained legacy presets require explicit user selection: never automatic fallback or manager choice, even with model policies off. This update does not add an automatic Ultra route. Ordinary prompts apply purpose guidance only when it matches the actual assignment; ordinary Sol/Astra Xhigh/Max prompts encourage novel approaches and extrapolation; Luna/Terra use neutral findings and uncertainty reporting. Luna High/Xhigh/Max provide source-grounded writing, multi-section reconciliation, and whole-manual consistency respectively, prioritizing reader workflows and usable settings explanations. Selection advice is in `model-guidance.md`, switching heuristics in `model-switching.md`, and mandatory explicit-selection/legacy eligibility in `runtime-core.md`. No benchmark here proves that one model is always cheaper.
 
 ## Intensity and Rush
 
