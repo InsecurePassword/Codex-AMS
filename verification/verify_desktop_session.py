@@ -207,7 +207,7 @@ def main(desktop: Path) -> None:
                         raise AssertionError("Reopened Desktop did not expose all AMS agents")
                     if settings.read_bytes() != before:
                         raise AssertionError("Provider settings changed")
-                print("PASS actual packaged Desktop: open-app guard, no early writes, normal close, automatic install, reopened server and Task tool expose 35 agents, reinstall; no model calls.", flush=True)
+                print("PASS actual packaged Desktop: open-app guard, no early writes, normal close, automatic install, reopened server and Task tool expose 20 agents, reinstall; no model calls.", flush=True)
                 browser.close()
             finally:
                 for child in (installing, process):

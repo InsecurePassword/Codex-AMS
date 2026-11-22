@@ -26,7 +26,7 @@ spec = importlib.util.spec_from_file_location("install_harnesses", ROOT / "tools
 assert spec and spec.loader
 installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
-MODELS = ("gpt-6.2-sol", "gpt-6-luna", "gpt-6.2-astra", "gpt-6-sol", "gpt-5.6-sol", "gpt-6.1-terra", "gpt-5.6-luna")
+MODELS = ("gpt-6.2-sol", "gpt-6-luna", "gpt-6.2-astra", "gpt-6.1-terra")
 
 
 class HarnessInstall(unittest.TestCase):
@@ -105,12 +105,12 @@ else:
         (self.oc / "opencode.jsonc").write_text('// keep comments\n{"permission":{"bash":"ask"}}\n', encoding="utf-8")
         before = {p: p.read_bytes() for p in (self.pi / "settings.json", self.codex / "config.toml", self.oc / "opencode.jsonc")}
         self.assert_ok(self.wrapper("all"))
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 21)
         for target in (self.pi, self.oc):
             agents = sorted((target / "agents").glob("*.md"))
-            self.assertEqual(len(agents), 35)
+            self.assertEqual(len(agents), 20)
             self.assertFalse(any("daybreak" in p.name for p in agents))
-        self.assertEqual(len([p for p in (self.skill / installer.SKILL).rglob("*") if p.is_file()]), 56)
+        self.assertEqual(len([p for p in (self.skill / installer.SKILL).rglob("*") if p.is_file()]), 41)
         snapshots = {p: p.read_bytes() for folder in (self.pi, self.oc, self.codex) for p in folder.rglob("*") if p.is_file()}
         self.assert_ok(self.wrapper("all"))
         self.assertTrue(all(p.read_bytes() == data for p, data in snapshots.items()))
@@ -127,7 +127,7 @@ else:
 
     def test_pi_only_honors_selected_profile(self) -> None:
         self.assert_ok(self.wrapper("pi"))
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 20)
         self.assertFalse(self.oc.exists())
         self.assertFalse(self.codex.exists())
         self.assertFalse((self.home / ".pi/agent").exists())
@@ -164,8 +164,8 @@ else:
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(target.read_text(encoding="utf-8"), "custom agent\n")
         self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 21)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 20)
 
     def test_render_uses_native_fields_and_no_authority_overrides(self) -> None:
         for p in installer.package_profiles():
@@ -177,7 +177,12 @@ else:
                 self.assertEqual(fields["thinking" if harness == "pi" else "reasoningEffort"], p["model_reasoning_effort"])
                 self.assertNotIn("permission", fields)
                 self.assertNotIn("tools", fields)
-                self.assertIn("never spawn", text)
+                self.assertIn("do not activate AMS, change either, spawn agents", text)
+                if p["name"] in {"ams_luna_low", "ams_astra_max"}:
+                    self.assertIn("Accept worker/none only", text)
+                    self.assertNotIn("If explicitly assigned delegated management", text)
+                else:
+                    self.assertIn("request descendants through root; never spawn them", text)
                 self.assertIn(p["developer_instructions"].strip(), text)
 
     def test_unavailable_provider_never_substitutes_model(self) -> None:
@@ -330,7 +335,7 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
                 self.assertEqual(installer.home_path(variable, self.home), home)
                 for _ in range(2):
                     self.assertEqual(installer.install(harness), 0)
-                    self.assertEqual(len(list((home / "agents").glob("*.md"))), 35)
+                    self.assertEqual(len(list((home / "agents").glob("*.md"))), 20)
             leaf = physical / (harness + "-redirect")
             leaf.symlink_to(home, target_is_directory=True)
             with patch.dict(os.environ, {variable: str(leaf) + os.sep}):
@@ -433,8 +438,8 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
         with patch.object(installer, "catalog", side_effect=catalog):
             self.assertEqual(installer.install("all"), 2)
         self.assertTrue((self.skill / installer.SKILL / "SKILL.md").exists())
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 21)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 20)
         self.assertFalse((self.oc / "agents").exists())
 
     def test_no_local_inference_from_working_directory(self) -> None:
@@ -505,22 +510,23 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
             self.assertEqual(installer.install("all"), 2)
         self.assertEqual(list((self.oc / "agents").glob("*.md")), [existing])
         self.assertEqual(existing.read_bytes(), before)
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 20)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 21)
 
     def test_all_keeps_codex_and_pi_when_only_gui_is_available(self) -> None:
         with patch.object(installer, "opencode_cli", side_effect=ValueError("desktop launcher, not run")):
             self.assertEqual(installer.install("all"), 2)
         self.assertFalse((self.oc / "agents").exists())
-        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 35)
-        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 36)
+        self.assertEqual(len(list((self.pi / "agents").glob("*.md"))), 20)
+        self.assertEqual(len(list((self.codex / "agents").glob("*.toml"))), 21)
 
     def seed_predecessors(self, harness: str, provider: str) -> dict[Path, bytes]:
         home = self.oc if harness == "opencode" else self.pi
         agents = home / "agents"
         agents.mkdir(parents=True, exist_ok=True)
         data = {agents / (Path(name).stem + ".md"): installer.render(tomllib.loads(raw.decode()), harness, provider)
-                for name, raw in frozen_profiles().items()}
+                for name, raw in (frozen_profiles() | {n: b for n, b in effort_update_predecessors().items()
+                    if Path(n).stem in installer.RETIRED_NATIVE_NAMES}).items()}
         for path, raw in data.items():
             path.write_bytes(raw)
         return data
@@ -582,12 +588,30 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
                     self.assertEqual({p: p.read_bytes() for p in agents.glob("*.md")}, old | {custom_target: custom})
                     custom_target.write_bytes(old[custom_target])
                     models["gpt-6.2-sol"].add("alternate")
+                    # Advertising retired IDs does not make them selectable again.
+                    for model in ("gpt-6-sol", "gpt-5.6-sol", "gpt-5.6-luna"):
+                        models[model] = {provider}
+                    retired = agents / "ams_luna_5_6_low.md"
+                    edited_retired = old[retired] + b"# customized retired preset\n"
+                    retired.write_bytes(edited_retired)
+                    self.assertEqual(installer.install(harness), 0)
+                    expected = {p["name"] + ".md": installer.render(p, harness, provider) for p in profiles}
+                    self.assertEqual({p.name: p.read_bytes() for p in agents.glob("*.md")},
+                                     expected | {retired.name: edited_retired})
+                    retired.write_bytes(old[retired])
                     for _ in range(2):
                         self.assertEqual(installer.install(harness), 0)
                         self.assertEqual(sol.read_bytes(), result)
                         self.assertEqual({p.name: p.read_bytes() for p in agents.glob("*.md")},
                                          {p["name"] + ".md": installer.render(p, harness, provider) for p in profiles})
         self.assertEqual((self.pi / "settings.json").read_bytes(), before_settings)
+
+    def test_only_retired_provider_models_cannot_create_a_preset(self) -> None:
+        models = dict.fromkeys(("gpt-6-sol", "gpt-5.6-sol", "gpt-5.6-luna", "gpt-5.3-codex-spark"), {"openai"})
+        with patch.object(installer, "install_core"), patch.object(installer, "catalog", return_value=models):
+            for harness, home in (("opencode", self.oc), ("pi", self.pi)):
+                self.assertEqual(installer.install(harness), 2)
+                self.assertFalse((home / "agents").exists())
 
     def test_official_native_upgrade_retires_spark_and_preserves_settings(self) -> None:
         before = (self.pi / "settings.json").read_bytes()
@@ -596,7 +620,7 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
             self.assertEqual(installer.install(harness), 0)
             home = self.oc if harness == "opencode" else self.pi
             files = list((home / "agents").glob("*.md"))
-            self.assertEqual(len(files), 35)
+            self.assertEqual(len(files), 20)
             self.assertFalse(any("spark" in path.name for path in files))
             for profile in installer.package_profiles():
                 self.assertEqual((home / "agents" / (profile["name"] + ".md")).read_bytes(), installer.render(profile, harness, provider))
@@ -678,6 +702,24 @@ assert len(staged) == 1 and not staged[0].exists(), "bootstrap directory was not
         backups = list(self.oc.glob(".ams-install-*"))
         self.assertEqual(len(backups), 1)
         self.assertEqual((backups[0] / changed.name).read_bytes(), old[changed])
+        self.assertFalse((self.oc / ".adaptive-master-subagent-orchestration.native.lock").exists())
+
+    def test_retired_path_reappearance_after_registry_check_preserves_both_versions(self) -> None:
+        old = self.seed_predecessors("opencode", "openai")
+        retired = self.oc / "agents/ams_luna_5_6_low.md"
+        custom = b"User recreated the retired name after displacement\n"
+        original = installer.verify_opencode_agents
+        def verify_then_reappear(files, env):
+            original(files, env)
+            self.assertFalse(retired.exists())
+            retired.write_bytes(custom)
+
+        with patch.object(installer, "verify_opencode_agents", side_effect=verify_then_reappear):
+            self.assertEqual(installer.install("opencode"), 2)
+        self.assertEqual({p: p.read_bytes() for p in retired.parent.glob("*.md")}, old | {retired: custom})
+        backups = list(self.oc.glob(".ams-install-*"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual((backups[0] / retired.name).read_bytes(), old[retired])
         self.assertFalse((self.oc / ".adaptive-master-subagent-orchestration.native.lock").exists())
 
     def test_displacement_boundary_preserves_completed_edits(self) -> None:
@@ -1062,10 +1104,10 @@ def verify_native_opencode() -> None:
             if result.returncode:
                 raise AssertionError(result.stderr)
             files = {p: p.read_bytes() for p in (config / "agents").glob("ams_*.md")}
-            if len(files) != 35 or settings.read_bytes() != before:
+            if len(files) != 20 or settings.read_bytes() != before:
                 raise AssertionError("Native OpenCode install changed settings or omitted profiles")
             installer.verify_opencode_agents(files, env)
-        print("PASS real OpenCode CLI install, 35 registered subagents, reinstall, and settings preservation; no model call.", flush=True)
+        print("PASS real OpenCode CLI install, 20 registered subagents, reinstall, and settings preservation; no model call.", flush=True)
 
 
 if __name__ == "__main__":

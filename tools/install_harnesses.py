@@ -121,9 +121,24 @@ MODEL_UPDATE_NATIVE_HASHES = {
         "ams_terra_xhigh": "ccc7e823dcad1051c23ea1761bd2e5747301a949b886bab6d59f09b5c13048d7",
     },
 }
-# Exact stock renders of current aliases from f2462569cf9223a14d438ea4a0bdd490e9dd3d0a.
+# Exact stock renders (current predecessors and retired aliases) from f2462569cf9223a14d438ea4a0bdd490e9dd3d0a.
 EFFORT_UPDATE_NATIVE_HASHES = {
     "opencode": {
+        "ams_sol_6_0_low": "5b220ea2dfa022f50620bd6814cdc67c084911d4a47473935e08710901600cc3",
+        "ams_sol_6_0_medium": "2c0d2504d52e9417212eb6cfc872c2428cb52da980705369c21b1dc90f45adec",
+        "ams_sol_6_0_high": "f9d6fc5c64860e8ac86d6cd2c5a973607cdfd24d7e3e30513faec810d719713e",
+        "ams_sol_6_0_xhigh": "6c24b7a4743344fdf76b76e28baf02ad49047d59be1a41c6aa38c4c97aa85750",
+        "ams_sol_6_0_max": "d23d1481484caa7bcbd094b96d098cae7d32012b641777488093d031c341cbf1",
+        "ams_sol_5_6_low": "4e86464dd0b3f87ff8d2f9222e5fe0a83ee3f4ba7a561d59c09d066cd88c67f8",
+        "ams_sol_5_6_medium": "a6805e32f1db24977a7096730ed5a37217c168879882fceffe70ae666fee66fc",
+        "ams_sol_5_6_high": "a2436633e5eda7c951387032709944d502609f5a99a5ee145c90c8028a606726",
+        "ams_sol_5_6_xhigh": "2de493cbe06c308736ceadc596562dfd6bab98b0b7b5f2f81440291124adddde",
+        "ams_sol_5_6_max": "b050572fb3909c3f72f62436bb57f26ae17308d9290cd88aaa9ab5c348b6234b",
+        "ams_luna_5_6_low": "f29106974484ff3450284c747463951ee1117aaa12021dda073545d9e3a75dcd",
+        "ams_luna_5_6_medium": "d2237ac29c7e27ff814e2bea56ac2485b2eea84420625ce1c3610738626ae87e",
+        "ams_luna_5_6_high": "44a55386d5e782f7e7aa680b98da4b0922ac9088d74f768a2d8db58456389be7",
+        "ams_luna_5_6_xhigh": "d1a57dbf665811b3b7d244a63b78488414fd21fa5d4a5bc51e9e6c9d728b3b95",
+        "ams_luna_5_6_max": "a1c207cdef39467e1a6966679a01c5a1b01f5cc13d748f6f692e5c17ba0524cc",
         "ams_astra_high": "45143850e40ea7bb5a0777e743f18ca0203ff8ab42d5d0f8d9feb104557934e2",
         "ams_astra_low": "518b3805fe5765070ad534b50b0fa5e99f1dbf0101955a1b67b3326858f566e6",
         "ams_astra_max": "897a048ab681a92edca3f6ec4a1e30b7985b95765bbf306e1383f8d98f1820e6",
@@ -146,6 +161,21 @@ EFFORT_UPDATE_NATIVE_HASHES = {
         "ams_terra_xhigh": "c38ac31cb3853056636b018e5c343348c21299181e1e394718d791be656bf55b",
     },
     "pi": {
+        "ams_sol_6_0_low": "eaaa5d05967c6c87169e240af35217ea15ef8a1ae78ce6eff718cba2da5ef30b",
+        "ams_sol_6_0_medium": "91a42439b4132695b9f0cc8e4ff3b2f6bab89fd7381048c5722cfe136a197c6d",
+        "ams_sol_6_0_high": "36c94aefcfe1b8c8348ab78a5994e98ddd9248a40dd293fb6541d111d84bcdfa",
+        "ams_sol_6_0_xhigh": "88fd485078dd59441bc21a9fdda68abab1c934b7e9b9146e8a7816e9ae8af7e4",
+        "ams_sol_6_0_max": "a3527fd7c5c93501066b8e0ac5f41ef463420bc32cedb336e225188ed25b556a",
+        "ams_sol_5_6_low": "3a16110a59754b1b1e03fe747d5e480b83168d10a6d94b738e2f71118944c2b7",
+        "ams_sol_5_6_medium": "b82bb75cbe7b2ccde59c31744f018d1da1887b03a5116da60cb7b4447d256c5a",
+        "ams_sol_5_6_high": "8d91ca9559500a27e9a3b5178a84a11f14b65ac8fe6126f870796036c3ca0b3a",
+        "ams_sol_5_6_xhigh": "34b3697920b8f7a20316bbe96cb0e5b9758afe41c96c0213857cd0f7af5c0f93",
+        "ams_sol_5_6_max": "817e17bd66af55b49e6f430e76631b12084754e37b9ae7005cec7b4ac0e7de0e",
+        "ams_luna_5_6_low": "3a2a35880c3a61686c7a4b3c6a365f06ca026cdeeae3be57ff2b84b0e175a635",
+        "ams_luna_5_6_medium": "9286108ac4d5ac5316b092f0b712dbd4a2409b7ae1fd0a8bada153218acf9bca",
+        "ams_luna_5_6_high": "09902c620cd6318829825d79c8907c4722f378c2655b205b1c31788dae055040",
+        "ams_luna_5_6_xhigh": "f8125f7f8f542e4817c3e98179e1ec0593ed6813936437db82f421925e2d06b9",
+        "ams_luna_5_6_max": "af85c64d548ab1a9702268b12bf102b2c80745c17715a6258e59242a0f334977",
         "ams_astra_high": "626ef5d157382e36e40f1ce80de7db6e896231f6e11c3db1fe44597e45b2a7cb",
         "ams_astra_low": "bace3849bf38e7c3135a41a092f3f71dc57361ffe033cf61c4dd710267bf7184",
         "ams_astra_max": "9b734d459124ee82ec5f35899c4e24156c6a075d413929bbc0658365a12648e2",
@@ -168,10 +198,13 @@ EFFORT_UPDATE_NATIVE_HASHES = {
         "ams_terra_xhigh": "f1c3ce661e275707b6994954b12b5aee58ac19c77d1c9ad5ca13fe1bf178a506",
     },
 }
-RETIRED_NATIVE_NAMES = ("ams_spark_low", "ams_spark_medium", "ams_spark_high")
+RETIRED_NATIVE_NAMES = ("ams_spark_low", "ams_spark_medium", "ams_spark_high") + tuple(
+    f"ams_{family}_{effort}" for family in ("sol_6_0", "sol_5_6", "luna_5_6")
+    for effort in ("low", "medium", "high", "xhigh", "max")
+)
 EXPECTED_PROFILE_NAMES = {
     f"ams_{family}_{effort}" for family in
-    ("sol", "luna", "astra", "sol_6_0", "sol_5_6", "terra", "luna_5_6")
+    ("sol", "luna", "astra", "terra")
     for effort in ("low", "medium", "high", "xhigh", "max")
 } | {"ams_daybreak_blue_max"}
 
@@ -280,8 +313,8 @@ def manifest_entries(data: bytes) -> dict[str, tuple[str, int]]:
 def package_profiles(local: bool = True) -> list[dict[str, str]]:
     entries = manifest_entries(source_bytes("install-manifest.txt", local))
     names = sorted(name for name in entries if "/assets/agent-profiles/" in name and name.endswith(".toml"))
-    if {Path(name).stem for name in names} != EXPECTED_PROFILE_NAMES or len(names) != 36:
-        raise ValueError("Expected the exact 36 manifest-listed AMS model profiles.")
+    if {Path(name).stem for name in names} != EXPECTED_PROFILE_NAMES or len(names) != 21:
+        raise ValueError("Expected the exact 21 manifest-listed AMS model profiles.")
     profiles = []
     for name in names:
         data = source_bytes(name, local)
@@ -750,6 +783,7 @@ def retire_native_files(agent_home: Path, harness: str, replaced: list[Replaceme
         except ValueError:
             continue
         if predecessor_provider(name, prior[1], harness) is None:
+            print(f"{harness}: preserving non-stock retired preset: {path}", flush=True)
             continue
         backup = backups / path.name
         os.rename(path, backup)
@@ -915,7 +949,9 @@ def install(harness: str, opencode_provider: str = "auto", pi_provider: str = "a
             preflight(files)
             if any(not p.is_file() or p.read_bytes() != data for p, data in files.items()):
                 raise ValueError("Final native agent verification failed.")
-            for path, _, _, backup, prior in replaced:
+            for path, _, published, backup, prior in replaced:
+                if published is None and (path.exists() or path.is_symlink()):
+                    raise ValueError(f"Retired agent reappeared before completion: {path}")
                 if regular_snapshot(backup) != prior:
                     raise ValueError(f"Displaced agent changed before completion: {path}")
             print(f"{target}: {len(files)} native agent presets installed in {homes[target] / 'agents'}")

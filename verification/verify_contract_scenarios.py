@@ -74,6 +74,7 @@ class PeerMember:
     peer_role: str
     orchestration_role: str = "worker"
     delegation_authority: str = "none"
+    profile: str = ""
 
 
 def canonical_peer_path(path: str) -> bool:
@@ -96,6 +97,7 @@ def peer_message_allowed(
         and canonical_peer_path(receiver.path)
         and sender.orchestration_role == receiver.orchestration_role == "worker"
         and sender.delegation_authority == receiver.delegation_authority == "none"
+        and "ams_luna_low" not in {sender.profile, receiver.profile}
         and {sender.peer_role, receiver.peer_role} == {"lead", "member"}
         and kind in PEER_MESSAGE_KINDS
         and not (changed_fields & PEER_IMMUTABLE_FIELDS)
@@ -291,6 +293,23 @@ class LeanContracts(unittest.TestCase):
             kind="evidence",
         ))
 
+    def test_luna_low_cannot_participate_in_peer_synthesis_or_generic_results(self) -> None:
+        lead = PeerMember("pipe", "/root/lead", "/root/runner", "lead", profile="ams_luna_low")
+        member = PeerMember("pipe", "/root/runner", "/root/lead", "member")
+        self.assertFalse(peer_message_allowed(member, lead, kind="evidence"))
+        self.assertFalse(peer_message_allowed(lead, member, kind="evidence"))
+        hierarchy = (PACKAGE / "references/hierarchy-control.md").read_text(encoding="utf-8")
+        governance = (PACKAGE / "references/model-governance.md").read_text(encoding="utf-8")
+        core = (PACKAGE / "references/runtime-core.md").read_text(encoding="utf-8")
+        self.assertIn("Exclude Luna Low", hierarchy)
+        self.assertIn("root composes RESULT", governance)
+        self.assertIn("with no generic fields or peer synthesis", governance)
+        _, _, result_form = governance.partition("\nRESULT\n")
+        self.assertIn("Requested+observed identity:", result_form)
+        self.assertIn("Distinguish requested from directly observed model/effort; mark unknowns", governance)
+        self.assertIn("Root records this outside the Luna Low receipt", core)
+        self.assertIn("Never inspect Luna Low command output for identity", core)
+
     def test_each_real_route_gets_two_delegated_attempts_and_optional_root_third(self) -> None:
         disabled = RouteBudget(False)
         self.assertEqual([disabled.next("route-a") for _ in range(3)], ["delegated-correction", "delegated-confirmation", "block-route-and-continue"])
@@ -386,7 +405,7 @@ class LeanContracts(unittest.TestCase):
         self.assertIn("select the next authorized ready objective", scope)
         self.assertIn("Continue automatically", governance)
         self.assertNotIn("convergence", governance.lower())
-        self.assertIn("ams_<sol|luna|astra>_<low|medium|high|xhigh|max>", core)
+        self.assertIn("ams_<sol|luna|astra|terra>_<low|medium|high|xhigh|max>", core)
         self.assertIn("input/reasoning/output usage", (PACKAGE / "references/model-switching.md").read_text(encoding="utf-8"))
         self.assertIn("Astra Xhigh for Internet-exposed software", (PACKAGE / "references/model-guidance.md").read_text(encoding="utf-8"))
         self.assertIn("tool authority, not model authority", computer_use)
@@ -465,7 +484,7 @@ class LeanContracts(unittest.TestCase):
         self.assertNotIn("AMS SPARK", control)
         self.assertFalse(list((PACKAGE / "assets/agent-profiles").glob("ams_spark_*.toml")))
 
-    def test_routing_contract_and_explicit_only_legacy(self) -> None:
+    def test_routing_contract_explicit_terra_and_retired_profiles(self) -> None:
         # Written-contract coverage, not a live model-compliance test.
         core = (PACKAGE / "references/runtime-core.md").read_text()
         guidance = (PACKAGE / "references/model-guidance.md").read_text()
@@ -473,9 +492,12 @@ class LeanContracts(unittest.TestCase):
         for flags in itertools.product((False, True), repeat=3):
             settings = resolve_settings(dict(zip(("model_governance", "model_guidance", "automatic_model_switching"), flags)), project=True)
             self.assertEqual(tuple(settings[k] for k in ("model_governance", "model_guidance", "automatic_model_switching")), flags)
-            self.assertIn("never choose them automatically, including fallback, manager descendants, or policy-off operation", core)
+            self.assertIn("never choose it automatically, including fallback, manager descendants, or policy-off operation", core)
             self.assertIn("A manager request is not user selection", core)
-        self.assertIn("Explicit user model/effort choices override heuristics", core)
+        self.assertIn("Explicit eligible choices override heuristics", core)
+        self.assertIn("Retired profiles and model IDs are unavailable even if registered", core)
+        for family in ("sol_6_0", "sol_5_6", "luna_5_6", "spark"):
+            self.assertFalse(list((PACKAGE / "assets/agent-profiles").glob(f"ams_{family}_*.toml")))
         self.assertIn("Report unavailable selections", switching)
         for phrase in (
             "Sol 6.2 Xhigh for local/LAN-only software not intended for Internet exposure",
@@ -545,16 +567,16 @@ class LeanContracts(unittest.TestCase):
         # Positive: execute the supplied extraction and pass an approved opaque artifact.
         self.assertIn("A supplied CLI extraction command is allowed", prompt)
         self.assertIn("artifact or reference is authorized", prompt)
-        self.assertIn("including CLI extraction to an approved opaque artifact", core)
+        self.assertIn("including opaque extraction", core)
         # Negative: asking the same worker to inspect/interpret extracted content changes eligibility.
         self.assertIn("parse, read, interpret, summarize, or decide from output", prompt)
         self.assertIn("Never fall back to Luna Low for analysis", core)
-        self.assertIn("Current Luna limits apply with model policies off", core)
+        self.assertIn("Luna limits apply with policies off", core)
         self.assertIn("assign interpretation separately", guidance)
-        self.assertIn("opaque CLI extraction is eligible", guidance)
-        self.assertIn("No added capture unless explicitly ordered and authorized", core)
-        self.assertIn("Other current Luna tiers are non-code only", core)
-        self.assertIn("Send source, build, or test interpretation requiring code meaning to Sol", core)
+        self.assertIn("Opaque CLI extraction fits Low", guidance)
+        self.assertIn("Add capture only when explicitly ordered and authorized", core)
+        self.assertIn("No Luna profile analyzes/reviews codebases, programs, debugs, or implements", core)
+        self.assertIn("Route code-dependent work to Sol", core)
         for phrase in ("Do not run an unclear or unapproved command",
                        "Do not select, change, or retry commands",
                        "Return execution status and exit code",

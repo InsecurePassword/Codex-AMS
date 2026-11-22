@@ -65,17 +65,17 @@ def effort_update_predecessors() -> dict[str, bytes]:
     """Frozen exact stock bytes before prompt changes; independent of live profile assets."""
     file = ROOT / "verification/fixtures/prior-profiles/f2462569-stock-profiles.txt"
     snapshot = file.read_bytes()
-    if hashlib.sha256(snapshot).hexdigest() != "c2908825f6fbda02a3dc01838c8c453729b9ae4207ab0f1b1a0ce4fb3dddb656":
+    if hashlib.sha256(snapshot).hexdigest() != "b3845ca9fe1c16d58a606bf7685aee7f735a59003946c2d08b8f77957a483126":
         raise AssertionError("f2462569 stock snapshot hash mismatch")
-    parts = re.split(rb"^=== (ams_[a-z_]+\.toml) ===\n", snapshot, flags=re.MULTILINE)
+    parts = re.split(rb"^=== (ams_[a-z0-9_]+\.toml) ===\n", snapshot, flags=re.MULTILINE)
     result = {name.decode(): raw for name, raw in zip(parts[1::2], parts[2::2], strict=True)}
-    if len(result) != 20:
+    if len(result) != 35:
         raise AssertionError("f2462569 stock snapshot profile inventory mismatch")
     return result
 
 
 def model_update_predecessors() -> dict[str, bytes]:
-    """Reconstruct the immediate stock predecessor and independently pin its exact bytes."""
+    """Reconstruct the ac708b49 stock predecessor and independently pin its exact bytes."""
     source = effort_update_predecessors()
     routes = {
         "astra": (b"gpt-6.2-astra", b"gpt-6-astra", b"Astra 6.2", b"Astra 6"),
@@ -91,6 +91,8 @@ def model_update_predecessors() -> dict[str, bytes]:
         if hashlib.sha256(prior).hexdigest() != digest:
             raise AssertionError(f"immediate stock predecessor bytes differ: {name}")
         result[name] = prior
+    # These recently retired profiles were byte-identical in ac708b49 and f2462569.
+    result.update({name: raw for name, raw in source.items() if name.startswith(("ams_sol_6_0_", "ams_sol_5_6_", "ams_luna_5_6_"))})
     return result
 
 
@@ -173,7 +175,7 @@ def write_owner(lock: Path, *, host: str, pid: int, acquired: int, token: str = 
 
 def assert_profiles(codex_home: Path) -> dict[str, str]:
     profiles = sorted((codex_home / "agents").glob("ams_*.toml"))
-    if len(profiles) != 36:
+    if len(profiles) != 21:
         raise AssertionError(f"installed profile inventory mismatch: {len(profiles)}")
     return {path.name: sha256(path) for path in profiles}
 
@@ -251,6 +253,15 @@ def check_stock_model_upgrade(local_script: Path, environment: dict[str, str],
         raise AssertionError("edited stock predecessor did not stop all replacements")
 
     collision.write_bytes(old[collision.name])
+    retired = agents / "ams_luna_5_6_low.toml"
+    edited_retired = old[retired.name] + b"# customized retired preset\n"
+    retired.write_bytes(edited_retired)
+    result = invoke(local_script, homes, local=True)
+    if "Preserving non-stock retired preset" not in result.stdout + result.stderr:
+        raise AssertionError("customized retired preset was not reported")
+    if {p.name: p.read_bytes() for p in agents.glob("*.toml")} != current | {retired.name: edited_retired}:
+        raise AssertionError("stock retirement removed customization or left an official retired alias")
+    retired.write_bytes(old[retired.name])
     for _ in range(2):  # Stock migration followed by an idempotent reinstall.
         invoke(local_script, homes, local=True)
         if current != {p.name: p.read_bytes() for p in agents.glob("*.toml")}:
@@ -678,7 +689,8 @@ def main() -> int:
             upgrade_skill = base / "upgrade-skills"
             agents = upgrade_codex / "agents"
             agents.mkdir(parents=True)
-            old = frozen_profiles()
+            old = frozen_profiles() | {name: raw for name, raw in effort_update_predecessors().items()
+                                       if name.startswith(("ams_sol_6_0_", "ams_sol_5_6_", "ams_luna_5_6_"))}
             for name, data in old.items():
                 (agents / name).write_bytes(data)
             settings = upgrade_codex / "config.toml"
@@ -696,7 +708,7 @@ def main() -> int:
             failing.write_text(text.replace(anchor, failure), encoding="utf-8", newline="\n")
             invoke(failing, upgrade_env, expect_success=False)
             if {p.name: p.read_bytes() for p in agents.glob("*.toml")} != old or keep.read_bytes() != b"old skill":
-                raise AssertionError("Failed upgrade did not restore every predecessor, retired Spark, and prior skill")
+                raise AssertionError("Failed upgrade did not restore every predecessor, all retired profiles, and prior skill")
             invoke(script, upgrade_env)
             assert_profiles(upgrade_codex)
             if list(agents.glob("ams_spark_*.toml")):
@@ -735,7 +747,7 @@ def main() -> int:
                 "PASS: offline profiles-only/install/reinstall/collision/manifest checks; "
                 "profiles-only, full install, idempotence, collision refusal, "
                 "active/stale/malformed lock handling, manifest refusal, exact baseline upgrade, "
-                "immediate stock model upgrade, Spark retirement, custom preservation, and transactional rollback"
+                "stock model upgrades, exact retired profile cleanup, custom preservation, and transactional rollback"
             )
         finally:
             server.shutdown()

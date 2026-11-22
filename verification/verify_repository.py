@@ -16,13 +16,12 @@ BASELINE = ROOT / "verification/fixtures/baseline-install-manifest-working-curre
 
 MODELS = {
     "sol": "gpt-6.2-sol", "luna": "gpt-6-luna", "astra": "gpt-6.2-astra",
-    "sol_6_0": "gpt-6-sol", "sol_5_6": "gpt-5.6-sol",
-    "terra": "gpt-6.1-terra", "luna_5_6": "gpt-5.6-luna",
+    "terra": "gpt-6.1-terra",
 }
 PROFILE_EFFORTS = {family: ("low", "medium", "high", "xhigh", "max") for family in MODELS}
 PROFILE_LABELS = {
     "sol": "Sol 6.2", "luna": "Luna 6", "astra": "Astra 6.2",
-    "sol_6_0": "Sol 6.0", "sol_5_6": "Sol 5.6", "terra": "Terra 6.1", "luna_5_6": "Luna 5.6",
+    "terra": "Terra 6.1",
 }
 CORE_REFERENCES = {
     "blocker-diagnosis.md",
@@ -277,8 +276,8 @@ def main() -> int:
         path for path in PACKAGE.rglob("*") if path.is_file() and not path.is_symlink()
     )
     actual_paths = {path.relative_to(ROOT).as_posix() for path in actual_files}
-    if len(actual_files) != 56:
-        fail(f"expected 56 installed-core files, got {len(actual_files)}")
+    if len(actual_files) != 41:
+        fail(f"expected 41 installed-core files, got {len(actual_files)}")
     if set(entries) != actual_paths:
         fail(
             "manifest membership mismatch: "
@@ -341,7 +340,7 @@ def main() -> int:
             else:
                 for phrase in ("If explicitly assigned delegated management", "request descendants through root; never spawn them"):
                     require(instructions, phrase, filename)
-            if effort in {"xhigh", "max"} and family in {"sol", "sol_6_0", "sol_5_6", "astra"}:
+            if effort in {"xhigh", "max"} and family in {"sol", "astra"}:
                 if not worker_only:
                     require(instructions, "Preserve material child discoveries", filename)
                 for phrase in (
@@ -350,13 +349,13 @@ def main() -> int:
                     "not private reasoning traces",
                 ):
                     require(instructions, phrase, filename)
-            if effort in {"xhigh", "max"} and family in {"luna", "luna_5_6", "terra"}:
+            if effort in {"xhigh", "max"} and family in {"luna", "terra"}:
                 for phrase in ("Report material findings", "Preserve important child findings", "continue unaffected authorized work", "not private reasoning traces"):
                     require(instructions, phrase, filename)
                 for phrase in ("Make material new ideas", "When assigned exploratory", "When assigned alternative designs", "When asked to synthesize a new design", "When asked to develop ideas", "When assigned solution development"):
                     if phrase in instructions:
                         fail(f"unintended exploration default: {filename}: {phrase}")
-            if family in {"luna", "luna_5_6"} and effort in {"high", "xhigh", "max"}:
+            if family == "luna" and effort in {"high", "xhigh", "max"}:
                 for phrase in ("When assigned", "intended reader", "plain language", "what relevant settings change, their defaults, choices, interactions", "when changes take effect", "worked examples", "expected results", "recovery steps", "exact commands, paths", "Flag unknowns"):
                     require(instructions, phrase, filename)
                 require(instructions, {"high": "verified source material", "xhigh": "multi-section documentation", "max": "complete manual or documentation set"}[effort], filename)
@@ -421,7 +420,7 @@ def main() -> int:
     require(core, "AMS controls or profiles also require explicit package scope in the WORK ORDER", "delegated AMS Git scope")
     require(package_maintenance, "Package maintenance is root-controlled", "package-maintenance root authority")
     require(package_maintenance, "may delegate bounded inspection or edits through explicit work orders", "delegated package maintenance")
-    require(core, "ams_<sol|luna|astra>_<low|medium|high|xhigh|max>", "Astra route inventory")
+    require(core, "ams_<sol|luna|astra|terra>_<low|medium|high|xhigh|max>", "current route inventory")
     require(model_switching, "input/reasoning/output usage", "completed-task cost basis")
     for phrase in ("Straightforward non-code drafting", "Straightforward non-code interpretation or triage", "multi-section reconciliation", "whole-manual consistency", "Only ordinary Sol/Astra Xhigh/Max profiles"):
         require(model_guidance, phrase, "writing and exploration selection")
@@ -429,8 +428,8 @@ def main() -> int:
         fail("superseded writing default remains")
     require(model_guidance, "Sol 6.2 Xhigh for local/LAN-only software not intended for Internet exposure", "local security route")
     require(model_guidance, "Astra Xhigh for Internet-exposed software", "Internet security route")
-    require(core, "never choose them automatically, including fallback, manager descendants, or policy-off operation", "explicit-only legacy eligibility")
-    require(core, "Terra and legacy Sol 6.0, Sol 5.6, and Luna 5.6 require explicit user selection", "Terra/legacy explicit-only eligibility")
+    require(core, "never choose it automatically, including fallback, manager descendants, or policy-off operation", "explicit-only Terra eligibility")
+    require(core, "Retired profiles and model IDs are unavailable even if registered", "retired routes unavailable")
 
     global_default = toml_block_after(control, "Global/base default:")
     project_default = toml_block_after(control, "Project default adds one project-only field:")

@@ -8,7 +8,7 @@ If a helper gets stuck, the main agent asks for a closer look instead of treatin
 
 ## Latest update
 
-**Updated effort guidance and embedded instructions for all 20 current presets.** Sol 6.2 High remains the baseline, Astra 6.2 is scoped to specialist work, and Terra 6.1 remains explicit-only. Luna 6 Low is execution-only: run the supplied CLI command; leave interpreting output to another worker. Model IDs and effort tiers are unchanged. See [Update AMS](INSTALLATION.md#update-ams).
+**Updated effort guidance and embedded instructions for all 20 current presets.** Sol 6.2 High remains the baseline, Astra 6.2 is scoped to specialist work, and Terra 6.1 remains explicit-only. Luna 6 Low is execution-only: run the supplied CLI command; leave interpreting output to another worker. Current IDs and efforts are unchanged. Older AMS routes are retired. See [Update AMS](INSTALLATION.md#update-ams).
 
 ## Start here
 

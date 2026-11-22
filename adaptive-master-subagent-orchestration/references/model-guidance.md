@@ -9,7 +9,7 @@ Load only when `model_guidance = true`. Select by task and evidence, not a fixed
 | Luna 6 | Authorized verbatim CLI only; no content inspection | Straightforward non-code drafting | Straightforward non-code interpretation or triage | Ambiguous or multisource non-code triage and multi-section reconciliation | Sustained complicated non-code synthesis, e.g. whole-manual consistency |
 | Terra 6.1 (explicit only) | Clear screenshot, UI, or structured visual evidence | Bounded multi-screen ambiguity | Significant visual-to-technical discrepancy | Difficult design/visual coherence | Exceptional bounded conflicting visual or technical evidence |
 
-See `runtime-core.md`: opaque CLI extraction is eligible; assign interpretation separately or keep integral analysis with its owner.
+See `runtime-core.md`: Luna does no code work. Opaque CLI extraction fits Low; assign interpretation separately or keep integral analysis with its owner.
 
 For assigned security audits, use Sol 6.2 Xhigh for local/LAN-only software not intended for Internet exposure; use Astra Xhigh for Internet-exposed software. Neither requires a prior finding or failed Sol attempt. Stay within authorized surfaces and relevant reachable controls. Exposure does not reroute ordinary development or authorize unrelated review.
 

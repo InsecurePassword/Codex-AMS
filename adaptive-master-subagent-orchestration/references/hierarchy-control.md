@@ -21,7 +21,7 @@ Authority, scope, dependencies, permissions, ownership, and allocation only narr
 
 ## Bounded peer channel
 
-Root may authorize direct messaging only when cheaper than relay and only between exactly two root-spawned `worker/none` siblings. Copy the same addendum into both orders:
+Root may authorize direct messaging only when cheaper than relay and only between exactly two root-spawned `worker/none` siblings. Exclude Luna Low; send its execution receipt only to the authorized recipient. Copy the same addendum into both orders:
 
 ```text
 PEER CHANNEL

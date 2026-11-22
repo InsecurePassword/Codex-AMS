@@ -41,12 +41,11 @@ Dispatch every useful ready safe authorized lane under the enabled model policie
 Select an available appropriate profile, applying the cost heuristic only when automatic model switching is enabled:
 
 ```text
-ams_<sol|luna|astra>_<low|medium|high|xhigh|max>
-ams_<sol_6_0|sol_5_6|terra|luna_5_6>_<low|medium|high|xhigh|max>
+ams_<sol|luna|astra|terra>_<low|medium|high|xhigh|max>
 ams_daybreak_blue_max
 ```
 
-Legacy versions require explicit user selection, never automatic fallback; explicit model/effort choices remain authoritative. Use the installed model-purpose recommendations only when model guidance is enabled; this directive adds no model-choice advice when it is off. Before browser or desktop control load `references/computer-use.md`. In Codex, record the requested profile immediately after spawn and distinguish directly observed identity. Never silently substitute or repeat unchanged failure. Daybreak is never proactive: after a qualifying standard-Sol cyber-safeguard refusal, load the complete installed `references/daybreak-blue.md`. Extreme cannot duplicate a fallback unit, parallelize one access boundary, reuse admission, reopen closure, or increase start/task budgets.
+Terra requires explicit user selection; retired routes are unavailable and never substituted. Explicit eligible model/effort choices remain authoritative. Use the installed model-purpose recommendations only when model guidance is enabled; this directive adds no model-choice advice when it is off. Before browser or desktop control load `references/computer-use.md`. In Codex, record the requested profile immediately after spawn and distinguish directly observed identity. Never silently substitute or repeat unchanged failure. Daybreak is never proactive: after a qualifying standard-Sol cyber-safeguard refusal, load the complete installed `references/daybreak-blue.md`. Extreme cannot duplicate a fallback unit, parallelize one access boundary, reuse admission, reopen closure, or increase start/task budgets.
 
 Before each spawn establish the installed canonical work order, including scope basis, declared dependencies/readiness, exact ownership, interfaces/invariants, exact validation, and retry delta when applicable. Preserve user work and reconcile branch/worktree/artifact state before integration.
 

@@ -58,13 +58,15 @@ profile_files=(
   ams_sol_low.toml ams_sol_medium.toml ams_sol_high.toml ams_sol_xhigh.toml ams_sol_max.toml
   ams_luna_low.toml ams_luna_medium.toml ams_luna_high.toml ams_luna_xhigh.toml ams_luna_max.toml
   ams_astra_low.toml ams_astra_medium.toml ams_astra_high.toml ams_astra_xhigh.toml ams_astra_max.toml
-  ams_sol_6_0_low.toml ams_sol_6_0_medium.toml ams_sol_6_0_high.toml ams_sol_6_0_xhigh.toml ams_sol_6_0_max.toml
-  ams_sol_5_6_low.toml ams_sol_5_6_medium.toml ams_sol_5_6_high.toml ams_sol_5_6_xhigh.toml ams_sol_5_6_max.toml
   ams_terra_low.toml ams_terra_medium.toml ams_terra_high.toml ams_terra_xhigh.toml ams_terra_max.toml
-  ams_luna_5_6_low.toml ams_luna_5_6_medium.toml ams_luna_5_6_high.toml ams_luna_5_6_xhigh.toml ams_luna_5_6_max.toml
   ams_daybreak_blue_max.toml
 )
-retired_profile_files=(ams_spark_low.toml ams_spark_medium.toml ams_spark_high.toml)
+retired_profile_files=(
+  ams_spark_low.toml ams_spark_medium.toml ams_spark_high.toml
+  ams_sol_6_0_low.toml ams_sol_6_0_medium.toml ams_sol_6_0_high.toml ams_sol_6_0_xhigh.toml ams_sol_6_0_max.toml
+  ams_sol_5_6_low.toml ams_sol_5_6_medium.toml ams_sol_5_6_high.toml ams_sol_5_6_xhigh.toml ams_sol_5_6_max.toml
+  ams_luna_5_6_low.toml ams_luna_5_6_medium.toml ams_luna_5_6_high.toml ams_luna_5_6_xhigh.toml ams_luna_5_6_max.toml
+)
 
 required_files=(
   SKILL.md
@@ -122,6 +124,21 @@ sha256_file() {
 is_authorized_prior_profile() {
   # Exact stock aliases from f2462569cf9223a14d438ea4a0bdd490e9dd3d0a, then ac708b49b118c4c4a30b11b38df85bde6d0c5be5.
   case "$1:$2" in
+    "ams_sol_6_0_low.toml:b3e075ca5f151c6afefc851d342905aa5fd8fda1ef76704e82f9921c027b4db5"|\
+    "ams_sol_6_0_medium.toml:c2b279246f21fce7d13fcfcf05bd303d57aeeca401256698d22381a5d505d49d"|\
+    "ams_sol_6_0_high.toml:a562880b8462120eecd5ed503a3323352325bfb93d4bb09aedb5a3ee49b9849a"|\
+    "ams_sol_6_0_xhigh.toml:8716635fa8b3112db53b7d10f58f159845ff7c4fd0d3a7545448931b97f6e1cd"|\
+    "ams_sol_6_0_max.toml:e1f6172cb314991f39d010af77386217bb80dd2877e3715b61913e9e5bb61a8a"|\
+    "ams_sol_5_6_low.toml:c8ff92a9560bac0197fff651ce1899ffcfb4ae5fc20f67262adc4949b9a96f94"|\
+    "ams_sol_5_6_medium.toml:ef51bb6b6e8a85c53ade68d853a7fd99faea371f9380b4cebab4a44bbd3c29f0"|\
+    "ams_sol_5_6_high.toml:9bd506edd974ad8438931b4ebf24c692c7cc041089676b9fccd5f1334fd3b1df"|\
+    "ams_sol_5_6_xhigh.toml:327274c963b07ba62f6940bccd5066782c25f669b3090434fa9d3a45593cb4cd"|\
+    "ams_sol_5_6_max.toml:9c1b30dc513fcda72588cca57ad504fa3239d14a4facc7609728625054bdb3bf"|\
+    "ams_luna_5_6_low.toml:b6aa6dbf4e1c07fa7749b8078c48113ae784e7e39323b03024654285ca0de759"|\
+    "ams_luna_5_6_medium.toml:a3bb7003366e3364e8c7d0f9141ab104f32350fe8d3d170e859fb6863bd1d35a"|\
+    "ams_luna_5_6_high.toml:05aba2495e062c569060a4e0ece64b7929714bb0e77ef39df17782561f90e159"|\
+    "ams_luna_5_6_xhigh.toml:b0c42e354bda5c676b2a855252725cf888492280c3eb87ab44950bbf18d31086"|\
+    "ams_luna_5_6_max.toml:64e2fbcb395ff1bd9be86efc5256e4a79137298c61242659638ac2417c0e6e1d"|\
     "ams_astra_high.toml:dee66316edc1becfb11dcd439b28e96cab2ed6ccbb9c21d4bd04f0ba18f71030"|\
     "ams_astra_low.toml:d4ae35f4b5f6a472e96e8a6a9ddb8cb4edf353f25490e2854960f8cef8893ed0"|\
     "ams_astra_max.toml:23450a288f4ce5d6a8d99c5d6f110f62631ecfb89237570bb35d06e1586aa247"|\
@@ -453,6 +470,8 @@ assert_profile_preflight() {
     snapshot=$(file_snapshot "$target_profile") || continue
     if is_authorized_prior_profile "$profile_file" "${snapshot##* }"; then
       printf '%s\n' "$snapshot" > "$profile_preflight_root/$profile_file"
+    else
+      printf 'Preserving non-stock retired preset: %s\n' "$target_profile" >&2
     fi
   done
 }

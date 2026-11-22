@@ -19,7 +19,7 @@ The root model and reasoning effort are external configuration. AMS does not sel
 
 Core AMS provides:
 
-- 36 Codex model/effort profiles, plus native OpenCode/Pi presets for exact advertised ordinary-model matches;
+- 21 Codex model/effort profiles, plus native OpenCode/Pi presets for exact advertised ordinary-model matches;
 - root-mediated delegation; optional model governance adds finite allocation and Balanced team limits;
 - same-objective collaboration through available direct messaging or parent relay; optional model governance adds the bounded-pair protocol;
 - one-writer mutable-surface ownership;
@@ -126,7 +126,7 @@ A local lane or objective can be deferred while independent authorized work cont
 
 ## Retired Spark settings
 
-Spark is no longer an active route. Historical `spark_enabled`, `spark_efforts`, and `spark_available` are validated compatibility input only; they cannot activate anything and are removed on the next authorized settings write. Installation preserves settings and retires only exact recognized official Spark profiles, preserving customized files.
+Spark is no longer an active route. Historical `spark_enabled`, `spark_efforts`, and `spark_available` are validated compatibility input only; they cannot activate anything and are removed on the next authorized settings write. Installation preserves settings and retires only exact recognized stock Spark, Sol 6.0, Sol 5.6, and Luna 5.6 presets, preserving customized files.
 
 ## Astra and computer use
 
@@ -170,13 +170,13 @@ The profile grants no access, permission, authorization, target authority, or re
 
 ## Package boundaries
 
-Installed core contains 56 files: `SKILL.md`, `agents/openai.yaml`, 36 profiles, and 18 normative references. [install-manifest.txt](install-manifest.txt) records their exact lengths and hashes. Repository documentation, `.github/`, `tools/`, and `verification/` are not installed as core instructions. `extensions/` contains separately installed companions; their helpers run only when explicitly used.
+Installed core contains 41 files: `SKILL.md`, `agents/openai.yaml`, 21 profiles, and 18 normative references. [install-manifest.txt](install-manifest.txt) records their exact lengths and hashes. Repository documentation, `.github/`, `tools/`, and `verification/` are not installed as core instructions. `extensions/` contains separately installed companions; their helpers run only when explicitly used.
 
 The root loads `SKILL.md`, project control, runtime core, and scope/dependency control for active work. Project governance and each model policy load only when enabled. Other references are gated. Outside Codex, `harness-compatibility.md` maps native tools and registries. Only the selected model profile applies to its child; the full profile directory is not added to each prompt.
 
 The Codex plugin manifest declares only the skill path. It does not declare the bundled TOMLs as registered agents, so this package's marketplace path requires the profiles-only bootstrap before a new thread. This is a statement about this package, not a claim that all plugins are unable to distribute agents.
 
-Direct installation deploys the shared skill and the selected harness registries. Codex gets all 36 bundled TOMLs; OpenCode and Pi receive up to 35 translated ordinary presets after exact model-catalog matching. Daybreak is not translated. Native OpenCode/Pi presets retain complete conditional purpose and discovery-reporting instructions. The assigned role still determines whether an ordinary child is a worker or delegated manager.
+Direct installation deploys the shared skill and the selected harness registries. Codex gets 21 bundled TOMLs; OpenCode and Pi receive up to 20 translated ordinary presets after exact model-catalog matching. Daybreak is not translated. Native OpenCode/Pi presets retain complete conditional purpose and discovery-reporting instructions. Assignments set roles within profile eligibility.
 
 No AMS-authored durable orchestration database, daemon, task ledger, or recovery subsystem is installed. The host apps and `pi-subagents` may maintain their own sessions and artifacts; that is separate from AMS's no-runtime-state instruction.
 
@@ -208,14 +208,11 @@ These are the package's requested identifiers and efforts. The [Codex 0.171.0 ca
 | Terra 6.1 (`ams_terra_*`, explicit only) | `gpt-6.1-terra` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Luna 6 (`ams_luna_*`) | `gpt-6-luna` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Astra 6.2 (`ams_astra_*`) | `gpt-6.2-astra` | `low`, `medium`, `high`, `xhigh`, `max` |
-| Sol 6.0 (`ams_sol_6_0_*`, explicit only) | `gpt-6-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
-| Sol 5.6 (`ams_sol_5_6_*`, explicit only) | `gpt-5.6-sol` | `low`, `medium`, `high`, `xhigh`, `max` |
-| Luna 5.6 (`ams_luna_5_6_*`, explicit only) | `gpt-5.6-luna` | `low`, `medium`, `high`, `xhigh`, `max` |
 | Daybreak Blue | `gpt-daybreak-blue` | `max`, specialized Codex-only contract |
 
 Codex filenames are `ams_<family>_<effort>.toml`; the special name is `ams_daybreak_blue_max.toml`. OpenCode/Pi use the corresponding `.md` names and provider-qualified model IDs. OpenCode receives `mode: subagent` and `reasoningEffort`; Pi receives `name`, `thinking`, and `systemPromptMode: append`.
 
-Current aliases request Sol 6.2, Luna 6, Astra 6.2, and Terra 6.1. Terra and the retained legacy presets are explicit-only regardless of model policy settings. Current Luna Low is a hard execution-only role, not a cheaper interpretation fallback. Other current Luna tiers perform only non-code work. If a build or test diagnostic needs interpretation of source behavior, route it to Sol; a separately supplied authorized CLI extraction may still run on Luna Low if the output remains opaque. Selection advice is in [model guidance](adaptive-master-subagent-orchestration/references/model-guidance.md); [model switching](adaptive-master-subagent-orchestration/references/model-switching.md) governs reselection and [runtime core](adaptive-master-subagent-orchestration/references/runtime-core.md) defines mandatory eligibility. There is no automatic Ultra route. Ordinary Sol/Astra Xhigh and Max report material novel approaches; higher Luna/Terra profiles distinguish findings and uncertainty without a novelty requirement.
+Current aliases request Sol 6.2, Luna 6, Astra 6.2, and Terra 6.1. Terra is explicit-only regardless of model policies. Sol 6.0, Sol 5.6, Luna 5.6, and Spark are retired and not AMS routes. Historical definitions remain in [Git history](https://github.com/InsecurePassword/Codex-AMS/tree/f2462569cf9223a14d438ea4a0bdd490e9dd3d0a) and the noninstalled ownership fixture; neither can re-enable the routes. Current Luna Low is a hard execution-only role, not a cheaper interpretation fallback. No Luna profile performs code work. Luna Low returns a status/exit/approved artifact receipt only; root records requested/observed model identity separately and assembles the generic result. Luna Low cannot lead or join peer synthesis. If a build or test diagnostic needs interpretation of source behavior, route it to Sol; a separately supplied authorized CLI extraction may still run on Luna Low if the output remains opaque. Selection advice is in [model guidance](adaptive-master-subagent-orchestration/references/model-guidance.md); [model switching](adaptive-master-subagent-orchestration/references/model-switching.md) governs reselection and [runtime core](adaptive-master-subagent-orchestration/references/runtime-core.md) defines mandatory eligibility. There is no automatic Ultra route. Ordinary Sol/Astra Xhigh and Max report material novel approaches; higher Luna/Terra profiles distinguish findings and uncertainty without a novelty requirement.
 
 ### Evidence for effort defaults
 
@@ -320,7 +317,7 @@ A GitHub token in the environment authenticates the helper's subsequent download
 
 Remote staging validates manifest paths, the downloaded core lengths/hashes, and an unchanged manifest re-read before handing off to the native installer. The native transaction validates its exact core membership and uses the existing install lock, staging, backup, and rollback behavior. Matching hashes establish consistency with the fetched manifest, not independent publisher signing.
 
-Codex and native OpenCode/Pi presets are replaced only when absent, byte-identical, or an exact recognized official predecessor. A marker alone is not ownership proof. Custom, unknown, or redirected targets block replacement. Native upgrades preserve a prior provider only when it advertises the new exact model; a missing new model never leaves an old model silently masquerading under the current alias. Selected Bash and native-harness installation roots pin ancestor aliases to physical paths once at setup; redirected root leaves and redirects inside those roots are still rejected. Transactions snapshot regular-file identity and bytes before replacement or retirement. Native OpenCode/Pi transactions move the actual displaced entry into private backup custody, verify that entry against the snapshot, and publish replacements create-only. Native rollback likewise moves and verifies the actual published entry before removal and restores create-only. A conflicting edit is restored at a vacant original name or retained in custody when that name has reappeared; incomplete recovery is reported with the backup directory. Displaced originals are checked again before successful cleanup. Skill-tree publication and rollback also check tree identity and contents. Intervening changes are preserved and reported with the retained transaction backup path. These checkpoint checks and no-clobber operations do not exclude an external writer modifying an already-open file after the final check.
+Codex and native OpenCode/Pi presets are replaced only when absent, byte-identical, or an exact recognized official predecessor. A marker alone is not ownership proof. Custom, unknown, or redirected targets block replacement. Native upgrades preserve a prior provider only when it advertises the new exact model; a missing new model never leaves an old model silently masquerading under the current alias. Selected Bash and native-harness installation roots pin ancestor aliases to physical paths once at setup; redirected root leaves and redirects inside those roots are still rejected. Transactions snapshot regular-file identity and bytes before replacement or retirement. Native OpenCode/Pi transactions move the actual displaced entry into private backup custody, verify that entry against the snapshot, and publish replacements create-only. Native rollback likewise moves and verifies the actual published entry before removal and restores create-only. A conflicting edit is restored at a vacant original name or retained in custody when that name has reappeared; incomplete recovery is reported with the backup directory. Before successful cleanup, native transactions recheck displaced originals and that retired names have not reappeared. Skill-tree publication and rollback also check tree identity and contents. Intervening changes are preserved and reported with the retained transaction backup path. These checkpoint checks and no-clobber operations do not exclude an external writer modifying an already-open file after the final check.
 
 Settings are not migrated by installation. Project/global settings updates are agent-directed writes through the skill's commands. No installer adds model governance to profiles or rewrites them when a policy switch changes.
 

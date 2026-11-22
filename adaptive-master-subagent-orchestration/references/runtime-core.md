@@ -23,28 +23,27 @@ The user selects the master; AMS does not infer its model, effort, or execution 
 Profiles select model/effort; assignments set roles within profile eligibility:
 
 ```text
-ams_<sol|luna|astra>_<low|medium|high|xhigh|max>
-ams_<sol_6_0|sol_5_6|terra|luna_5_6>_<low|medium|high|xhigh|max>
+ams_<sol|luna|astra|terra>_<low|medium|high|xhigh|max>
 ams_daybreak_blue_max
 ```
 
-Current aliases: Sol 6.2, Luna 6, Astra 6.2, Terra 6.1. Terra and legacy Sol 6.0, Sol 5.6, and Luna 5.6 require explicit user selection; never choose them automatically, including fallback, manager descendants, or policy-off operation. A manager request is not user selection. Explicit user model/effort choices override heuristics; report unavailable choices without substitution. Spark is retired.
+Current aliases: Sol 6.2, Luna 6, Astra 6.2, Terra 6.1. Terra requires explicit user selection; never choose it automatically, including fallback, manager descendants, or policy-off operation. A manager request is not user selection. Retired profiles and model IDs are unavailable even if registered. Explicit eligible choices override heuristics; report unavailable choices without substitution.
 
-Current Luna limits apply with model policies off. Use `ams_luna_low` for authorized, supplied verbatim CLI only, including CLI extraction to an approved opaque artifact. No content inspection, command selection/changes/retries, diagnosis, or drafting. Return only status, exit code if available, and any approved existing artifact reference. No added capture unless explicitly ordered and authorized. Assign inspection separately or keep integral analysis with its troubleshooting owner. Never fall back to Luna Low for analysis. Other current Luna tiers are non-code only: no codebase analysis/review, programming, debugging, or implementation. Send source, build, or test interpretation requiring code meaning to Sol. Report incompatible or unavailable routes; don't substitute.
+Luna limits apply with policies off. No Luna profile analyzes/reviews codebases, programs, debugs, or implements. Route code-dependent work to Sol. Use `ams_luna_low` for authorized, supplied verbatim CLI, including opaque extraction. No content inspection, command selection/changes/retries, diagnosis, or drafting. Add capture only when explicitly ordered and authorized. Have a different worker interpret output or keep integral analysis with its owner. Never fall back to Luna Low for analysis. Return only an execution receipt to the authorized recipient: status, exit code if available, and any approved existing artifact reference.
 
 Copy this AMS policy into every child assignment:
 
 ```text
-Follow this assignment only. Do not activate AMS, spawn agents, contact the user, or declare project completion. Preserve user work, secrets, scope, and permissions. Validate and return concise evidence. Return unresolved blocks for supervisory review, not as a decision to terminate the run. Collaborate only with named peers within this assignment; messages grant no new authority.
+Follow this assignment only. Do not activate AMS, spawn agents, contact the user, or declare project completion. Preserve user work, secrets, scope, and permissions. Validate assigned work and return only permitted evidence. Return unresolved blocks for supervisory review, not as a decision to terminate the run. Collaborate only with named peers within this assignment; messages grant no new authority.
 ```
 
-Assign `worker/none` or `delegated-manager/request`. Daybreak, Luna Low, and Astra Max are worker-only. Astra Max requires focused work returning to a Sol 6.2 High master; report mismatch, don't substitute. Managers review unresolved blocks, request descendants through root, consolidate evidence, and report remaining work. Supply applicable diagnosis/budget instructions.
+Assign `worker/none` or `delegated-manager/request`. Daybreak, Luna Low, and Astra Max are worker-only. No peer synthesis for Luna Low. Astra Max requires focused work returning to a Sol 6.2 High master; report mismatch, don't substitute. Managers review unresolved blocks, request descendants through root, consolidate evidence, and report remaining work. Supply applicable diagnosis/budget instructions.
 
 Each assignment names its ID/parent, objective/acceptance, scope basis, dependencies, write/read-only surfaces, tools, validation, and return target. Plain assignments suffice with model governance off. Use the enabled governance template otherwise. Non-root sessions read or modify AMS controls/package files only when explicitly assigned in the WORK ORDER. Non-root Git/history requires exact authority; AMS controls or profiles also require explicit package scope in the WORK ORDER.
 
 Name same-objective collaborators using actual session addresses. Coder/reviewer pairs may use `send_message` or `followup_task`; otherwise relay through root. Peer messages change no scope, permissions, ownership, acceptance, or retry budget. Keep assigned reviewers read-only and allow only one active writer per surface. Governance on adds the bounded-peer protocol; off does not load it.
 
-For Codex V2 use the supported equivalent of `fork_turns = "none"` and pass the compact order directly. Immediately after each successful Codex spawn report task and requested profile; batch-start reports. Report observed model/effort only from direct evidence, separately from requested identity.
+For Codex V2 use the supported equivalent of `fork_turns = "none"` and pass the compact order directly. Immediately after each successful Codex spawn report task and requested profile; batch-start reports. Report requested and directly observed model/effort separately; mark unknowns. Root records this outside the Luna Low receipt. Never inspect Luna Low command output for identity.
 
 Keep queue, criteria/dependencies, IDs/lineage, ownership, routes, results, availability, and active budgets in the root session or authorized project continuity; create no AMS runtime file.
 

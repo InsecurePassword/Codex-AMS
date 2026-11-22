@@ -183,7 +183,7 @@ def native(desktop: Path) -> None:
         home = Path(temporary).resolve()
         config = home / ".config/opencode"
         config.mkdir(parents=True)
-        models = ("gpt-6.2-sol", "gpt-6-luna", "gpt-6.2-astra", "gpt-6-sol", "gpt-5.6-sol", "gpt-6.1-terra", "gpt-5.6-luna")
+        models = ("gpt-6.2-sol", "gpt-6-luna", "gpt-6.2-astra", "gpt-6.1-terra")
         settings = config / "opencode.json"
         settings.write_text(json.dumps({"$schema": "https://opencode.ai/config.json", "enabled_providers": ["ams-test"], "provider": {
             "ams-test": {"npm": "@ai-sdk/openai-compatible", "name": "No inference fixture", "options": {"baseURL": "http://127.0.0.1:9/v1", "apiKey": "fixture-not-a-secret"},
@@ -205,12 +205,12 @@ def native(desktop: Path) -> None:
             print(result.stdout, flush=True)
             if result.returncode:
                 raise AssertionError(result.stderr)
-            if "downloading temporary official CLI " + VERSION not in result.stdout or "all 35 installed agents confirmed" not in result.stdout:
+            if "downloading temporary official CLI " + VERSION not in result.stdout or "all 20 installed agents confirmed" not in result.stdout:
                 raise AssertionError("The Desktop-only bootstrap and native registry check did not execute.")
             files = list((config / "agents").glob("ams_*.md"))
-            if len(files) != 35 or settings.read_bytes() != before:
+            if len(files) != 20 or settings.read_bytes() != before:
                 raise AssertionError("Missing presets or changed provider settings.")
-        print("PASS official production Desktop without bundled CLI: temporary matching release, 35 registered agents, default agent directory, reinstall; no model calls.", flush=True)
+        print("PASS official production Desktop without bundled CLI: temporary matching release, 20 registered agents, default agent directory, reinstall; no model calls.", flush=True)
 
 
 if __name__ == "__main__":

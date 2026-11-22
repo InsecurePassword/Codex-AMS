@@ -63,13 +63,15 @@ $ProfileFiles = @(
     "ams_sol_low.toml", "ams_sol_medium.toml", "ams_sol_high.toml", "ams_sol_xhigh.toml", "ams_sol_max.toml",
     "ams_luna_low.toml", "ams_luna_medium.toml", "ams_luna_high.toml", "ams_luna_xhigh.toml", "ams_luna_max.toml",
     "ams_astra_low.toml", "ams_astra_medium.toml", "ams_astra_high.toml", "ams_astra_xhigh.toml", "ams_astra_max.toml",
-    "ams_sol_6_0_low.toml", "ams_sol_6_0_medium.toml", "ams_sol_6_0_high.toml", "ams_sol_6_0_xhigh.toml", "ams_sol_6_0_max.toml",
-    "ams_sol_5_6_low.toml", "ams_sol_5_6_medium.toml", "ams_sol_5_6_high.toml", "ams_sol_5_6_xhigh.toml", "ams_sol_5_6_max.toml",
     "ams_terra_low.toml", "ams_terra_medium.toml", "ams_terra_high.toml", "ams_terra_xhigh.toml", "ams_terra_max.toml",
-    "ams_luna_5_6_low.toml", "ams_luna_5_6_medium.toml", "ams_luna_5_6_high.toml", "ams_luna_5_6_xhigh.toml", "ams_luna_5_6_max.toml",
     "ams_daybreak_blue_max.toml"
 )
-$RetiredProfileFiles = @("ams_spark_low.toml", "ams_spark_medium.toml", "ams_spark_high.toml")
+$RetiredProfileFiles = @(
+    "ams_spark_low.toml", "ams_spark_medium.toml", "ams_spark_high.toml",
+    "ams_sol_6_0_low.toml", "ams_sol_6_0_medium.toml", "ams_sol_6_0_high.toml", "ams_sol_6_0_xhigh.toml", "ams_sol_6_0_max.toml",
+    "ams_sol_5_6_low.toml", "ams_sol_5_6_medium.toml", "ams_sol_5_6_high.toml", "ams_sol_5_6_xhigh.toml", "ams_sol_5_6_max.toml",
+    "ams_luna_5_6_low.toml", "ams_luna_5_6_medium.toml", "ams_luna_5_6_high.toml", "ams_luna_5_6_xhigh.toml", "ams_luna_5_6_max.toml"
+)
 
 $RequiredFiles = @(
     "SKILL.md",
@@ -97,6 +99,21 @@ foreach ($ProfileFile in $ProfileFiles) { $RequiredFiles += "assets/agent-profil
 
 # First hash for each current family alias: exact stock f2462569cf9223a14d438ea4a0bdd490e9dd3d0a.
 $PriorCanonicalProfileHashes = @{
+    "ams_sol_6_0_low.toml" = @("b3e075ca5f151c6afefc851d342905aa5fd8fda1ef76704e82f9921c027b4db5")
+    "ams_sol_6_0_medium.toml" = @("c2b279246f21fce7d13fcfcf05bd303d57aeeca401256698d22381a5d505d49d")
+    "ams_sol_6_0_high.toml" = @("a562880b8462120eecd5ed503a3323352325bfb93d4bb09aedb5a3ee49b9849a")
+    "ams_sol_6_0_xhigh.toml" = @("8716635fa8b3112db53b7d10f58f159845ff7c4fd0d3a7545448931b97f6e1cd")
+    "ams_sol_6_0_max.toml" = @("e1f6172cb314991f39d010af77386217bb80dd2877e3715b61913e9e5bb61a8a")
+    "ams_sol_5_6_low.toml" = @("c8ff92a9560bac0197fff651ce1899ffcfb4ae5fc20f67262adc4949b9a96f94")
+    "ams_sol_5_6_medium.toml" = @("ef51bb6b6e8a85c53ade68d853a7fd99faea371f9380b4cebab4a44bbd3c29f0")
+    "ams_sol_5_6_high.toml" = @("9bd506edd974ad8438931b4ebf24c692c7cc041089676b9fccd5f1334fd3b1df")
+    "ams_sol_5_6_xhigh.toml" = @("327274c963b07ba62f6940bccd5066782c25f669b3090434fa9d3a45593cb4cd")
+    "ams_sol_5_6_max.toml" = @("9c1b30dc513fcda72588cca57ad504fa3239d14a4facc7609728625054bdb3bf")
+    "ams_luna_5_6_low.toml" = @("b6aa6dbf4e1c07fa7749b8078c48113ae784e7e39323b03024654285ca0de759")
+    "ams_luna_5_6_medium.toml" = @("a3bb7003366e3364e8c7d0f9141ab104f32350fe8d3d170e859fb6863bd1d35a")
+    "ams_luna_5_6_high.toml" = @("05aba2495e062c569060a4e0ece64b7929714bb0e77ef39df17782561f90e159")
+    "ams_luna_5_6_xhigh.toml" = @("b0c42e354bda5c676b2a855252725cf888492280c3eb87ab44950bbf18d31086")
+    "ams_luna_5_6_max.toml" = @("64e2fbcb395ff1bd9be86efc5256e4a79137298c61242659638ac2417c0e6e1d")
     "ams_daybreak_blue_max.toml" = @("d82a3f01f3b36d11b0ae7be52a55e03d0415f504a08f692de98e69cd0218476b")
     "ams_luna_high.toml" = @("8ddd0b92e79f28a4c41b9bcbe5ff593ac9117bf48db121ae70c5f9efeaf10d9f", "6400ff519bf08e609d663274a03ab63103da0e3c263a75913434a47bb84f6963", "f727d164f9517f5d654bf8d6192b4db39a1f7a5a67473793daf755c2bbe2abee", "22cd43c99ba332d8e5902f1ee96a9f8c481a21bd9c3b108f2ee6ecdaaf50f986", "f7a8bd41fb963aa79319bbe4ad9531204568d6a212013f1116029ddca9d805d6", "99a75b8f47ece6fae8ea4e13d81441cb857e0034ab87611788b6b1a2b152b0e8", "474d38aa8803805b54bceb3a1c0d13fb264c539f1552b042c75aad8dc993bb4a")
     "ams_luna_low.toml" = @("101a0d2d52c32b5b36379a973b02f8e174b63fbd537108b67f564fc84face254", "1a8d32c5bab48bec8a8389ebf3e5fa4d341ae148ad50c5cb43daebe6c953fc56", "1032905d4e79c15b02397657f2641397b7af49540c34ed271737e5310155c124", "869cce6526326fe89cc9f698890ce50f99f6f2e7bec7b06460e55fe1ab8cfac1", "fb47eec631a3eb6ade50951939dcce9cefe894607d27654eb67a476a1f3918f8", "c9f4b4fc800f4f3dfe8d3205bc0c6842d17d0b49fa4fbce83a203ceac57600a9", "9c9c3619814ed77104d7a327ef2851d39a3ba0a8ddcd2ef5b0aab142af5352f6")
@@ -336,6 +353,7 @@ function Assert-ProfilePreflight {
     foreach ($ProfileFile in $RetiredProfileFiles) {
         try { $Snapshot = Get-FileSnapshot (Join-Path $AgentHome $ProfileFile) } catch { continue }
         if (Test-AuthorizedPriorProfile $ProfileFile $Snapshot.Split(' ')[-1]) { $ProfilePreflight[$ProfileFile] = $Snapshot }
+        else { Write-Warning "Preserving non-stock retired preset: $(Join-Path $AgentHome $ProfileFile)" }
     }
 }
 
