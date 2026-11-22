@@ -1,6 +1,6 @@
 # AMS project governance
 
-Use only when `project_governance = true`. It is proportional, non-recursive, and non-persistent: no new criteria, acceptance system, durable state, campaign, receipt, or recovery ledger; no change to root authority, routing, hierarchy, permissions, scope, or writer safety.
+Use only when `project_governance = true`. It is proportional and non-recursive. It adds no criteria, acceptance system, campaign, separate ledger, or authority; the project work ledger is independent of this policy.
 
 Maintain the authorized deliverables, criteria, dependencies, critical path, integration order, validation, risks, blockers, and objective states. Project packets, roadmaps, pauses, approvals, trackers, tests, and recording rules remain authoritative. AMS coordinates; it does not redefine them.
 
@@ -12,4 +12,4 @@ Root alone reconciles and accepts or rejects. Passing checks, a commit/checkpoin
 
 Treat unauthorized scope, hidden dependencies, overlapping ownership, expanded parentage/delegation, destructive action, reduced validation, unchanged failure, post-acceptance extras, or conflicting completion claims as deviations. Apply the smallest correction and continue safe independent work.
 
-Use project-native continuity; otherwise return a concise handoff with completed objectives/evidence, active/deferred/blocked work, ownership, next authorized action, and resumption condition. Create no AMS-specific handoff file.
+When blocked, hand off evidence, ownership, next action and resumption condition.

@@ -36,8 +36,10 @@ CORE_REFERENCES = {
     "model-switching.md",
     "package-maintenance.md",
     "profile-management.md",
+    "project-continuity.md",
     "project-control.md",
     "project-governance.md",
+    "project-verification.md",
     "root-execution-fallback.md",
     "runtime-core.md",
     "scope-dependency-control.md",
@@ -276,8 +278,8 @@ def main() -> int:
         path for path in PACKAGE.rglob("*") if path.is_file() and not path.is_symlink()
     )
     actual_paths = {path.relative_to(ROOT).as_posix() for path in actual_files}
-    if len(actual_files) != 41:
-        fail(f"expected 41 installed-core files, got {len(actual_files)}")
+    if len(actual_files) != 43:
+        fail(f"expected 43 installed-core files, got {len(actual_files)}")
     if set(entries) != actual_paths:
         fail(
             "manifest membership mismatch: "
@@ -391,6 +393,8 @@ def main() -> int:
     control = read_text(PACKAGE / "references/project-control.md")
     config_maintenance = read_text(PACKAGE / "references/configuration-maintenance.md")
     core = read_text(PACKAGE / "references/runtime-core.md")
+    continuity = read_text(PACKAGE / "references/project-continuity.md")
+    verification = read_text(PACKAGE / "references/project-verification.md")
     scope = read_text(PACKAGE / "references/scope-dependency-control.md")
     diagnosis = read_text(PACKAGE / "references/blocker-diagnosis.md")
     hierarchy = read_text(PACKAGE / "references/hierarchy-control.md")
@@ -435,6 +439,11 @@ def main() -> int:
     project_default = toml_block_after(control, "Project default adds one project-only field:")
     if global_default.get("root_execution_fallback") is not False:
         fail("root fallback must default off")
+    if global_default.get("continuity_ledger") is not True:
+        fail("ledger must default on")
+    for key in ("project_map", "project_verification", "premise_check"):
+        if global_default.get(key) is not False:
+            fail(f"{key} must default off")
     if project_default != {"local_llm_lane": False}:
         fail("project-only local LLM default mismatch")
     if set(global_default) != {
@@ -442,6 +451,10 @@ def main() -> int:
         "allow_implicit_invocation",
         "intensity",
         "project_governance",
+        "continuity_ledger",
+        "project_map",
+        "project_verification",
+        "premise_check",
         "model_governance",
         "model_guidance",
         "automatic_model_switching",
@@ -525,9 +538,51 @@ def main() -> int:
     for phrase in (
         "Continue automatically while authorized ready work exists",
         "Review is proportional and non-recursive",
-        "no new criteria, acceptance system, durable state, campaign, receipt, or recovery ledger",
+        "adds no criteria, acceptance system, campaign, separate ledger, or authority",
     ):
         require(governance, phrase, "compact project governance")
+    require(control, "AMS ENABLE LEDGER | AMS DISABLE LEDGER", "ledger command")
+    require(control, "AMS ENABLE PROJECT-MAP | AMS DISABLE PROJECT-MAP", "map toggle")
+    require(control, "`AMS MAPPROJECT` is an exact, case-insensitive one-shot control", "explicit mapping command")
+    require(control, "In OpenCode/Pi load `harness-compatibility.md`; read existing route eligibility only", "manual mapping transport")
+    require(core, "before interrupted-route retry", "replacement-root recovery gate")
+    for phrase in (
+        "same normalized runner episode or real non-runner route",
+        "prior attempts, terminal/exhausted state, and custody",
+        "If unverified, defer that route and continue independent work",
+        "This applies with ledger off", "Ledger is not runtime authority",
+        "never sensitive Daybreak details",
+    ):
+        require(diagnosis, phrase, "cross-root retry recovery")
+    require(core, "Load `project-continuity.md` for enabled ledger work/recovery", "core continuity gate")
+    require(core, "then dispatch", "material dispatch ledger boundary")
+    require(core, "reconcile ledger history and affected feature cards", "continuity close boundary")
+    for name in ("VERIFICATION", "PREMISE-CHECK"):
+        require(control, f"AMS ENABLE {name} | AMS DISABLE {name}", f"{name} control")
+    require(core, 'If `project_verification` is on and relevant, load `project-verification.md`', "verification gate")
+    for phrase in (
+        "recipe creation is explicitly in scope", "undriven recipe draft/unverified",
+        "one real user journey at the exact source/build",
+        "mock/synthetic tests, or CI status as substitute proof", "confirm evidence survives cleanup", "blocked/not run",
+    ):
+        require(verification, phrase, "project verification contract")
+    for phrase in (
+        "`premise_check = true` and two materially different corrections sharing an assumption failed the same gate",
+        "one already-authorized safe observation", "Do not start a premise-dependent fix before observing",
+        "No extra attempt or spawn",
+        "no change to no-start terminal rules or Daybreak",
+    ):
+        require(diagnosis, phrase, "premise check contract")
+    for phrase in (
+        "Only when positively absent", "never create an alternate ledger/map",
+        "conditional edit/create", "reading back before retrying",
+        "stable objective/task, attempt, and transition IDs",
+        "correction retaining the original",
+        "not live permissions, dispatch, dependency readiness, ownership, or acceptance authority",
+        "source-mapped is runtime-unverified", "only affected cards/index",
+        "without separate authorization",
+    ):
+        require(continuity, phrase, "project continuity contract")
     require(profile_management, "Peer communication remains available with model governance off", "ungoverned communication")
     for phrase in (
         "tool authority, not model authority",

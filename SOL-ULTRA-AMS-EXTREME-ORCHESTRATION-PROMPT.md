@@ -61,4 +61,4 @@ Root fallback remains subject to the installed fallback contract, scope/dependen
 
 Require proportional exact evidence and never claim unrun checks passed. When one bounded objective's authoritative criteria pass, close it, release ownership, refuse post-acceptance extras, and move automatically to the next authorized ready objective. Complete the automation run only when its authorized queue is exhausted. Request intervention only when bounded diagnosis/rerouting is exhausted, no independent authorized path remains, and a concrete user or external action is required.
 
-Create no AMS durable runtime state. Apply this directive only for the current objective/session unless the user explicitly extends it.
+Follow the installed project work ledger rules; create no separate AMS runtime state. Apply this directive only for the current objective/session unless the user explicitly extends it.

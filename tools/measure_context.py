@@ -20,9 +20,13 @@ SCENARIOS = {
     "active_governance": ["SKILL.md", "references/project-control.md", "references/runtime-core.md", "references/scope-dependency-control.md", "references/project-governance.md"],
 }
 
+CONTINUITY = "references/project-continuity.md"
+SCENARIOS["active_continuity"] = [*SCENARIOS["active_governance"], CONTINUITY]
+
 MODEL_POLICIES = ["references/model-governance.md", "references/model-guidance.md", "references/model-switching.md"]
 
 LAZY_REFERENCES = [
+    CONTINUITY,
     *MODEL_POLICIES,
     "references/harness-compatibility.md",
     "references/blocker-diagnosis.md",
@@ -33,6 +37,7 @@ LAZY_REFERENCES = [
     "references/intensity-control.md",
     "references/package-maintenance.md",
     "references/profile-management.md",
+    "references/project-verification.md",
     "references/root-execution-fallback.md",
     "references/zergling-rush.md",
 ]
@@ -68,6 +73,7 @@ def baseline_scenarios() -> tuple[str, dict[str, int]]:
         "active_core": sizes["SKILL.md"] + sizes["references/project-control.md"] + sizes["references/runtime-core.md"],
         "active_governance": sizes["SKILL.md"] + sizes["references/project-control.md"] + sizes["references/runtime-core.md"] + sizes["references/project-governance.md"],
     }
+    old["active_continuity"] = old["active_governance"]  # No continuity reference in the baseline.
     return str(baseline["baseline"]), old
 
 
@@ -85,6 +91,7 @@ def build_report(model_policies: bool = True) -> dict[str, object]:
             "bootstrap_skill": "always-loaded SKILL.md",
             "active_core": "SKILL + project control + runtime core + scope/dependency control + selected model policies",
             "active_governance": "active core + compact project governance",
+            "active_continuity": "active governance + project ledger/map reference when applicable",
             "lazy_references": "incremental only when selected",
             "companions": "separate skills excluded from core manifest",
             "child_profiles": "one selected profile file per child; not summed into root context or billed usage",

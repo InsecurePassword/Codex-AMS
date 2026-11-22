@@ -12,7 +12,9 @@ Outside Codex, first load `harness-compatibility.md`. Resolve `project-control.m
 
 Off means do not load or apply that policy or its gated references. The master retains discretion over the corresponding decisions. Switching off does not prohibit switching. Delegation, supervision, recovery, permissions, and scope remain mandatory.
 
-Lazy-load `profile-management.md` when a selected profile is missing, unregistered, mismatched, or explicitly being installed or repaired; `computer-use.md` before browser, desktop, or visual UI control; `blocker-diagnosis.md` after any process no-start or reproducible non-runner failure; `root-execution-fallback.md` at its existing gate; `daybreak-blue.md` only after a qualifying standard-Sol cyber-safeguard refusal; `package-maintenance.md` for package work. Missing material blocks only that capability.
+Lazy-load `profile-management.md` when a selected profile is missing, unregistered, mismatched, or explicitly being installed or repaired; `computer-use.md` before browser, desktop, or visual UI control; `blocker-diagnosis.md` after no-start, reproducible non-runner failure, or before interrupted-route retry; `root-execution-fallback.md` at its existing gate; `daybreak-blue.md` only after a qualifying standard-Sol cyber-safeguard refusal; `package-maintenance.md` for package work. Missing material blocks only that capability.
+
+Load `project-continuity.md` for enabled ledger work/recovery or enabled map upkeep after material changes; apply only the enabled function(s). Status, activation/settings/install alone, and read-only work never write continuity.
 
 Load the separate `ams-local-openai-lane` only with project `local_llm_lane = true` and current-session user selection of a local model/use case. Otherwise do not inspect its profiles/endpoint or invoke local models.
 
@@ -45,7 +47,7 @@ Name same-objective collaborators using actual session addresses. Coder/reviewer
 
 For Codex V2 use the supported equivalent of `fork_turns = "none"` and pass the compact order directly. Immediately after each successful Codex spawn report task and requested profile; batch-start reports. Report requested and directly observed model/effort separately; mark unknowns. Root records this outside the Luna Low receipt. Never inspect Luna Low command output for identity.
 
-Keep queue, criteria/dependencies, IDs/lineage, ownership, routes, results, availability, and active budgets in the root session or authorized project continuity; create no AMS runtime file.
+Keep active queue, ownership, routes, availability, and budgets in the root session. Use project continuity for work history/evidence, not runtime authority.
 
 ## Failure and fallback
 
@@ -59,11 +61,11 @@ Root fallback is default-off. If explicitly enabled, one eligible route that exh
 
 ## Loop
 
-1. Refresh criteria, dependencies, settings, topology, ownership, routes, and availability.
+1. Refresh criteria, dependencies, settings, ownership, routes, and availability. Resolve enabled continuity and verify live state on recovery.
 2. Choose the next authorized ready objective and a non-overlapping topology under enabled policies.
-3. Verify scope/dependency admission; dispatch.
+3. Verify scope/dependency admission, record the material work order if enabled and writable, then dispatch.
 4. Reconcile results/requests, diagnose bounded failures, and continue independent work.
-5. Integrate and validate existing criteria through logical parents.
-6. Accept/close, release proven-clear ownership, and advance automatically.
+5. Integrate and validate through logical parents. If `project_verification` is on and relevant, load `project-verification.md`.
+6. Accept/close, release proven-clear ownership, reconcile ledger history and affected feature cards, then advance.
 
-Apply enabled governance. Add no criteria, durable AMS state, or post-acceptance work. Complete when the authorized queue is exhausted. Ask the user only after bounded correction/rerouting is exhausted, no independent ready work remains, and a concrete external credential, resource, authorization, physical action, or material decision is required. Never expose private chain-of-thought.
+Apply enabled governance. Add no criteria, orchestration database, or extra objectives. Complete when the authorized queue is exhausted. Ask the user only after bounded correction/rerouting is exhausted, no independent ready work remains, and a concrete external credential, resource, authorization, physical action, or material decision is required. Never expose private chain-of-thought.

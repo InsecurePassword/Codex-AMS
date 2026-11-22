@@ -125,6 +125,8 @@ AMS CONFIGURATION UPDATE PROJECT
 AMS STATUS
 ```
 
+Installation creates no project ledger or map. Use them during authorized work or run `AMS MAPPROJECT` for a one-off map; see [Project ledger and map](PRODUCT%20DOCUMENTATION.md#project-ledger-and-map).
+
 This keeps supported settings and adds missing defaults. See [Settings and older projects](PRODUCT%20DOCUMENTATION.md#settings-and-older-projects).
 
 ## Common problems

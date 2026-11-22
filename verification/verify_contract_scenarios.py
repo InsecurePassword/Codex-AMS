@@ -17,6 +17,10 @@ BASE_DEFAULTS: dict[str, object] = {
     "allow_implicit_invocation": True,
     "intensity": "auto",
     "project_governance": True,
+    "continuity_ledger": True,
+    "project_map": False,
+    "project_verification": False,
+    "premise_check": False,
     "model_governance": True,
     "model_guidance": True,
     "automatic_model_switching": True,
@@ -40,9 +44,9 @@ def resolve_settings(data: dict[str, object], *, project: bool) -> dict[str, obj
     unknown = set(data) - set(defaults) - RETIRED
     if unknown:
         raise ValueError(f"unknown settings: {unknown}")
-    for key in {"model_governance", "model_guidance", "automatic_model_switching"} & set(data):
+    for key in {key for key, default in defaults.items() if type(default) is bool} & set(data):
         if type(data[key]) is not bool:
-            raise ValueError(f"model policy Boolean {key}")
+            raise ValueError(f"policy Boolean {key}")
     for key in RETIRED_BOOL & set(data):
         if type(data[key]) is not bool:
             raise ValueError(f"retired Boolean {key}")
@@ -57,6 +61,50 @@ def resolve_settings(data: dict[str, object], *, project: bool) -> dict[str, obj
     if "schema_version" in data and type(data["schema_version"]) not in {str, int, float, bool}:
         raise ValueError("schema_version must be scalar")
     return {key: data.get(key, value) for key, value in defaults.items()}
+
+
+CONTINUITY_PATHS = {"continuity_ledger": "continuity.md", "project_map": "PROJECT-MAP.md"}
+FUNCTION_FIELDS = {"LEDGER": "continuity_ledger", "PROJECT-MAP": "project_map",
+                   "VERIFICATION": "project_verification", "PREMISE-CHECK": "premise_check"}
+
+
+def function_control(values: dict[str, object], command: str) -> dict[str, object]:
+    match = re.fullmatch(r"AMS (ENABLE|DISABLE) ([A-Z-]+)", command.upper())
+    if match is None or match[2] not in FUNCTION_FIELDS:
+        raise ValueError("not a function control")
+    field = FUNCTION_FIELDS[match[2]]
+    return {**values, field: match[1] == "ENABLE"}
+
+
+def continuity_target(
+    settings: dict[str, object], feature: str, *, phase: str, authorized_write: bool,
+    active_session: bool = False,
+    native_candidates: tuple[str, ...] = (), target_safe: bool = True,
+    material: bool = True, absence_proven: bool = True,
+) -> str | None:
+    manual_map = phase == "manual-map" and feature == "project_map"
+    automatic = phase == "active-work" and active_session and settings[feature]
+    if (not (manual_map or automatic) or not authorized_write or not material
+            or not target_safe or len(native_candidates) > 1):
+        return None
+    if native_candidates:
+        return native_candidates[0]
+    return CONTINUITY_PATHS[feature] if absence_proven else None
+
+
+def apply_transition(history: dict[str, str], transition: str, facts: str) -> str:
+    if transition in history:
+        return "replay-no-op" if history[transition] == facts else "reconcile-as-new-correction"
+    history[transition] = facts
+    return "recorded"
+
+
+def recovered_retry(kind: str, corroborated_attempts: int | None, terminal: bool | None) -> str:
+    if corroborated_attempts is None or terminal is None:
+        return "defer-unverified"
+    if terminal or (kind == "non-runner" and corroborated_attempts >= 2):
+        return "preserve-stop"
+    return "use-remaining-budget"
 
 
 PEER_MESSAGE_KINDS = {"question", "answer", "evidence", "scoped-correction"}
@@ -265,6 +313,182 @@ class LeanContracts(unittest.TestCase):
             self.assertTrue(resolved["model_governance"])
             self.assertEqual(resolve_settings(resolved, project=project), resolved)
         self.assertIn("convergence_control", original)
+
+    def test_continuity_defaults_and_independent_strict_controls(self) -> None:
+        # Validate actual shipped default data against the pre-feature compatibility contract.
+        control = (PACKAGE / "references/project-control.md").read_text(encoding="utf-8")
+        defaults = tomllib.loads(control.split("```toml\n")[1].split("```")[0])
+        self.assertEqual(defaults, BASE_DEFAULTS)
+        old = {"enabled": False, "project_governance": False, "model_guidance": False}
+        current = resolve_settings(old, project=True)
+        self.assertTrue(current["continuity_ledger"])
+        self.assertFalse(current["project_map"])
+        no_ledger = function_control(current, "AMS disable ledger")
+        self.assertEqual(no_ledger, {**current, "continuity_ledger": False})
+        self.assertEqual(function_control(no_ledger, "AMS ENABLE LEDGER"), current)
+        upkeep = function_control(current, "AMS ENABLE PROJECT-MAP")
+        self.assertEqual(upkeep, {**current, "project_map": True})
+        self.assertEqual(function_control(upkeep, "AMS DISABLE PROJECT-MAP"), current)
+        for name, field in FUNCTION_FIELDS.items():
+            enabled = function_control(current, f"AMS ENABLE {name}")
+            self.assertEqual(enabled, {**current, field: True})
+            self.assertEqual(function_control(enabled, f"AMS DISABLE {name}"), {**current, field: False})
+        self.assertFalse(current["project_verification"])
+        self.assertFalse(current["premise_check"])
+        self.assertNotIn("continuity_ledger", old)
+        for invalid in ("false", 0, [], {"nested": True}):
+            for field in FUNCTION_FIELDS.values():
+                for project in (False, True):
+                    with self.assertRaises(ValueError):
+                        resolve_settings({field: invalid}, project=project)
+        for invalid in ("AMS ENABLE OTHER", "AMS LEDGER off", "AMS ENABLE PROJECT MAP", "AMS ENABLE LEDGER GLOBAL"):
+            with self.assertRaises(ValueError):
+                function_control(current, invalid)
+        self.assertIn("Status probes nothing", control)
+        self.assertIn("known path/state only; do not discover them", control)
+        self.assertIn("never activation", control)
+
+    def test_continuity_uses_native_or_defers_instead_of_parallel_fallback(self) -> None:
+        # A late-discovered canonical ledger must supersede planned fallback creation.
+        settings = resolve_settings({"enabled": True, "project_governance": False, "project_map": True}, project=True)
+        allow = {"phase": "active-work", "authorized_write": True, "active_session": True}
+        for feature, path in CONTINUITY_PATHS.items():
+            self.assertEqual(continuity_target(settings, feature, **allow), path)
+            self.assertEqual(continuity_target(settings, feature, **allow, native_candidates=("doc/native.md",)), "doc/native.md")
+            for reason in (
+                {"native_candidates": ("doc/one.md", "doc/two.md")},
+                {"absence_proven": False},
+                {"native_candidates": ("doc/native.md",), "target_safe": False},
+                {"phase": "read-only", "authorized_write": False},
+                {"authorized_write": False},
+                {"phase": "activation-only"},
+                {"phase": "install-only"},
+                {"phase": "settings-only"},
+                {"phase": "status"},
+                {"active_session": False},
+                {"material": False},
+            ):
+                self.assertIsNone(continuity_target(settings, feature, **(allow | reason)), reason)
+            self.assertIsNone(continuity_target({**settings, feature: False}, feature, **allow))
+
+    def test_ledger_reconciles_post_dispatch_interrupt_and_replay(self) -> None:
+        history: dict[str, str] = {}
+        self.assertEqual(apply_transition(history, "T1/A1/plan", "admitted"), "recorded")
+        self.assertEqual(apply_transition(history, "T1/A1/plan", "admitted"), "replay-no-op")
+        self.assertEqual(apply_transition(history, "T1/A1/end", "interrupted; start unknown"), "recorded")
+        self.assertEqual(apply_transition(history, "T1/A1/end", "start verified"), "reconcile-as-new-correction")
+        self.assertEqual(history["T1/A1/end"], "interrupted; start unknown")
+        self.assertEqual(apply_transition(history, "T1/A1/end-correction1", "start verified by host"), "recorded")
+        self.assertEqual(apply_transition(history, "T1/A2/failed-no-run", "no start verified"), "recorded")
+        self.assertEqual(len(history), 4)
+        contract = (PACKAGE / "references/project-continuity.md").read_text(encoding="utf-8")
+        for status in ("no-run", "blockage", "rejection", "interruption", "supersession", "acceptance", "handoff"):
+            self.assertIn(status, contract)
+        self.assertIn("Do not imply a planned action ran", contract)
+        self.assertIn("verify", contract.lower())
+        self.assertIn("treat uncertain ownership as potentially live", contract)
+
+    def test_one_shot_map_is_not_activation_or_automatic_maintenance(self) -> None:
+        control = (PACKAGE / "references/project-control.md").read_text(encoding="utf-8")
+        settings = resolve_settings({}, project=True)
+        original = dict(settings)
+        manual = {"phase": "manual-map", "authorized_write": True}
+        self.assertEqual(continuity_target(settings, "project_map", **manual), "PROJECT-MAP.md")
+        self.assertIsNone(continuity_target(settings, "continuity_ledger", **manual))
+        self.assertIsNone(continuity_target(settings, "project_map", **(manual | {"authorized_write": False})))
+        self.assertIsNone(continuity_target(settings, "project_map", phase="active-work", authorized_write=True))
+        active = {"phase": "active-work", "authorized_write": True, "active_session": True}
+        self.assertFalse(settings["enabled"])
+        self.assertEqual(continuity_target(settings, "continuity_ledger", **active), "continuity.md")
+        self.assertIsNone(continuity_target(settings, "continuity_ledger", **(active | {"active_session": False})))
+        self.assertIsNone(continuity_target(settings, "project_map", **active))
+        self.assertEqual(settings, original)
+        self.assertIn("even if upkeep or AMS is off", control)
+        self.assertIn("Do not activate AMS, create/change settings, start unrelated work", control)
+        self.assertIn("Enable schedules no immediate work", control)
+
+    def test_manual_map_uses_existing_non_codex_transport_without_install(self) -> None:
+        control = (PACKAGE / "references/project-control.md").read_text(encoding="utf-8")
+        map_only = control.split("`AMS MAPPROJECT` is an exact")[1].split("## Availability")[0]
+        for marker in ("even if upkeep or AMS is off", "In OpenCode/Pi load `harness-compatibility.md`",
+                       "read existing route eligibility only", "supported registered Sol transport or report unavailable",
+                       "never install or test-start it"):
+            self.assertIn(marker, map_only)
+        harness = (PACKAGE / "references/harness-compatibility.md").read_text(encoding="utf-8")
+        self.assertIn("OpenCode: use native `task`", harness)
+        self.assertIn("Pi: use the installed `pi-subagents` extension's `subagent` tool", harness)
+        manual = {"phase": "manual-map", "authorized_write": True, "active_session": False}
+        settings = resolve_settings({}, project=True)
+        self.assertEqual(continuity_target(settings, "project_map", **manual), "PROJECT-MAP.md")
+        self.assertIsNone(continuity_target(settings, "project_map", **manual, target_safe=False))
+
+    def test_map_does_not_turn_source_or_stale_proof_into_runtime_acceptance(self) -> None:
+        contract = (PACKAGE / "references/project-continuity.md").read_text(encoding="utf-8")
+        for marker in (
+            "distinct user entry points", "source-mapped is runtime-unverified",
+            "suitable Sol worker for scoped source/code inspection", "do not route that work to Luna",
+            "Prior observations need relevant current revisions and evidence",
+            "only affected cards/index", "missing harness/evidence",
+            "Do not execute the product to fill the map without separate authorization",
+            "does not add acceptance criteria",
+        ):
+            self.assertIn(marker, contract)
+
+    def test_verification_requires_actual_scoped_journey_and_surviving_proof(self) -> None:
+        verification = (PACKAGE / "references/project-verification.md").read_text(encoding="utf-8")
+        for marker in (
+            "Use only with `project_verification = true`",
+            "recipe creation is explicitly in scope", "undriven recipe draft/unverified",
+            "one real user journey at the exact source/build",
+            "perform the actual user action",
+            "result and expected side effects",
+            "CI status as substitute proof",
+            "confirm evidence survives cleanup",
+            "unsupported or missing evidence is never a pass",
+        ):
+            self.assertIn(marker, verification)
+        self.assertIn("or permit new targets, launches, installs", verification)
+        self.assertIn("Root reconciles with existing criteria", verification)
+
+    def test_premise_check_does_not_buy_a_third_worker_or_runner_start(self) -> None:
+        diagnosis = (PACKAGE / "references/blocker-diagnosis.md").read_text(encoding="utf-8")
+        premise = diagnosis.split("## Premise check")[1].split("## Two attempts per route")[0]
+        for marker in (
+            "premise_check = true", "two materially different corrections",
+            "sharing an assumption failed the same gate", "already-authorized safe observation",
+            "Do not start a premise-dependent fix before observing", "defer that unverified correction",
+            "No extra attempt or spawn", "no reopening an exhausted or denied lane",
+            "no change to no-start terminal rules or Daybreak",
+        ):
+            self.assertIn(marker, premise)
+        budget = RouteBudget()
+        self.assertEqual(budget.next("same-real-route"), "delegated-correction")
+        self.assertEqual(budget.next("same-real-route"), "delegated-confirmation")
+        self.assertEqual(budget.next("same-real-route"), "block-route-and-continue")
+
+    def test_root_replacement_does_not_reset_unknown_or_exhausted_routes(self) -> None:
+        diagnosis = (PACKAGE / "references/blocker-diagnosis.md").read_text(encoding="utf-8")
+        section = diagnosis.split("## Recovery before retry")[1].split("## Shared runner fail-fast")[0]
+        for marker in ("normalized runner episode or real non-runner route", "prior attempts, terminal/exhausted state, and custody",
+                       "authorized live state and corroborated evidence", "defer that route and continue independent work",
+                       "This applies with ledger off", "Ledger is not runtime authority", "never sensitive Daybreak details"):
+            self.assertIn(marker, section)
+        sig = runner_signature(work_order="old", profile="sol", manager="old", intensity="auto",
+                               transport="normal", context="prior")
+        replacement = runner_signature(work_order="new", profile="sol", manager="new", intensity="moderate",
+                                       transport="normal", context="replacement")
+        self.assertEqual(sig, replacement)
+        old_runner = RunnerEpisode(sig, state="terminal", process_starts=3)
+        old_route = RouteBudget(attempts={"native-route": 2})
+        for ledger in (False, True):
+            settings = resolve_settings({"continuity_ledger": ledger}, project=True)
+            self.assertEqual(settings["continuity_ledger"], ledger)
+            self.assertEqual(recovered_retry("runner", None, False), "defer-unverified")
+            self.assertEqual(recovered_retry("non-runner", None, False), "defer-unverified")
+            self.assertEqual(recovered_retry("runner", 3, None), "defer-unverified")
+            self.assertEqual(recovered_retry("runner", old_runner.process_starts, old_runner.state == "terminal"), "preserve-stop")
+            self.assertEqual(recovered_retry("non-runner", old_route.attempts["native-route"], False), "preserve-stop")
+            self.assertEqual(recovered_retry("non-runner", 1, False), "use-remaining-budget")
 
     def test_scope_admission_and_queue_advance(self) -> None:
         self.assertTrue(admit("C07", True, "in-scope defect"))

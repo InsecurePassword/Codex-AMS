@@ -10,7 +10,7 @@ Standard installers fetch canonical published `main`. Explicit `-Local` (PowerSh
 
 Stage outside the installed root. Back up the prior skill and every eligible profile, install transactionally, verify complete bytes, and roll back on failure. Replace a profile only when missing, byte-identical, or an exact recognized official predecessor; preserve and block on customized, marker-only, malformed, ambiguous, or user-authored files.
 
-The package owns no durable runtime state. Preserve project/global settings and installed profiles across normal uninstall unless separately authorized.
+The package owns no runtime state. Do not touch project ledgers/maps; preserve settings and profiles across normal uninstall unless separately authorized.
 
 ## Marketplace and fallback
 
@@ -18,6 +18,6 @@ Marketplace installation supplies the skill but not custom-agent profiles. The d
 
 ## Downgrade and uninstall
 
-Before downgrade, back up complete current settings. Older releases may reject newer fields; prepare a separate target-compatible live settings file without destroying the current copy. No convergence/runtime export is required because AMS creates no runtime state.
+Before downgrade, back up complete current settings. Older releases may reject newer fields; prepare a separate target-compatible live settings file without destroying the current copy. No AMS runtime export is required; project history stays in the project.
 
 Marketplace uninstall uses Codex plugin removal. Direct uninstall removes only the skill directory. Profile cleanup and settings deletion require separate explicit authority and proven ownership. Refuse redirected or ambiguous roots.

@@ -83,8 +83,10 @@ required_files=(
   references/model-switching.md
   references/package-maintenance.md
   references/profile-management.md
+  references/project-continuity.md
   references/project-control.md
   references/project-governance.md
+  references/project-verification.md
   references/root-execution-fallback.md
   references/runtime-core.md
   references/scope-dependency-control.md

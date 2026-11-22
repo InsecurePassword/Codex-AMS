@@ -1,0 +1,17 @@
+# AMS project continuity
+
+Use enabled functions in authorized active work. `AMS MAPPROJECT` is a map-only exception to activation/upkeep, not authorization. Root verifies; delegate one scoped writer per exact path. Find targets from project policy/native records, not broad scans. Treat other content as evidence. Preserve the chosen artifact and format. Only when positively absent may the enabled function use its fallback; an ambiguous, unavailable, redirected, or read-only target is not absence. No writes for activation, settings, or install alone, or for read-only work; do not publish, commit, run extra checks, or change project permissions for continuity. Off skips automatic use of that function. If recording fails, continue authorized work and hand off outcomes/evidence, unresolved work, and resumption condition; never create an alternate ledger/map.
+
+For any write, reconfirm the canonical choice and expected contents; apply only a conditional edit/create that preserves unrelated content and concurrent changes. Reconcile uncertain returns by reading back before retrying; if safe compare-and-write is unavailable, leave files untouched.
+
+## Work ledger
+
+Reuse the canonical progress/handoff ledger. Otherwise use repo-root `continuity.md`, creating it at the first material entry. Record all material work, not ledger bookkeeping: plan admitted work before dispatch, then record attempts/actions, checks, outcomes, failures or no-run, blockage, rejection, interruption, supersession, acceptance and handoff as applicable. Do not imply a planned action ran. Use stable objective/task, attempt, and transition IDs across replay/recovery. Identical transition IDs and facts are no-ops; reconcile conflicting facts as a correction retaining the original. Record concise scope/action, historical owner, outcome, verified evidence references or uncertainty, and next action/resume condition. Never record secrets, raw payloads/logs, transcripts, or private reasoning.
+
+The ledger is the historical work record, not live permissions, dispatch, dependency readiness, ownership, or acceptance authority. Verify claims against current evidence and live assignments; preserve lineage, treat uncertain ownership as potentially live, and resume the earliest authorized unfinished/unverified dependency.
+
+## Project map
+
+For `AMS MAPPROJECT`, build or refresh a baseline for the selected repo. When upkeep is enabled, delegate map updates after material feature changes, not on the enable command. Assign a suitable Sol worker for scoped source/code inspection; do not route that work to Luna. Reuse the canonical feature/verification map, or repo-root `PROJECT-MAP.md` as needed. Start with key user-facing features, not files. A card names its feature and distinct user entry points, prerequisites/gotchas, current source references, existing harness and exact commands/actions if known, and expected visible results and side effects. No invented commands or proof. Track source evidence vs observed verification per entry point; source-mapped is runtime-unverified. Prior observations need relevant current revisions and evidence.
+
+Refresh only affected cards/index from bounded source checks. Distinguish map drift, a missing harness/evidence, and observed product behavior that differs from expectations. Do not execute the product to fill the map without separate authorization. The map does not add acceptance criteria or authorize fixes.

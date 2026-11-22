@@ -1,6 +1,10 @@
 # AMS bounded blocker diagnosis
 
-Load after a process no-start or reproducible non-runner lane failure, regardless of model-policy switches. Unresolved blocks need manager assessment (or a root-assigned diagnostic agent for direct workers). Supervision never resets attempts or overrides actual restrictions. Keep evidence in session; create no recovery files.
+Apply regardless of policy switches. Unresolved blocks need manager review or root-assigned diagnosis for direct workers; no budget or permission reset.
+
+## Recovery before retry
+
+After root replacement, verify the same normalized runner episode or real non-runner route and its prior attempts, terminal/exhausted state, and custody using authorized live state and corroborated evidence. Never reset on replacement. If unverified, defer that route and continue independent work. This applies with ledger off. Ledger is not runtime authority; record only authorized sanitized correlation/evidence refs, never sensitive Daybreak details.
 
 ## Shared runner fail-fast
 
@@ -14,9 +18,13 @@ Proven no-start owns nothing. Active, uncertain, or potentially live workers/man
 
 ## Non-runner diagnosis
 
-Capture only decisive evidence: action/work-order, real execution route and invocation class, status/start failure, bounded stderr/output, cwd/relevant environment, scope/ownership/dependencies. Classify invocation/order; tool/model/module/runtime; path/quoting/shell/cwd; permission/sandbox/approval; baseline/hidden dependency; harness/environment; external credential/service/endpoint/physical dependency; or shared runner.
+Capture decisive order/action, real route/invocation, start/status, bounded output, cwd/environment, scope/ownership/dependencies. Keep raw evidence in session. Classify invocation, capability/runtime, path/shell/cwd, permission/approval, baseline/dependency, harness/environment, external/physical dependency, or shared runner.
 
-A route is the real mechanism/capability/permission path for the blocked action. Worker, manager, profile/effort, task name, branch, wrapper, shell label, or recovered context alone does not create another route. Admit a new route only with evidence of a materially different viable mechanism; do not invent routes to extend attempts.
+A route is the real mechanism/capability/permission path. Worker, manager, profile/effort, task name, branch, wrapper, shell label, or recovered context alone does not create another route. Admit a new route only with evidence of a materially different viable mechanism; do not invent routes to extend attempts.
+
+## Premise check
+
+If `premise_check = true` and two materially different corrections sharing an assumption failed the same gate, state that assumption and one already-authorized safe observation that would distinguish it. Do not start a premise-dependent fix before observing; if evidence is unavailable, defer that unverified correction. No extra attempt or spawn, no reopening an exhausted or denied lane, and no change to no-start terminal rules or Daybreak.
 
 ## Two attempts per route
 
@@ -29,6 +37,6 @@ Neither attempt may broaden scope, permissions, ownership, or acceptance. After 
 
 When enabled and eligible, `root-execution-fallback.md` may permit one atomic third and final root attempt. Otherwise mark only the affected route/objective deferred or blocked with evidence and both attempts.
 
-Continue every independent authorized ready objective. Ask the user only when no autonomous ready path remains and a concrete credential, permission, physical action, external resource, material choice, or new authority is required. A lane block is not automatically an objective block; an objective block is not automatically a run block.
+Continue every independent authorized ready objective. Ask only with no autonomous ready path and a required credential, permission, physical action, resource, material choice, or authority. Lane, objective, and run blocks are distinct.
 
-If a process started and its command failed, diagnose the supported parser/module/path/tool-release/permission cause within the same two attempts. Use another executable only when evidence shows equivalent semantics and a materially different route. Optional local-LLM failure suppresses that lane and reroutes unchanged work; troubleshoot the server only when requested.
+Started command failure stays within two attempts. Another executable needs equivalent semantics and evidence of a materially different route. Optional local-LLM failure suppresses only that lane; reroute unchanged work and troubleshoot the server only on request.

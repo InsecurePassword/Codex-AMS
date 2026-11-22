@@ -26,6 +26,7 @@ Core AMS provides:
 - mandatory scope/dependency admission;
 - automation-boundary continuation from one accepted objective to the next;
 - compact default-on project governance;
+- default-on project work ledger; opt-in feature map upkeep, real-journey verification, and premise checks;
 - bounded blocker diagnosis without recovery loops;
 - command-runner fail-fast with three diagnostic starts and at most one corrected original-lane confirmation after a successful probe;
 - bounded root fallback with independent validation;
@@ -33,7 +34,7 @@ Core AMS provides:
 - refusal-triggered Daybreak Blue capability preflight and one-task defensive fallback;
 - transactional package/profile installation.
 
-AMS creates no convergence campaign, persistent custody/receipt system, archive/prune history, runtime lock/state, review/accounting ledger, or availability cache.
+AMS creates no separate orchestration database, runtime lock, persistent custody system, or cache. The optional durable records are project-native work history and feature verification documentation.
 
 ### Bounded peer channels
 
@@ -62,6 +63,10 @@ enabled = false
 allow_implicit_invocation = true
 intensity = "auto"
 project_governance = true
+continuity_ledger = true
+project_map = false
+project_verification = false
+premise_check = false
 model_governance = true
 model_guidance = true
 automatic_model_switching = true
@@ -82,6 +87,11 @@ local_llm_lane = false
 ```text
 AMS STATUS
 AMS ENABLE | AMS DISABLE
+AMS ENABLE LEDGER | AMS DISABLE LEDGER
+AMS ENABLE PROJECT-MAP | AMS DISABLE PROJECT-MAP
+AMS ENABLE VERIFICATION | AMS DISABLE VERIFICATION
+AMS ENABLE PREMISE-CHECK | AMS DISABLE PREMISE-CHECK
+AMS MAPPROJECT
 AMS MODE auto|minimal|balanced|moderate|heavy|extreme
 AMS IMPLICIT on|off
 AMS GOVERNANCE on|off
@@ -94,7 +104,7 @@ AMS PROFILES auto|installer
 AMS LOCAL LLM on|off
 ```
 
-These are messages interpreted by the loaded skill, not terminal executables. Normal controls write project settings only. `AMS CONFIGURATION UPDATE GLOBAL` is the sole global-writing command. `AMS STATUS` is physically read-only and performs no capability probes.
+These are messages interpreted by the loaded skill, not terminal executables. Settings controls update only project settings unless explicitly global. Function toggles preserve activation, other policies, and existing project records. `AMS MAPPROJECT` delegates only mapping, with no settings change. `AMS CONFIGURATION UPDATE GLOBAL` is the sole global-writing command. `AMS STATUS` is physically read-only and performs no capability probes.
 
 ## Scope, dependencies, and automation
 
@@ -103,6 +113,22 @@ The root establishes an automation boundary from direct user instruction and aut
 Before affected dispatch or acceptance, AMS verifies the declared candidate base and accepted dependency closure. Worktree-only repairs, unrecorded branches, caches, generated state, or undeclared packets do not silently satisfy prerequisites. Validation failures outside the owned surface are compared with the base/control when practical and classified as objective, baseline, environment, harness, or another dependency.
 
 When one objective passes, AMS closes it, releases ownership, refuses post-acceptance extras, selects the next authorized ready objective, and continues. The run stops normally only when the authorized queue is exhausted; blockers stop the run only when bounded diagnosis/rerouting is exhausted and no independent authorized path remains.
+
+## Project continuity
+
+[The installed continuity contract](adaptive-master-subagent-orchestration/references/project-continuity.md) is selected for relevant active work and recovery. `continuity_ledger` and `project_map` are strict Booleans, defaulting to true and false respectively, independent from each other and project governance. Controls use the same project-over-global semantics as other policies. Read-only status reports the effective values and any already known target state without discovery. Off skips automatic maintenance and leaves records and project-native obligations untouched. Activation alone, settings-only commands, package operations, and read-only work write neither artifact.
+
+The work ledger is the durable history of material AMS work. Each confirmed transition has stable task/attempt/transition identifiers, historical ownership, outcome and verified evidence references or honest uncertainty. Preserve plans and no-runs as such, preserve prior entries on correction, and reconcile live ownership and current authorization independently on recovery. Reuse the authorized project-native progress/handoff ledger before considering repo-root `continuity.md`.
+
+The separate project map follows PStack's [feature-card creation](https://github.com/cursor/plugins/blob/7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9/pstack/skills/create-verification-skill/SKILL.md#L34-L44) and [maintenance](https://github.com/cursor/plugins/blob/7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9/pstack/skills/maintain-verification-skill/SKILL.md#L19-L39) pattern. Reuse the project's map or use repo-root `PROJECT-MAP.md` when needed for authorized feature work. `AMS MAPPROJECT` starts one map-only pass in the selected repo even when upkeep or AMS is off. `AMS ENABLE PROJECT-MAP` opts into scoped future maintenance, not immediate mapping. Use a Sol worker for code-dependent source mapping. In OpenCode or Pi the one-shot reads eligibility using the installed harness compatibility contract; missing transport is reported, not installed or tested by launching it. Separate distinct user entry points, source-mapped expectations, and actual verified observations. Keep checks affected-feature only; unlike PStack's dedicated verification workflow, routine AMS map maintenance does not run the product or create an adapter or verification skill.
+
+For either artifact, root coordinates and verifies, assigning an exact path to one eligible writer under existing authorization. Safely compare to the current target before changing it; if unavailable, ambiguous, stale, or read-only, continue authorized work without creating another record. No special process, Git mutation, or new permission comes with either function.
+
+## Verification and premise checks
+
+These independent Booleans default off. When enabled and relevant, [project verification](adaptive-master-subagent-orchestration/references/project-verification.md) adapts PStack's [verification workflow](https://github.com/cursor/plugins/blob/7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9/pstack/skills/create-verification-skill/SKILL.md#L25-L44). A bounded Sol worker uses one exact revision/build and real authorized user entry point, checks preconditions and baseline, observes the action/result/side effects, and verifies persisted evidence after authorized cleanup. It reuses native recipes and tools; a new recipe requires explicit scope and remains draft/unverified until driven. Report blocked/not run when the needed setup or scope is absent. Separate automation, unit tests and CI cannot substitute for actual journey proof.
+
+[PStack's premise check](https://github.com/cursor/plugins/blob/7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9/pstack/skills/principle-attack-the-premise/SKILL.md#L7-L15) is adapted in [blocker diagnosis](adaptive-master-subagent-orchestration/references/blocker-diagnosis.md#premise-check). When two materially different fixes sharing an assumption fail the same gate, name the assumption and one authorized observation that could distinguish it. Do not start another correction that depends on it until the observation can be made. This cannot buy a retry, reopen a denial or terminal runner failure, or change Daybreak eligibility.
 
 ## Governance
 
@@ -114,13 +140,13 @@ Default-on project governance coordinates the existing project workflow:
 - respect project-native packets, pauses, approvals, trackers, and gates;
 - provide a concise handoff when autonomous progress cannot continue.
 
-Governance cannot expand scope, create criteria, create durable state, or override project authorization. `AMS GOVERNANCE off` removes only this lifecycle layer; core scope/dependency, ownership, delegation, supervisory recovery, evidence, and truthful completion controls remain. Model-purpose advice and switching heuristics are controlled by their separate switches.
+Governance cannot expand scope, create criteria or a separate persistence layer, or override project authorization. `AMS GOVERNANCE off` removes only this lifecycle layer; core scope/dependency, ownership, delegation, supervisory recovery, evidence, and truthful completion controls remain. Model-purpose advice and switching heuristics are controlled by their separate switches.
 
 ## Failure behavior
 
 A reproducible non-runner failure is budgeted per materially real delegated route. The route gets exactly two attempts in its proper lane: one evidence-backed correction attempt and one confirmation attempt, which may repeat the corrected invocation once to distinguish a sporadic failure or use one materially different evidence-backed correction. Changing worker, manager, profile, effort, task name, branch, wrapper, shell label, or context does not create another route or reset its budget. After two failures, optional root fallback—disabled by default—may perform one atomic third and final attempt when its safety gate passes.
 
-Repeated `spawn_ready` creates one root-session episode keyed by the unchanged physical runner signature. It gets three diagnostic starts: initial failure, one same-lane retry, then one root process-only probe. Probe success permits at most one materially corrected original-lane confirmation; another no-start terminalizes the episode without a new process, profile, manager, transport, context, or intensity reset. Probe failure likewise terminalizes process-dependent work. Active or potentially live sessions, writers, and allocations remain owned until closure is proven; unresolved state is reported live or unverified while runner-independent authorized work continues.
+Repeated `spawn_ready` creates one root-session episode keyed by the unchanged physical runner signature. It gets three diagnostic starts: initial failure, one same-lane retry, then one root process-only probe. Probe success permits at most one materially corrected original-lane confirmation; another no-start terminalizes the episode without a new process, profile, manager, transport, context, or intensity reset. Probe failure likewise terminalizes process-dependent work. On root replacement, reconcile the prior normalized runner episode or non-runner route, attempts, exhaustion, and custody from authorized corroborated evidence before retrying. A ledger hint is not sufficient; unknown affected routes defer even with ledger off. Active or potentially live sessions, writers, and allocations remain owned until closure is proven; unresolved state is reported live or unverified while runner-independent authorized work continues.
 
 A local lane or objective can be deferred while independent authorized work continues. User intervention is requested only when no autonomous route remains and a concrete permission, credential, physical action, external resource, material choice, or new authority is required.
 
@@ -170,7 +196,7 @@ The profile grants no access, permission, authorization, target authority, or re
 
 ## Package boundaries
 
-Installed core contains 41 files: `SKILL.md`, `agents/openai.yaml`, 21 profiles, and 18 normative references. [install-manifest.txt](install-manifest.txt) records their exact lengths and hashes. Repository documentation, `.github/`, `tools/`, and `verification/` are not installed as core instructions. `extensions/` contains separately installed companions; their helpers run only when explicitly used.
+Installed core contains 43 files: `SKILL.md`, `agents/openai.yaml`, 21 profiles, and 20 normative references. [install-manifest.txt](install-manifest.txt) records their exact lengths and hashes. Repository documentation, `.github/`, `tools/`, and `verification/` are not installed as core instructions. `extensions/` contains separately installed companions; their helpers run only when explicitly used.
 
 The root loads `SKILL.md`, project control, runtime core, and scope/dependency control for active work. Project governance and each model policy load only when enabled. Other references are gated. Outside Codex, `harness-compatibility.md` maps native tools and registries. Only the selected model profile applies to its child; the full profile directory is not added to each prompt.
 
@@ -178,7 +204,7 @@ The Codex plugin manifest declares only the skill path. It does not declare the 
 
 Direct installation deploys the shared skill and the selected harness registries. Codex gets 21 bundled TOMLs; OpenCode and Pi receive up to 20 translated ordinary presets after exact model-catalog matching. Daybreak is not translated. Native OpenCode/Pi presets retain complete conditional purpose and discovery-reporting instructions. Assignments set roles within profile eligibility.
 
-No AMS-authored durable orchestration database, daemon, task ledger, or recovery subsystem is installed. The host apps and `pi-subagents` may maintain their own sessions and artifacts; that is separate from AMS's no-runtime-state instruction.
+No AMS-authored orchestration database, daemon, or recovery subsystem is installed. Project ledgers and maps belong to projects, not the installed package or the host apps' session stores.
 
 ## Optional model policies
 
@@ -367,7 +393,7 @@ Before downgrade, back up complete current settings and prepare a separate older
 
 The contract tests combine simulated behavior with textual assertions; they do not run an AI model through every scenario. OpenCode/Pi catalog and package-manager fixtures do not prove live account access, effective reasoning effort, direct peer support, or long-duration autonomous behavior. Native installer tests exercise the real filesystem/scripts; Codex registry checks are not a visual test of a user's particular app window. End-to-end model/computer-use qualification remains distinct from a green installer job.
 
-`tools/measure_context.py --check` measures authored UTF-8 bytes with approximate token estimates. Use `--model-policies off` to compare the disabled-policy path. Selected child-profile sizes are reported separately: only the selected profile is loaded, not the directory total. The historical context and manifest baselines are comparison fixtures, not the current settings schema or extra live profiles. Historical deltas are informational; the total scenario and lazy-reference caps remain enforced. They do not measure billed reasoning tokens or prove total-task cost reduction.
+`tools/measure_context.py --check` measures authored UTF-8 bytes with approximate token estimates. Use `--model-policies off` to compare the disabled-policy path. Selected child-profile sizes are reported separately: only the selected profile is loaded, not the directory total. The historical context and manifest baselines are comparison fixtures, not the current settings schema or extra live profiles. Historical deltas are informational; the total scenario and lazy-reference caps remain enforced. The continuity scenario includes the shared project ledger/map reference on top of the active governed path; the always-active caps are unchanged. They do not measure billed reasoning tokens or prove total-task cost reduction.
 
 ## Upstream references
 

@@ -54,6 +54,23 @@ A coding helper and a review helper can exchange questions and corrections. Some
 
 At the end, expect a summary of changes, checks actually run, and anything left unresolved. An AI report is not a guarantee: inspect important results and do not assume a test ran unless it is reported as run.
 
+## Project ledger and map
+
+AMS offers two independent project features:
+
+- **Ledger (on by default)**: the history of material work AMS planned, attempted, completed, rejected, or could not finish. It records outcomes, evidence, and what can resume. AMS reuses the project's existing progress/handoff ledger; if none exists and it can write, it uses `continuity.md` at the repo root. The ledger is not permission to resume or proof that a worker is no longer active.
+- **Project map (automatic upkeep off by default)**: a feature index with entry points, prerequisites, expected results, and how to check them with the project's existing test tools. AMS reuses an existing project map or, when needed, uses repo-root `PROJECT-MAP.md`. It updates affected features, not the whole repo. Reading source does not prove a feature ran; AMS only records a successful run with actual evidence and does not start the product just to fill the map.
+
+Installing, changing settings, and read-only reviews do not write either file. If AMS cannot safely use the right place, it preserves what is there and reports the handoff instead of starting a parallel record.
+
+Send `AMS MAPPROJECT` in the project to map it from scratch or refresh its existing map without changing settings. Send `AMS ENABLE PROJECT-MAP` to have a coding helper maintain affected cards during future work, or `AMS DISABLE PROJECT-MAP` to stop automatic upkeep. `AMS DISABLE LEDGER` and `AMS ENABLE LEDGER` control the ledger. These commands preserve existing records and do not turn AMS itself on or off.
+
+## Optional verification and premise checks
+
+Send `AMS ENABLE VERIFICATION` to use the project's existing verification tools for a real, authorized user journey when relevant. AMS records what the helper actually ran, what happened, and what evidence remains after cleanup. A unit test or CI badge is not proof that the user journey ran. Turning it on does not start the product or grant new access.
+
+Send `AMS ENABLE PREMISE-CHECK` to have AMS name and test the shared assumption when two different fixes fail the same check. The observation must already be allowed; this does not buy another retry or bypass a blocker. Both features are off by default. Use `AMS DISABLE VERIFICATION` or `AMS DISABLE PREMISE-CHECK` to turn them off.
+
 ## Check or change settings
 
 Load AMS first. Then send these instructions in the AI chat. They are interpreted by the skill; they are not separate programs or slash commands.
@@ -149,7 +166,7 @@ AMS CONFIGURATION UPDATE PROJECT
 AMS STATUS
 ```
 
-This keeps supported values, adds missing defaults, and removes recognized retired settings. It does not blindly delete unknown values; an invalid file needs to be corrected. The three new model-policy fields default to on when absent.
+This keeps supported values, adds missing defaults, and removes recognized retired settings. It does not blindly delete unknown values; an invalid file needs to be corrected. The three model-policy fields and ledger default to on when absent. Automatic map upkeep, project verification, and premise checks default to off.
 
 A new project is not automatically enabled just because you installed AMS. The skill may create disabled defaults when first used in a trusted project. `AMS STATUS` itself never creates or changes that file.
 

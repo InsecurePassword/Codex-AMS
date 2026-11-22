@@ -85,18 +85,33 @@ else:
         for key in ("AMS_INSTALL_PROFILES_ONLY", "AMS_INSTALL_SKILL_ONLY", "AMS_OPENCODE_CLI"):
             os.environ.pop(key, None)
 
-    def wrapper(self, harness: str, *extra: str) -> subprocess.CompletedProcess[str]:
+    def wrapper(self, harness: str, *extra: str, cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
         if os.name == "nt":
             command = [shutil.which("powershell.exe") or "powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ROOT / "install.ps1"), "-Local", "-Harness", harness]
         else:
             command = ["bash", str(ROOT / "install.sh"), "--local", "--harness", harness]
         env = os.environ.copy()
         env.pop("PSModulePath", None)
-        return subprocess.run([*command, *extra], cwd=ROOT, env=env, capture_output=True,
+        return subprocess.run([*command, *extra], cwd=cwd, env=env, capture_output=True,
                               text=True, encoding="utf-8", errors="replace", timeout=180)
 
     def assert_ok(self, result: subprocess.CompletedProcess[str]) -> None:
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_install_never_creates_or_changes_project_continuity(self) -> None:
+        project = self.home / "caller-project"
+        project.mkdir()
+        files = [project / "continuity.md", project / "PROJECT-MAP.md"]
+        self.assert_ok(self.wrapper("codex", cwd=project))
+        self.assertTrue(all(not path.exists() for path in files))
+        records = {path: f"Existing user-owned {path.name}\n".encode() for path in files}
+        for path, data in records.items():
+            path.write_bytes(data)
+        self.assert_ok(self.wrapper("codex", cwd=project))
+        self.assertEqual({path: path.read_bytes() for path in files}, records)
+        installed = self.skill / "adaptive-master-subagent-orchestration/references/project-continuity.md"
+        source = ROOT / "adaptive-master-subagent-orchestration/references/project-continuity.md"
+        self.assertEqual(installed.read_bytes(), source.read_bytes())
 
     def test_all_targets_and_reinstall_preserve_settings(self) -> None:
         self.codex.mkdir()
@@ -110,7 +125,10 @@ else:
             agents = sorted((target / "agents").glob("*.md"))
             self.assertEqual(len(agents), 20)
             self.assertFalse(any("daybreak" in p.name for p in agents))
-        self.assertEqual(len([p for p in (self.skill / installer.SKILL).rglob("*") if p.is_file()]), 41)
+        expected = installer.manifest_entries((ROOT / "install-manifest.txt").read_bytes())
+        installed = {p.relative_to(self.skill).as_posix()
+                     for p in (self.skill / installer.SKILL).rglob("*") if p.is_file()}
+        self.assertEqual(installed, set(expected))
         snapshots = {p: p.read_bytes() for folder in (self.pi, self.oc, self.codex) for p in folder.rglob("*") if p.is_file()}
         self.assert_ok(self.wrapper("all"))
         self.assertTrue(all(p.read_bytes() == data for p, data in snapshots.items()))
