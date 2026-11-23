@@ -62,7 +62,7 @@ Root fallback is default-off. If explicitly enabled, one eligible route that exh
 ## Loop
 
 1. Refresh criteria, dependencies, settings, ownership, routes, and availability. Resolve enabled continuity and verify live state on recovery.
-2. Choose the next authorized ready objective and a non-overlapping topology under enabled policies.
+2. Choose authorized ready work and non-overlapping lanes under enabled policies.
 3. Verify scope/dependency admission, record the material work order if enabled and writable, then dispatch.
 4. Reconcile results/requests, diagnose bounded failures, and continue independent work.
 5. Integrate and validate through logical parents. If `project_verification` is on and relevant, load `project-verification.md`.

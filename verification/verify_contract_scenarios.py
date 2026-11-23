@@ -490,6 +490,78 @@ class LeanContracts(unittest.TestCase):
             self.assertEqual(recovered_retry("non-runner", old_route.attempts["native-route"], False), "preserve-stop")
             self.assertEqual(recovered_retry("non-runner", 1, False), "use-remaining-budget")
 
+    def test_extreme_refills_only_distinct_admitted_ready_lanes(self) -> None:
+        def refill(items, *, total, live_free, occupied, reserved, potential, native_admits=None, capacity_refused=False):
+            if capacity_refused:
+                return []
+            # Unknown count allows real work via native admission, not a guessed batch size.
+            if total is None and live_free is None:
+                next_ready = next_objective(items)
+                return [next_ready.name] if next_ready and native_admits and native_admits(next_ready.name) else []
+            remaining = total - len(occupied | reserved | potential) if total is not None else live_free
+            if live_free is not None:
+                remaining = min(remaining, live_free)
+            return [item.name for item in sorted(items, key=lambda item: item.priority)
+                    if item.ready and item.authorized][:max(0, remaining)]
+
+        queue = [Objective("blocked-dependent", 0, False), Objective("first-ready", 1, True),
+                 Objective("out-of-scope", 2, True, False), Objective("second-ready", 3, True)]
+        occupied, reserved, potential = {"slow-sibling"}, {"writer"}, {"writer", "uncertain"}
+        self.assertEqual(refill(queue, total=5, live_free=1, occupied=occupied,
+                                reserved=reserved, potential=potential), ["first-ready"])
+        # A proved slot release permits refill while the slow sibling still runs.
+        self.assertEqual(refill(queue[2:], total=5, live_free=2, occupied=occupied,
+                                reserved=set(), potential={"uncertain"}), ["second-ready"])
+        self.assertEqual(refill(queue, total=None, live_free=None, occupied=set(),
+                                reserved=set(), potential=set()), [])
+
+        wide = [Objective(f"ready-{i}", i, True) for i in range(9)]
+        self.assertEqual(refill(wide, total=9, live_free=7, occupied=occupied, reserved=reserved,
+                                potential=potential), [f"ready-{i}" for i in range(6)])
+
+        observed = []
+        permits = {"first-ready"}
+        def native_admission(name):
+            observed.append(name)
+            return name in permits
+
+        unknown = dict(total=None, live_free=None, reserved=set(), potential=set(), native_admits=native_admission)
+        self.assertEqual(refill(queue, occupied={"slow-sibling"}, **unknown), ["first-ready"])
+        self.assertEqual(refill(queue[2:], occupied={"slow-sibling", "first-ready"}, **unknown), [])
+        self.assertEqual(refill(queue[2:], occupied={"slow-sibling", "first-ready"}, capacity_refused=True, **unknown), [])
+        self.assertEqual(observed, ["first-ready", "second-ready"])
+        # A proved close changes capacity; reopen only the real, still-ready work.
+        permits.add("second-ready")
+        self.assertEqual(refill(queue[2:], occupied={"slow-sibling"}, **unknown), ["second-ready"])
+        self.assertEqual(observed, ["first-ready", "second-ready", "second-ready"])
+
+        intensity = (PACKAGE / "references/intensity-control.md").read_text(encoding="utf-8")
+        for phrase in ("Before waiting and when slots or readiness change", "habitual ceilings",
+                       "ready lanes", "finite allocation", "non-overlapping ownership",
+                       "managers request and supervise, workers execute",
+                       "Spare slots do not justify splitting coherent work",
+                       "Rush requires separate current-turn consent"):
+            self.assertIn(phrase, intensity)
+        self.assertIn("at most one active non-root", intensity)
+        self.assertIn("up to three direct workers; no mix or nesting", intensity)
+
+    def test_capacity_uses_effective_harness_and_read_only_codex_settings(self) -> None:
+        skill = (PACKAGE / "SKILL.md").read_text(encoding="utf-8")
+        intensity = (PACKAGE / "references/intensity-control.md").read_text(encoding="utf-8")
+        self.assertLess(skill.index("For control-only requests, return"), skill.index("Before sizing delegation"))
+        for phrase in ("active harness’s effective limit", "only concurrency settings", "trusted `.codex/config.toml`",
+                       "`$CODEX_HOME/config.toml`", "`~/.codex/config.toml` if unset",
+                       "without edits or exposing credentials or unrelated values"):
+            self.assertIn(phrase, skill)
+        for phrase in ("stricter live constraints", "occupied, reserved, and potentially live slots",
+                       "Honor loaded Codex precedence; static files may miss overrides or managed limits",
+                       "`agents.max_concurrent_threads_per_session` (legacy `agents.max_threads`) excludes root",
+                       "known supporting V2", "explicit loaded",
+                       "includes root (subtract one for workers)", "dispatch real ready work through native admission",
+                       "track successful/uncertain opens", "Resume capacity-blocked work only on material change",
+                       "never guess or probe"):
+            self.assertIn(phrase, intensity)
+
     def test_scope_admission_and_queue_advance(self) -> None:
         self.assertTrue(admit("C07", True, "in-scope defect"))
         self.assertTrue(admit("C06-R2", True, "authorized blocking dependency"))

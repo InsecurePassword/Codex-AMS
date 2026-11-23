@@ -36,7 +36,7 @@ Respect authoritative project-native packets, queues, pauses, approvals, depende
 
 ## Routing and dispatch
 
-Dispatch every useful ready safe authorized lane under the enabled model policies. Do not silently re-enable disabled model guidance or switching. Use parallelism, managers, independent investigation, and proportional non-recursive review only when valuable. Extreme has no fixed depth or count, but capacity, finite allocation, dependency readiness, one-writer ownership, safety, and coordination value govern. Never manufacture work or duplicate writers merely because capacity exists. Rush still requires separate consent.
+Enumerate distinct ready safe authorized lanes under the enabled model policies, then fill verified capacity before waiting and whenever a slot or readiness changes. Do not wait for unrelated completion. Use the installed intensity and capacity rules. Do not silently re-enable disabled model guidance or switching. Use parallelism, managers, independent investigation, and proportional non-recursive review only when valuable. Extreme has no fixed depth or count, but capacity, finite allocation, dependency readiness, one-writer ownership, safety, and coordination value govern. Never manufacture work or duplicate writers merely because capacity exists. Rush still requires separate consent.
 
 Select an available appropriate profile, applying the cost heuristic only when automatic model switching is enabled:
 

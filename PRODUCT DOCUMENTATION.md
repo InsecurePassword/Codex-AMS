@@ -147,7 +147,7 @@ With model governance on, choose a mode:
 | `AMS MODE minimal` | Keep helper work serial. |
 | `AMS MODE balanced` | Use a small, bounded team. |
 | `AMS MODE heavy` | Use more parallel helpers and managers when useful. |
-| `AMS MODE extreme` | Use every useful, ready task that can safely run within available capacity. |
+| `AMS MODE extreme` | Start useful independent work in available slots. Refill as slots free up or work becomes ready, without waiting for unrelated tasks. |
 
 A mode command also enables AMS for the project. It does not turn model governance on if you turned that off; modes are dormant while model governance is off. `balanced` may appear as `moderate` in status or settings. They mean the same thing.
 
